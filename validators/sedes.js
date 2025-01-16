@@ -1,5 +1,5 @@
 const { check } = require('express-validator');
-const validateResults = require('../utils/handlevalidator');
+const validateResults = require('../utils/handleValidator');
 
 const validatorCrearSede = [
     check('se_nombre').exists().notEmpty().isLength({ min: 3, max: 255 }).trim().customSanitizer((value) => value.toLowerCase()), 
