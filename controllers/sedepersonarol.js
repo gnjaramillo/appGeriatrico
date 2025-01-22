@@ -21,7 +21,7 @@ const asignarRolSuperUsuario = async (req, res) => {
             return res.status(404).json({ message: 'Persona no encontrada' });
         }
 
-        // Verificar si el rol super_admin existe, si no, crearlo
+        // Verificar si el rol super usuario existe, si no, crearlo
         let rol = await rolModel.findOne({ where: { rol_id: SUPER_ADMIN_ROL_ID } });
         if (!rol) {
             // Si el rol no existe, crear uno
@@ -35,11 +35,11 @@ const asignarRolSuperUsuario = async (req, res) => {
 
 
 
-        // Verificar si ya existe un super usuario con el rol "super_admin"
+        // Verificar si ya existe un super usuario 
         const rolExistente = await sedePersonaRolModel.findOne({
             where: {
                 se_id: SEDE_GLOBAL_ID,  // Usar la sede global (ID 0)
-                rol_id: SUPER_ADMIN_ROL_ID, // Usar el rol "super_admin" (ID 1)
+                rol_id: SUPER_ADMIN_ROL_ID, // Usar el rol "super usuario" (ID 1)
                 [Op.or]: [
                     { sp_fecha_fin: null },  // No tiene fecha de fin, es activo indefinidamente
                     { sp_fecha_fin: { [Op.gt]: new Date() } }  // Tiene una fecha fin futura
@@ -61,7 +61,7 @@ const asignarRolSuperUsuario = async (req, res) => {
         });
 
         // Generar el token
-        const token = await tokenSignBasico(persona, rol, { se_id: SEDE_GLOBAL_ID });
+        const token = await tokenSign(persona, rol, { se_id: SEDE_GLOBAL_ID });
 
         return res.status(201).json({
             message: 'Super usuario asignado correctamente.',
@@ -80,18 +80,20 @@ const asignarRolSuperUsuario = async (req, res) => {
 
 
 
-// asignar rol admin de sede (los asigna el super usuario)
+
+
+const ADMINISTRADOR_SEDE_ROL_ID = 2; // ID del rol administrador
+// asignar rol admin de sede (este rol lo asigna el super usuario)
+
 const asignarRolAdminSede = async (req, res) => {
     try {
-        // Obtener los datos validados de la solicitud
         const data = matchedData(req);
         const { per_id, se_id, rol_id, sp_fecha_inicio, sp_fecha_fin } = data;
 
-        // Verificar que el rol existe y corresponde al rol "Administrador Sede"
-        const rol = await rolModel.findOne({ where: { rol_id } });
-        if (!rol || rol.rol_nombre !== 'administrador sede') {
+        // Validar que solo se puede asignar el rol de Administrador de Sede
+        if (rol_id !== ADMINISTRADOR_SEDE_ROL_ID) {
             return res.status(400).json({ 
-                message: 'El rol proporcionado no es válido o no corresponde al rol "Administrador Sede".' 
+                message: 'Aquí solo se puede registrar Administradores de Sede.' 
             });
         }
 
@@ -99,6 +101,17 @@ const asignarRolAdminSede = async (req, res) => {
         const persona = await personaModel.findOne({ where: { per_id } });
         if (!persona) {
             return res.status(404).json({ message: 'Persona no encontrada.' });
+        }
+
+        // Verificar si el rol existe, si no, crearlo
+        let rol = await rolModel.findOne({ where: { rol_id: ADMINISTRADOR_SEDE_ROL_ID } });
+        if (!rol) {
+            rol = await rolModel.create({
+                rol_id: ADMINISTRADOR_SEDE_ROL_ID,
+                rol_nombre: 'Administrador Sede', 
+                rol_descripcion: 'Rol con permisos en la sede a su cargo'
+            });
+            console.log("Rol 'Administrador Sede' creado.");
         }
 
         // Validar si la sede existe
@@ -111,7 +124,7 @@ const asignarRolAdminSede = async (req, res) => {
         const adminExistente = await sedePersonaRolModel.findOne({
             where: {
                 se_id,
-                rol_id,
+                rol_id: ADMINISTRADOR_SEDE_ROL_ID,
                 [Op.or]: [
                     { sp_fecha_fin: null },
                     { sp_fecha_fin: { [Op.gt]: new Date() } }
@@ -123,12 +136,12 @@ const asignarRolAdminSede = async (req, res) => {
             return res.status(400).json({ message: 'Esta sede ya tiene un administrador activo.' });
         }
 
-        // Verificar si ya existe la misma relación activa entre persona, sede y rol
+        // Verificar si la persona ya tiene el rol en la sede
         const relacionExistente = await sedePersonaRolModel.findOne({
             where: {
                 per_id,
                 se_id,
-                rol_id,
+                rol_id: ADMINISTRADOR_SEDE_ROL_ID,
                 [Op.or]: [
                     { sp_fecha_fin: null },
                     { sp_fecha_fin: { [Op.gt]: new Date() } }
@@ -138,7 +151,7 @@ const asignarRolAdminSede = async (req, res) => {
 
         if (relacionExistente) {
             return res.status(400).json({
-                message: 'Esta persona ya tiene el rol de "Administrador Sede" asignado en esta sede.'
+                message: 'Esta persona ya tiene el rol de "Administrador Sede" en esta sede.'
             });
         }
 
@@ -146,12 +159,11 @@ const asignarRolAdminSede = async (req, res) => {
         const nuevaVinculacion = await sedePersonaRolModel.create({
             per_id,
             se_id,
-            rol_id,
+            rol_id: ADMINISTRADOR_SEDE_ROL_ID,
             sp_fecha_inicio,
             sp_fecha_fin: sp_fecha_fin || null
         });
 
-        // Responder con éxito
         return res.status(201).json({
             message: 'Rol "Administrador Sede" asignado correctamente.',
             data: nuevaVinculacion
@@ -167,8 +179,7 @@ const asignarRolAdminSede = async (req, res) => {
 
 
 
-
-
+// lista de sus roles visibles a cada usuario
 const obtenerRolesAsignados = async (req, res) => {
     try {
 
@@ -210,8 +221,7 @@ const obtenerRolesAsignados = async (req, res) => {
   
 
 
-
-
+// una vez entro al sistema, escojo entre los roles q ya tengo asignados
 const seleccionarRolYSede = async (req, res) => {
     try {
       const { rol_id, se_id } = req.body;
@@ -234,20 +244,18 @@ const seleccionarRolYSede = async (req, res) => {
       }   
   
 
-    // Generar el token con datos de rol y sede
-    const token = await tokenSign(
-        {
-          per_id: id, 
-          per_nombre_completo: req.user.nombre
-        },
-        se_id, // ID de la sede seleccionada
-        rol_id, // ID del rol seleccionado
-        asignacion.rol.dataValues.rol_nombre, 
-        asignacion.sede.dataValues.se_nombre 
-      );
-      
+    // Guardar `se_id` y `rol_id` en la sesión del usuario
+    req.session.se_id = se_id;
+    req.session.rol_id = rol_id;
+    
 
-     // console.log('Datos decodificados del token:', jwt.decode(token));
+    req.session.save((err) => {
+        if (err) {
+            console.error('Error al guardar la sesión:', err);
+        } else {
+            console.log('Sesión guardada correctamente:', req.session);
+        }
+    });
   
 
       return res.status(200).json({
@@ -256,7 +264,6 @@ const seleccionarRolYSede = async (req, res) => {
         sede: asignacion.sede.se_nombre,
         rol_id: asignacion.rol_id,
         se_id: asignacion.se_id,
-        token,
       });
     } catch (error) {
       console.error('Error al seleccionar rol y sede:', error);
@@ -267,11 +274,17 @@ const seleccionarRolYSede = async (req, res) => {
 
 
 
+
+
 // roles asignados dentro de la sede (asignados por el admin sede)
 const asignarRol = async (req, res) => {
     try {
         const data = matchedData(req);
         const { per_id, rol_id, sp_fecha_inicio, sp_fecha_fin } = data;
+
+         // Obtener el `se_id` de la sesión
+         const se_id = req.session.se_id;
+         if (!se_id) return res.status(403).json({ message: 'No se ha seleccionado una sede' });
 
 
         // Validar que el rol sea permitido
@@ -283,12 +296,6 @@ const asignarRol = async (req, res) => {
             return res.status(403).json({ message: 'Rol no permitido para asignar en esta sede.' });
         }
 
-        // Validar sede
-        const { se_id } = req.user;
-        console.log("Usuario autenticado:", req.user);
-
-
-        if (!se_id) return res.status(403).json({ message: 'No se ha seleccionado una sede' });
 
         // Validar que la persona exista
         const persona = await personaModel.findOne({ where: { per_id } });
@@ -315,10 +322,24 @@ const asignarRol = async (req, res) => {
             sp_fecha_fin: sp_fecha_fin || null,
         });
 
+        // Guardar `se_id` y `rol_id` en la sesión del usuario
+        req.session.se_id = se_id;
+        req.session.rol_id = rol_id;
+
+        req.session.save((err) => {
+            if (err) {
+                console.error('Error al guardar la sesión:', err);
+            } else {
+                console.log('Sesión guardada correctamente:', req.session);
+            }
+        });
+
         return res.status(200).json({
             message: 'Rol asignado correctamente',
-            data: nuevaVinculacion,
+            nuevaVinculacion,
+        
         });
+
     } catch (error) {
         console.error("Error al asignar rol:", error);
         return res.status(500).json({
@@ -330,4 +351,52 @@ const asignarRol = async (req, res) => {
 
 
 
-module.exports = {asignarRolSuperUsuario,  asignarRolAdminSede, asignarRol, obtenerRolesAsignados, seleccionarRolYSede };
+// trae todos los roles dentro de una sede especifica, omite el del admin sede
+const obtenerPersonasConRoles = async (req, res) => {
+    try {
+         // Obtener el `se_id` de la sesión
+         const se_id = req.session.se_id;
+
+        if (!se_id) return res.status(403).json({ message: 'No se ha seleccionado una sede' });
+
+        // listado de personas con sus roles en la sede
+        const personasConRoles = await sedePersonaRolModel.findAll({
+            where: { se_id },
+            include: [
+                {
+                    model: personaModel, 
+                    as: 'persona',
+                    attributes: ['per_nombre_completo', 'per_usuario', 'per_telefono'] // Atributos básicos
+                },
+                {
+                    model: rolModel, 
+                    as: 'rol',
+                    attributes: ['rol_nombre'],
+                    where: {
+                        rol_nombre: { [Op.ne]: 'administrador sede' } // Excluir el rol "administrador sede"
+                    }
+                }
+            
+            ]
+        });
+
+        return res.status(200).json({
+            message: 'Listado de personas con roles',
+            data: personasConRoles
+        });
+    } catch (error) {
+        console.error("Error al obtener el listado de personas con roles:", error);
+        return res.status(500).json({
+            message: "Error al obtener el listado de personas con roles",
+            error: error.message,
+        });
+    }
+};
+
+
+
+
+
+module.exports = {asignarRolSuperUsuario,  asignarRolAdminSede, asignarRol, obtenerRolesAsignados, seleccionarRolYSede, obtenerPersonasConRoles };
+
+

@@ -127,10 +127,14 @@ const loginPersona = async (req, res) => {
 
 
       // Generar un token básico
-    const token = await tokenSign({
+      const token = await tokenSign({
         per_id: persona.per_id,
         per_nombre_completo: persona.per_nombre_completo
       });
+
+      
+
+
 
       
   

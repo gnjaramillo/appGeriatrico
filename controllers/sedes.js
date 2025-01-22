@@ -57,7 +57,6 @@ const crearSede = async (req, res) => {
 
 
 
-
 const obtenerSedes = async (req, res) => {
   try {
     // Obtener todas las sedes de la base de datos
@@ -117,6 +116,7 @@ const obtenerDetalleSede = async (req, res) => {
     return res.status(500).json({ message: "Error al obtener la sede" });
   }
 };
+
 
 
 const actualizarSede = async (req, res) => {

@@ -1,59 +1,49 @@
-/* const { handleHttpError } = require('../utils/handleError');
+/* 
+const { handleHttpError } = require('../utils/handleError');
+const rolModel = require('../models/rolModel'); 
 
 
-const checkRol = (roles) => (req, res, next) => {
+
+const checkRol = (allowedRoleIds) => async (req, res, next) => {
     try {
-        const { user } = req;
-        console.log({user})
-
-        // estraer los roles del usuario
-        const rolesByUser = user.role;
-
-        const checkValueRol = roles.some((rolSingle) => rolesByUser.includes(rolSingle));
+        const { rol_id } = req.session.rol_id; // ID del rol del usuario
         
-        if (!checkValueRol ) {
-            handleHttpError(res, 'Error de permisos', 403);
+        // Verificar si el rol_id existe en la base de datos
+        const rol = await rolModel.findOne({ where: { rol_id } });
+
+        // Si el rol no existe en la base de datos, retorna un error
+        if (!rol) {
+            return handleHttpError(res, 'Rol no encontrado', 403);
+        }
+
+        // Verifica si el rol_id está en la lista de IDs permitidos
+        if (!allowedRoleIds.includes(rol_id)) {
+            return handleHttpError(res, 'No tienes permiso', 403);
         }
 
         next();
-        
     } catch (error) {
-        handleHttpError(res, 'Error de permisos', 403);
+        return handleHttpError(res, 'Error en la validación', 403);
     }
 };
+
 
 module.exports = checkRol; */
 
 
 const { handleHttpError } = require('../utils/handleError');
+const {rolModel } = require('../models');
 
-/**
- * Middleware para verificar si el usuario tiene los roles permitidos
- * @param {Array<string>} roles Roles permitidos para la ruta
- */
-
-
-const checkRol = (roles) => (req, res, next) => {
+const checkRol = (allowedRoleIds) => (req, res, next) => {
     try {
-        const { rol } = req.user; // El rol debe estar disponible en req.user desde authMiddleware
-
-        if (!roles.includes(rol)) {
-            return handleHttpError(res, 'No tienes permisos para acceder a este recurso', 403);
+        const rol_id = req.session.rol_id; 
+        if (!allowedRoleIds.includes(rol_id)) {
+            return handleHttpError(res, 'No tienes permiso', 403);
         }
-
         next();
     } catch (error) {
-        console.error("Error en la verificación de roles:", error);
-        return handleHttpError(res, 'Error al verificar roles', 403);
+        return handleHttpError(res, 'Error en la validación', 403);
     }
 };
 
 module.exports = checkRol;
-
-
-
-/* Se usa el método .some() para comprobar si al menos uno de los roles permitidos
- (en roles) está presente en los roles del usuario (rolesByUser).
-La función de callback (rolSingle) => rolesByUser.includes(rolSingle) 
-se ejecuta para cada rol en roles, verificando si rolesByUser incluye ese rol.
-El resultado es true si existe al menos una coincidencia; de lo contrario, será false. */

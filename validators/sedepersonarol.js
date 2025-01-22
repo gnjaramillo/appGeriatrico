@@ -35,7 +35,7 @@ const validarAsignarRol = [
 
 
 const validarRolSeleccionado = [
-    check('se_id').isInt({ min: 1 }).exists().notEmpty().withMessage('El ID de la sede debe ser un número válido'),
+    check('se_id').isInt({ min: 0 }).exists().notEmpty().withMessage('El ID de la sede debe ser un número válido'),
     check('rol_id').isInt({ min: 1 }).exists().notEmpty().withMessage('El ID del rol debe ser un número válido'),
 
     (req, res, next) => validateResults(req, res, next),

@@ -9,8 +9,8 @@ const host = process.env.MYSQL_HOST
 
 const sequelize = new Sequelize(database, username, password, {
     host,
-    dialect: 'mysql', // o el que uses: 'postgres', 'sqlite', etc.
-    logging: false, // Desactiva los logs de Sequelize, es conveniente activarlos en dllo y desactivar en produccion
+    dialect: 'mysql', 
+    logging: false, // Desactiva los logs de Sequelize, activarlos en dllo y desactivar en produccion
     define: {
         underscored: true // Convierte camelCase en snake_case
     },
