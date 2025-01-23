@@ -1,6 +1,6 @@
 const { matchedData } = require('express-validator');
 const { encrypt, compare } = require('../utils/handlePassword');
-const { personaModel, rolModel, sedeModel, sedePersonaRolModel } = require('../models');
+const { personaModel, rolModel, sedeModel, geriatricoModel, sedePersonaRolModel, geriatricoPersonaRolModel } = require('../models');
 const { tokenSign } = require('../utils/handleJwt'); 
 const { subirImagenACloudinary } = require('../utils/handleCloudinary'); 
 const cloudinary = require('../config/cloudinary'); 
@@ -54,10 +54,6 @@ const registrarPersona = async (req, res) => {
 
         }
 
-        // Generar token de inicio de sesión
-        const token = await tokenSign(nuevaPersona, {}, {});
-
-
         // Ocultar la contraseña en la respuesta para no exponerla
         nuevaPersona.set('per_contraseña', undefined, { strict: false });
 
@@ -65,7 +61,6 @@ const registrarPersona = async (req, res) => {
         return res.status(201).json({
             message: "Persona registrada con éxito",
             data: {
-                token, // Token de autenticación
                 user: nuevaPersona, // Datos del usuario sin la contraseña
             },
         });
@@ -81,79 +76,54 @@ const registrarPersona = async (req, res) => {
 
 
 
-const loginPersona = async (req, res) => {
+
+  const loginPersona = async (req, res) => {
     try {
-      const data = matchedData(req);
-      const { per_usuario, per_password } = data;
-  
-      // Buscar al usuario
-      const persona = await personaModel.findOne({ where: { per_usuario } });
-      if (!persona) {
-        return res.status(404).json({ message: 'Usuario no encontrado' });
-      }
-  
-      // Verificar contraseña
-      const hashPassword = persona.per_password;
-      const check = await compare(per_password, hashPassword);
-      if (!check) {
-        return res.status(401).json({ message: 'Contraseña inválida' });
-      }
+        const data = matchedData(req);
+        const { per_usuario, per_password } = data;
+
+        // Buscar al usuario
+        const persona = await personaModel.findOne({ where: { per_usuario } });
+        if (!persona) {
+            return res.status(404).json({ message: 'Usuario no encontrado' });
+        }
+
+        // Verificar contraseña
+        const hashPassword = persona.per_password;
+        const check = await compare(per_password, hashPassword);
+        if (!check) {
+            return res.status(401).json({ message: 'Contraseña inválida' });
+        }
+
+        persona.set("password", undefined, { estrict: false });
 
 
-     persona.set("password", undefined, { estrict: false });
-  
-      // Buscar todas las combinaciones de roles y sedes asignadas al usuario
-      const asignaciones = await sedePersonaRolModel.findAll({
-        where: { per_id: persona.per_id },
-        include: [
-          { model: rolModel, as: 'rol', attributes: ['rol_id', 'rol_nombre'] },
-          { model: sedeModel, as: 'sede', attributes: ['se_id', 'se_nombre'] },
-        ],
-      });
-  
-      if (asignaciones.length === 0) {
-        return res.status(403).json({
-          message: 'No tienes roles ni sedes asignados. Comunícate con un administrador.',
+        // Generar el token básico con los datos del usuario
+        const token = await tokenSign({
+            per_id: persona.per_id,
+            per_nombre_completo: persona.per_nombre_completo,
         });
-      }
-  
-      // Construir la lista de roles y sedes disponibles
-      const opciones = asignaciones.map((a) => ({
-        rol_id: a.rol_id,
-        rol_nombre: a.rol.rol_nombre,
-        se_id: a.se_id,
-        se_nombre: a.sede.se_nombre,
-      }));
 
+        // Responder con el mensaje y las opciones
+        return res.status(200).json({
+            message: 'Inicio de sesión exitoso',
+            token,
+            persona: {
+                id: persona.per_id,
+                nombre: persona.per_nombre_completo,
+                usuario: persona.per_usuario,
+                correo: persona.per_correo,
+                foto: persona.per_foto,
+                genero: persona.per_genero,
+                telefono: persona.per_telefono
+            }
+        });
 
-      // Generar un token básico
-      const token = await tokenSign({
-        per_id: persona.per_id,
-        per_nombre_completo: persona.per_nombre_completo
-      });
-
-      
-
-
-
-      
-  
-      // Responder con las opciones disponibles
-      return res.status(200).json({
-        message: 'Inicio de sesión exitoso. Selecciona un rol y sede para continuar.',
-        token,
-        persona: {
-          id: persona.per_id,
-          nombre: persona.per_nombre_completo,
-          usuario: persona.per_usuario,
-        },
-        opciones, // Enviar las combinaciones disponibles de roles y sedes
-      });
     } catch (error) {
-      console.error('Error en el login:', error);
-      return res.status(500).json({ message: 'Error en el login' });
+        console.error('Error en el login:', error);
+        return res.status(500).json({ message: 'Error en el login' });
     }
-  };
+};
 
 
   

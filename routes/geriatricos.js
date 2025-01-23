@@ -10,9 +10,7 @@ const upload = require('../middleware/multer');
 
 
 
-router.post('/', sessionMiddleware, authMiddleware,  checkRol([1]),
-
-upload.single('ge_logo'), validatorCrearGeriatrico, crearGeriatrico);
+router.post('/', sessionMiddleware, authMiddleware,  checkRol([1]), upload.single('ge_logo'), validatorCrearGeriatrico, crearGeriatrico);
 router.get('/', obtenerGeriatricos);
 router.get('/:ge_id', validatorDetalleGeriatrico ,obtenerDetalleGeriatrico);
 router.put('/:ge_id', upload.single('ge_logo'), validatorActualizarGeriatrico,  actualizarGeriatrico);

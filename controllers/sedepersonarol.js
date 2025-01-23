@@ -1,81 +1,10 @@
 const { Op } = require('sequelize');
 const { matchedData } = require('express-validator');
-const { personaModel, rolModel, sedeModel, sedePersonaRolModel } = require('../models');
+const { personaModel, rolModel, sedeModel, geriatricoModel, sedePersonaRolModel, geriatricoPersonaRolModel } = require('../models');
 const { tokenSign } = require('../utils/handleJwt'); 
 const jwt = require('jsonwebtoken');
 
 
-
-
-const SUPER_ADMIN_ROL_ID = 1; // ID del rol super_admin (super administrador)
-const SEDE_GLOBAL_ID = 0;     // ID de la sede global creada manualmente ( será 0)
-// crear super usuario
-const asignarRolSuperUsuario = async (req, res) => {
-
-    try {
-        const { per_id, sp_fecha_inicio, sp_fecha_fin } = matchedData(req);
-
-        // Validar si la persona existe
-        const persona = await personaModel.findOne({ where: { per_id } });
-        if (!persona) {
-            return res.status(404).json({ message: 'Persona no encontrada' });
-        }
-
-        // Verificar si el rol super usuario existe, si no, crearlo
-        let rol = await rolModel.findOne({ where: { rol_id: SUPER_ADMIN_ROL_ID } });
-        if (!rol) {
-            // Si el rol no existe, crear uno
-            rol = await rolModel.create({
-                rol_id: SUPER_ADMIN_ROL_ID,
-                rol_nombre: 'Super Administrador', 
-                rol_descripcion: 'Rol con permisos especiales en el sistema'
-            });
-            console.log("Rol 'Super Administrador' creado.");
-        }
-
-
-
-        // Verificar si ya existe un super usuario 
-        const rolExistente = await sedePersonaRolModel.findOne({
-            where: {
-                se_id: SEDE_GLOBAL_ID,  // Usar la sede global (ID 0)
-                rol_id: SUPER_ADMIN_ROL_ID, // Usar el rol "super usuario" (ID 1)
-                [Op.or]: [
-                    { sp_fecha_fin: null },  // No tiene fecha de fin, es activo indefinidamente
-                    { sp_fecha_fin: { [Op.gt]: new Date() } }  // Tiene una fecha fin futura
-                ]
-            }
-        });
-
-        if (rolExistente) {
-            return res.status(400).json({ message: 'Ya existe un super usuario registrado.' });
-        }
-
-        // Crear el vínculo en la tabla sede_personas_roles
-        const nuevaVinculacion = await sedePersonaRolModel.create({
-            per_id,
-            se_id: SEDE_GLOBAL_ID,  // Usar la sede global (ID 0)
-            rol_id: SUPER_ADMIN_ROL_ID,
-            sp_fecha_inicio,
-            sp_fecha_fin: sp_fecha_fin || null,
-        });
-
-        // Generar el token
-        const token = await tokenSign(persona, rol, { se_id: SEDE_GLOBAL_ID });
-
-        return res.status(201).json({
-            message: 'Super usuario asignado correctamente.',
-            data: nuevaVinculacion,
-            token,
-        });
-    } catch (error) {
-        console.error('Error al asignar rol super usuario:', error);
-        return res.status(500).json({
-            message: 'Error al asignar rol super usuario',
-            error: error.message,
-        });
-    }
-};
 
 
 
@@ -180,43 +109,121 @@ const asignarRolAdminSede = async (req, res) => {
 
 
 // lista de sus roles visibles a cada usuario
+/* const obtenerRolesAsignados = async (req, res) => {
+  try {
+    // id del token básico
+    const { id } = req.user;
+
+    // Buscar las asignaciones de roles y sedes del usuario
+    const rolesSede = await sedePersonaRolModel.findAll({
+      where: { per_id: id },
+      include: [
+        { model: rolModel, as: "rol", attributes: ["rol_id", "rol_nombre"] },
+        { model: sedeModel, as: "sede", attributes: ["se_id", "se_nombre"] },
+      ],
+    });
+
+    // Obtener asignaciones de roles en geriátricos
+    const rolesGeriatrico = await geriatricoPersonaRolModel.findAll({
+      where: { per_id: id },
+      include: [
+        { model: rolModel, as: "rol", attributes: ["rol_id", "rol_nombre"] },
+        {
+          model: geriatricoModel,
+          as: "geriatrico",
+          attributes: ["ge_id", "ge_nombre"],
+        },
+      ],
+    });
+
+    // Determinar el mensaje según si tiene asignaciones
+    const message =
+      asignacionesSede.length === 0 && asignacionesGeriatrico.length === 0
+        ? "Aún no tienes roles ni sedes/geriátricos asignados. Comunícate con un administrador."
+        : "Selecciona un rol asignado para continuar.";
+
+    // Construir la respuesta
+    const opcionesSede = rolesSede.map((a) => ({
+      rol_id: a.rol_id,
+      rol_nombre: a.rol.rol_nombre,
+      se_id: a.se_id,
+      se_nombre: a.sede.se_nombre,
+    }));
+
+    const opcionesGeriatrico = rolesGeriatrico.map((a) => ({
+      rol_id: a.rol_id,
+      rol_nombre: a.rol.rol_nombre,
+      ge_id: a.ge_id,
+      ge_nombre: a.geriatrico.ge_nombre,
+    }));
+
+    return res.status(200).json({
+      message,
+      opcionesSede,
+      opcionesGeriatrico,
+    });
+  } catch (error) {
+    console.error("Error al obtener roles y sedes:", error);
+    return res.status(500).json({ message: "Error al obtener roles y sedes" });
+  }
+}; 
+ */
+
 const obtenerRolesAsignados = async (req, res) => {
     try {
+        const { id } = req.user; // Se obtiene desde el token del middleware
 
-      // id del token básico
-      const { id } = req.user; 
-  
-      // Buscar las asignaciones de roles y sedes del usuario
-      const asignaciones = await sedePersonaRolModel.findAll({
-        where: { per_id: id },
-        include: [
-          { model: rolModel, as: 'rol', attributes: ['rol_id', 'rol_nombre'] },
-          { model: sedeModel, as: 'sede', attributes: ['se_id', 'se_nombre'] },
-        ],
-      });
-  
-      // Validar si hay roles y sedes asignados
-      if (asignaciones.length === 0) {
-        return res.status(404).json({ message: 'No tienes roles ni sedes asignados' });
-      }
-  
-      // Formatear las asignaciones para enviarlas como respuesta
-      const rolesYSedes = asignaciones.map((a) => ({
-        rol_id: a.rol_id,
-        rol_nombre: a.rol.rol_nombre,
-        se_id: a.se_id,
-        se_nombre: a.sede.se_nombre,
-      }));
-  
-      return res.status(200).json({
-        message: 'Roles y sedes obtenidos exitosamente',
-        rolesYSedes,
-      });
+        // Obtener asignaciones de roles en sedes
+        const rolesSede = await sedePersonaRolModel.findAll({
+            where: { per_id: id },
+            include: [
+                { model: rolModel, as: 'rol', attributes: ['rol_id', 'rol_nombre'] },
+                { model: sedeModel, as: 'sede', attributes: ['se_id', 'se_nombre'] },
+            ],
+        });
+
+        // Obtener asignaciones de roles en geriátricos
+        const rolesGeriatrico = await geriatricoPersonaRolModel.findAll({
+            where: { per_id: id },
+            include: [
+                { model: rolModel, as: 'rol', attributes: ['rol_id', 'rol_nombre'] },
+                { model: geriatricoModel, as: 'geriatrico', attributes: ['ge_id', 'ge_nombre'] },
+            ],
+        });
+
+        // Determinar el mensaje según si tiene asignaciones
+        const message = (rolesSede.length === 0 && rolesGeriatrico.length === 0)
+            ? 'Aún no tienes roles ni sedes/geriátricos asignados. Comunícate con un administrador.'
+            : 'Selecciona un rol asignado para continuar.';
+
+
+        // Construir la respuesta
+        const opcionesSede = rolesSede.map(a => ({
+            rol_id: a.rol_id,
+            rol_nombre: a.rol.rol_nombre,
+            se_id: a.se_id,
+            se_nombre: a.sede.se_nombre,
+        }));
+
+        const opcionesGeriatrico = rolesGeriatrico.map(a => ({
+            rol_id: a.rol_id,
+            rol_nombre: a.rol.rol_nombre,
+            ge_id: a.ge_id,
+            ge_nombre: a.geriatrico.ge_nombre,
+        }));
+
+        return res.status(200).json({
+            message,
+            opcionesSede,
+            opcionesGeriatrico
+        });
+
     } catch (error) {
-      console.error('Error al obtener roles y sedes:', error);
-      return res.status(500).json({ message: 'Error al obtener roles y sedes' });
+        console.error('Error al obtener roles:', error);
+        return res.status(500).json({ message: 'Error al obtener roles' });
     }
 };
+
 
   
 
@@ -397,6 +404,6 @@ const obtenerPersonasConRoles = async (req, res) => {
 
 
 
-module.exports = {asignarRolSuperUsuario,  asignarRolAdminSede, asignarRol, obtenerRolesAsignados, seleccionarRolYSede, obtenerPersonasConRoles };
+module.exports = { asignarRolAdminSede, asignarRol, obtenerRolesAsignados, seleccionarRolYSede, obtenerPersonasConRoles };
 
 

@@ -37,6 +37,7 @@ const {rolModel } = require('../models');
 const checkRol = (allowedRoleIds) => (req, res, next) => {
     try {
         const rol_id = req.session.rol_id; 
+        
         if (!allowedRoleIds.includes(rol_id)) {
             return handleHttpError(res, 'No tienes permiso', 403);
         }

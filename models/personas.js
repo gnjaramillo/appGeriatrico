@@ -29,7 +29,7 @@ personaModel.associate = (models) => {
     personaModel.belongsToMany(models.rolModel, {
         through: models.sedePersonaRolModel,
         foreignKey: 'per_id',
-        as: 'rol'
+        as: 'rolesEnSedes'
     });
 
     // Persona puede estar en varias sedes a través de SedePersonaRol
@@ -37,6 +37,21 @@ personaModel.associate = (models) => {
         through: models.sedePersonaRolModel,
         foreignKey: 'per_id',
         as: 'sede'
+    });
+
+    // Persona puede tener varios roles a través de GeriatricoPersonaRol
+    personaModel.belongsToMany(models.rolModel, {
+        through: models.geriatricoPersonaRolModel,
+        foreignKey: 'per_id',
+        as: 'rolesEnGeriátricos'
+    });
+
+    
+    // Persona puede estar en varios geriatricos a través de GeriatricoPersonaRol
+    personaModel.belongsToMany(models.geriatricoModel, {
+        through: models.geriatricoPersonaRolModel,
+        foreignKey: 'per_id',
+        as: 'geriatrico'
     });
 
     // una persona puede tener un único paciente asociado.

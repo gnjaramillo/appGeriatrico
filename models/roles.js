@@ -20,7 +20,14 @@ rolModel.associate = (models) => {
     rolModel.belongsToMany(models.personaModel, {
         through: models.sedePersonaRolModel,
         foreignKey: 'rol_id',
-        as: 'persona'
+        as: 'personasEnSede'
+    });
+
+    // Un rol tiene muchas personas a través de GeriatricoPersonaRol
+    rolModel.belongsToMany(models.personaModel, {
+        through: models.geriatricoPersonaRolModel,
+        foreignKey: 'rol_id',
+        as: 'personasEnGeriatrico'
     });
 
 

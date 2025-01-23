@@ -4,9 +4,9 @@ const authMiddleware = require('../middleware/sessionJwt')
 const sessionMiddleware = require('../middleware/sessionRedis')
 const checkRol = require('../middleware/rol');
 
-const { asignarRolSuperUsuario, asignarRolAdminSede,  asignarRol, seleccionarRolYSede } = require('../controllers/sedepersonarol');
+const { asignarRolAdminSede,  asignarRol, seleccionarRolYSede } = require('../controllers/sedepersonarol');
 const { obtenerRolesAsignados, obtenerPersonasConRoles } = require('../controllers/sedepersonarol');
-const { validarSuperUsuario, validarAdminSede, validarAsignarRol, validarRolSeleccionado } = require('../validators/sedepersonarol');
+const { validarAdminSede, validarAsignarRol, validarRolSeleccionado } = require('../validators/sedepersonarol');
 
 
 
@@ -14,7 +14,6 @@ const { validarSuperUsuario, validarAdminSede, validarAsignarRol, validarRolSele
 // http://localhost:3000/api/sedepersonarol
 
 
-router.post('/superUsuario', validarSuperUsuario,  asignarRolSuperUsuario);
 // rol q solo asigna el super administrador
 router.post('/asignarAdminSede', sessionMiddleware, authMiddleware,  checkRol([1]), validarAdminSede, checkRol([1]), asignarRolAdminSede);
 // ver mis roles asignados como usuario
