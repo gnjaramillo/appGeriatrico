@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const { matchedData } = require('express-validator');
 const { encrypt, compare } = require('../utils/handlePassword');
 const { personaModel, rolModel, sedeModel, geriatricoModel, sedePersonaRolModel, geriatricoPersonaRolModel } = require('../models');
@@ -61,6 +62,7 @@ const registrarPersona = async (req, res) => {
         return res.status(201).json({
             message: "Persona registrada con éxito",
             data: {
+                per_id: nuevaPersona.per_id, 
                 user: nuevaPersona, // Datos del usuario sin la contraseña
             },
         });
@@ -77,7 +79,88 @@ const registrarPersona = async (req, res) => {
 
 
 
-  const loginPersona = async (req, res) => {
+const loginPersona = async (req, res) => {
+  try {
+    const data = matchedData(req);
+    const { per_usuario, per_password } = data;
+
+    // Buscar al usuario
+    const persona = await personaModel.findOne({ where: { per_usuario } });
+    if (!persona) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
+
+    // Verificar contraseña
+    const hashPassword = persona.per_password;
+    const check = await compare(per_password, hashPassword);
+    if (!check) {
+      return res.status(401).json({ message: "Contraseña inválida" });
+    }
+
+    persona.set("password", undefined, { estrict: false });
+
+    // Verificar si el usuario es Super Administrador
+    const esSuperAdmin = await geriatricoPersonaRolModel.findOne({
+      where: {
+        per_id: persona.per_id,
+        ge_id: 0, // geriatrico id 0
+        rol_id: 1, // ID del rol Super Administrador
+        [Op.or]: [
+          { sp_fecha_fin: null },
+          { sp_fecha_fin: { [Op.gt]: new Date() } },
+        ],
+      },
+    });
+
+    // Guardar en la sesión el rol o si es super admin
+    req.session.rol_id = esSuperAdmin ? 1 : null; // Guardar el rol si no es Super Admin
+    req.session.esSuperAdmin = !!esSuperAdmin; // Booleano indicando si es Super Admin
+
+    console.log("rol_id en la sesión:", req.session.rol_id);
+
+    // Generar el token con la información del usuario y si es Super Admin
+    const token = await tokenSign({
+      per_id: persona.per_id,
+      per_nombre_completo: persona.per_nombre_completo,
+      esSuperAdmin: !!esSuperAdmin, // true si es Super Admin, false si no
+    });
+
+    // **Guardar el token en las cookies**
+    res.cookie("authToken", token, {
+      httpOnly: true, // Previene acceso al token desde JavaScript en el navegador
+      secure: false, // False porque estás en local, cambiar a true en https
+      sameSite: "lax", // Permite enviar cookies entre rutas
+      maxAge: 2 * 60 * 60 * 1000, // 2 horas
+
+    });
+
+    // Responder con el mensaje y las opciones
+    return res.status(200).json({
+      message: "Inicio de sesión exitoso",
+      token,
+      persona: {
+        id: persona.per_id,
+        nombre: persona.per_nombre_completo,
+        usuario: persona.per_usuario,
+        correo: persona.per_correo,
+        foto: persona.per_foto,
+        genero: persona.per_genero,
+        telefono: persona.per_telefono,
+        esSuperAdmin: !!esSuperAdmin,
+      },
+    });
+  } catch (error) {
+    console.error("Error en el login:", error);
+    return res.status(500).json({ message: "Error en el login" });
+  }
+};
+
+
+
+
+
+
+/*   const loginPersona = async (req, res) => {
     try {
         const data = matchedData(req);
         const { per_usuario, per_password } = data;
@@ -124,11 +207,9 @@ const registrarPersona = async (req, res) => {
         return res.status(500).json({ message: 'Error en el login' });
     }
 };
+*/
 
-
-  
-
-module.exports = { registrarPersona, loginPersona };
+  module.exports = { registrarPersona, loginPersona };
 
 
 

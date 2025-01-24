@@ -21,11 +21,11 @@ module.exports = session({
     resave: false, // no vuelve a guardar sesion si no hay cambios
     saveUninitialized: false,
     cookie: {
-        // true si está en producción (HTTPS), false en desarrollo para permitir conexiones HTTP normales.
-        secure: process.env.NODE_ENV === 'production', // Solo cookies seguras en producción
+        secure: false, // Asegúrate de esto en desarrollo
         httpOnly: true,
-        maxAge: 1000 * 60 * 60 * 2 // 2 horas
-    }
+        maxAge: 1000 * 60 * 60 * 2, // 2 horas
+      }
+      
 }); 
 
 

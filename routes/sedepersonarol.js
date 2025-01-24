@@ -14,13 +14,13 @@ const { validarAdminSede, validarAsignarRol, validarRolSeleccionado } = require(
 // http://localhost:3000/api/sedepersonarol
 
 
-// rol q solo asigna el super administrador
-router.post('/asignarAdminSede', sessionMiddleware, authMiddleware,  checkRol([1]), validarAdminSede, checkRol([1]), asignarRolAdminSede);
+// rol q asigna el administrador geriatrico
+router.post('/rolesAdminSede', sessionMiddleware, authMiddleware,  checkRol([2]), validarAdminSede, asignarRolAdminSede);
 // ver mis roles asignados como usuario
-router.get('/rolesAsignados',sessionMiddleware, authMiddleware,  obtenerRolesAsignados);
+router.get('/rolesAsignados', sessionMiddleware, authMiddleware,  obtenerRolesAsignados);
 router.post('/rolSeleccionado', sessionMiddleware, authMiddleware, validarRolSeleccionado,  seleccionarRolYSede);
-router.post('/asignarRol', sessionMiddleware, authMiddleware, checkRol([2]), validarAsignarRol,  asignarRol);
-router.get('/listaPersonasRoles',sessionMiddleware, authMiddleware, checkRol([2]), obtenerPersonasConRoles);
+router.post('/asignarRol', sessionMiddleware, authMiddleware, checkRol([3]), validarAsignarRol,  asignarRol);
+router.get('/listaPersonasRoles',sessionMiddleware, authMiddleware, checkRol([3]), obtenerPersonasConRoles);
 
 
 
@@ -34,12 +34,14 @@ module.exports = router;
 "rol_id": 1,
 "rol_nombre": "super administrador",
 "rol_id": 2,
-"rol_nombre": "administrador sede",
+"rol_nombre": "administrador geriatrico",
 "rol_id": 3,
-"rol_nombre": "paciente",
+"rol_nombre": "administrador sede",
 "rol_id": 4,
-"rol_nombre": "enfermero(a)",
+"rol_nombre": "paciente",
 "rol_id": 5,
+"rol_nombre": "enfermero(a)",
+"rol_id": 6,
 "rol_nombre": "acudiente",
 "rol_id": 7,
 "rol_nombre": "colaborador",
