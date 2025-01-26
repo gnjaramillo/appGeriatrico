@@ -1,7 +1,7 @@
-require('dotenv').config();
 const { Sequelize } = require('sequelize');
 
 const NODE_ENV = process.env.NODE_ENV || 'development';
+console.log("El entorno actual es:", NODE_ENV);
 
 // Configuración según el entorno
 const config = {
@@ -49,6 +49,12 @@ if (NODE_ENV === 'production') {
         dialect: envConfig.dialect
     });
 }
+
+/* console.log('DATABASE:', process.env.MYSQL_DATABASE_RAILWAY);
+console.log('USER:', process.env.MYSQL_USER_RAILWAY);
+console.log('HOST:', process.env.MYSQL_HOST_RAILWAY);
+console.log('PORT:', process.env.MYSQL_PORT_RAILWAY); */
+
 
 // Función para conectar
 const dbConnectMysql = async () => {

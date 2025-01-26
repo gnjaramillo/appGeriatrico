@@ -12,7 +12,7 @@ require('./sync');  // Ejecuta la sincronización de modelos
 
 const app = express()
 const NODE_ENV = process.env.NODE_ENV || 'development'
-const port = process.env.PORT || 3000
+const port = process.env.PORT || 3000; 
 
 
 app.use(express.urlencoded({ extended: true }));
@@ -53,10 +53,12 @@ app.use('/api', require('./routes'))
 
 
 if (NODE_ENV !== 'test'){
-    app.listen(port, () => {
+    app.listen(port, "0.0.0.0", () => {
         console.log(`tu app esta lista por http://localhost:${port}`)
     });
 }
+
+
 
 
 
