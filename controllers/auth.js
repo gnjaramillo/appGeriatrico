@@ -83,7 +83,7 @@ const loginPersona = async (req, res) => {
     const data = matchedData(req);
     const { per_usuario, per_password } = data;
 
-    // Buscar al usuario
+
     const persona = await personaModel.findOne({ where: { per_usuario } });
     if (!persona) {
       return res.status(404).json({ message: "Usuario no encontrado" });
@@ -118,7 +118,7 @@ const loginPersona = async (req, res) => {
 
     console.log("rol_id en la sesión:", req.session.rol_id);
 
-    // Generar el token con la información del usuario y si es Super Admin
+    
     const token = await tokenSign({
       per_id: persona.per_id,
       per_nombre_completo: persona.per_nombre_completo,
@@ -130,11 +130,10 @@ const loginPersona = async (req, res) => {
       httpOnly: true, // Previene acceso al token desde JavaScript en el navegador
       secure: process.env.NODE_ENV === "production", // True solo en producción (HTTPS)
       sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' para producción (diferentes dominios)      
-      maxAge: 2 * 60 * 60 * 1000, // 2 horas
+      maxAge: 2 * 60 * 60 * 1000, 
 
     });
 
-    // Responder con el mensaje y las opciones
     return res.status(200).json({
       message: "Inicio de sesión exitoso",
       token,

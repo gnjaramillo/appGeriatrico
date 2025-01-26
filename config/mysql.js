@@ -20,10 +20,14 @@ const config = {
         dialect: 'mysql',
         logging: false // Desactiva logs en modo test para evitar ruido en consola
     },
-    production: {
+    production: { // Railway proporciona la URL de conexión
+        database: process.env.MYSQL_DATABASE_RAILWAY,
+        username: process.env.MYSQL_USER_RAILWAY,
+        password: process.env.MYSQL_PASSWORD_RAILWAY,
+        host: process.env.MYSQL_HOST_RAILWAY,
+        port: process.env.MYSQL_PORT_RAILWAY, 
+        dialect: 'mysql',
 
-        url: process.env.DATABASE_PUBLIC_URL_RAILWAY, // Railway proporciona la URL de conexión
-        dialect: 'mysql'
     }
 };
 
@@ -31,11 +35,17 @@ const config = {
 let sequelize;
 
 if (NODE_ENV === 'production') {
-    sequelize = new Sequelize(config.production.url, { dialect: config.production.dialect });
+    // En producción usamos las variables de entorno para desglosar la URL
+    sequelize = new Sequelize(config.production.database, config.production.username, config.production.password, {
+        host: config.production.host,
+        port: config.production.port,
+        dialect: config.production.dialect
+    });
 } else {
     const envConfig = config[NODE_ENV] || config.development;
     sequelize = new Sequelize(envConfig.database, envConfig.username, envConfig.password, {
         host: envConfig.host,
+        port: envConfig.port, // Añadimos el puerto aquí
         dialect: envConfig.dialect
     });
 }
@@ -51,9 +61,6 @@ const dbConnectMysql = async () => {
 };
 
 module.exports = { sequelize, dbConnectMysql };
-
-
-
 
 
 
