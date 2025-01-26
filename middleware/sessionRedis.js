@@ -21,7 +21,8 @@ module.exports = session({
     resave: false, // no vuelve a guardar sesion si no hay cambios
     saveUninitialized: false,
     cookie: {
-        secure: false, // Asegúrate de esto en desarrollo
+        secure: process.env.NODE_ENV === "production", // True solo en producción (HTTPS)   
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' para producción (diferentes dominios) 
         httpOnly: true,
         maxAge: 1000 * 60 * 60 * 2, // 2 horas
       }

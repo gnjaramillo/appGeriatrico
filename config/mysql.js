@@ -1,4 +1,66 @@
-const {Sequelize} = require('sequelize');
+require('dotenv').config();
+const { Sequelize } = require('sequelize');
+
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// Configuración según el entorno
+const config = {
+    development: {
+        database: process.env.MYSQL_DATABASE,
+        username: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        host: process.env.MYSQL_HOST,
+        dialect: 'mysql'
+    },
+    test: {
+        database: process.env.MYSQL_DATABASE_TEST,
+        username: process.env.MYSQL_USER,
+        password: process.env.MYSQL_PASSWORD,
+        host: process.env.MYSQL_HOST,
+        dialect: 'mysql',
+        logging: false // Desactiva logs en modo test para evitar ruido en consola
+    },
+    production: {
+
+        url: process.env.DATABASE_PUBLIC_URL_RAILWAY, // Railway proporciona la URL de conexión
+        dialect: 'mysql'
+    }
+};
+
+// Configurar Sequelize según el entorno
+let sequelize;
+
+if (NODE_ENV === 'production') {
+    sequelize = new Sequelize(config.production.url, { dialect: config.production.dialect });
+} else {
+    const envConfig = config[NODE_ENV] || config.development;
+    sequelize = new Sequelize(envConfig.database, envConfig.username, envConfig.password, {
+        host: envConfig.host,
+        dialect: envConfig.dialect
+    });
+}
+
+// Función para conectar
+const dbConnectMysql = async () => {
+    try {
+        await sequelize.authenticate();
+        console.log(`✅ Conectado a MySQL en modo ${NODE_ENV}`);
+    } catch (e) {
+        console.error('❌ Error de conexión a MySQL:', e);
+    }
+};
+
+module.exports = { sequelize, dbConnectMysql };
+
+
+
+
+
+
+
+/* const {Sequelize} = require('sequelize');
+
+
 const NODE_ENV = process.env.NODE_ENV
 const database = (NODE_ENV === 'test') ? process.env.MYSQL_DATABASE_TEST : process.env.MYSQL_DATABASE
 const username = process.env.MYSQL_USER
@@ -35,3 +97,6 @@ const dbConnectMysql =  async() => {
 };
 
 module.exports = { sequelize, dbConnectMysql };
+ */
+
+

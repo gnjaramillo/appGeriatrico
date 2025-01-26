@@ -55,8 +55,8 @@ const authMiddleware = async (req, res, next) => {
     // Intentar obtener el token desde las cookies
     const token = req.cookies.authToken || req.headers.authorization?.split(' ').pop();
 
-    console.log('Cookies en la solicitud:', req.cookies);
-    console.log('Authorization header:', req.headers.authorization);
+    // console.log('Cookies en la solicitud:', req.cookies);
+    // console.log('Authorization header:', req.headers.authorization);
 
 
     if (!token) {

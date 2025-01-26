@@ -128,8 +128,8 @@ const loginPersona = async (req, res) => {
     // **Guardar el token en las cookies**
     res.cookie("authToken", token, {
       httpOnly: true, // Previene acceso al token desde JavaScript en el navegador
-      secure: false, // False porque estás en local, cambiar a true en https
-      sameSite: "lax", // Permite enviar cookies entre rutas
+      secure: process.env.NODE_ENV === "production", // True solo en producción (HTTPS)
+      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' para producción (diferentes dominios)      
       maxAge: 2 * 60 * 60 * 1000, // 2 horas
 
     });

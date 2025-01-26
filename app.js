@@ -6,6 +6,9 @@ const swaggerUI = require('swagger-ui-express')
 const { dbConnectMysql } = require('./config/mysql')
 const cookieParser = require('cookie-parser');
 
+// Importa la sincronización
+require('./sync');  // Ejecuta la sincronización de modelos
+
 
 const app = express()
 const NODE_ENV = process.env.NODE_ENV || 'development'
