@@ -6,7 +6,21 @@ const personaModel = sequelize.define('Personas', {
     per_fecha: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },
     per_foto: { type: DataTypes.STRING },
     per_documento: { type: DataTypes.STRING, allowNull: false, unique: true },
-    per_nombre_completo: { type: DataTypes.STRING, allowNull: false },
+    per_nombre_completo: { 
+        type: DataTypes.STRING, 
+        allowNull: false,
+        set(value) {
+            // Transformar el nombre a mayúscula inicial para cada palabra
+            const capitalizeWords = (str) => {
+                return str
+                    .toLowerCase()
+                    .split(" ")
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(" ");
+            };
+            this.setDataValue('per_nombre_completo', capitalizeWords(value));
+        },
+    },
     per_telefono: {type: DataTypes.STRING, allowNull: false},
     per_genero: { type: DataTypes.ENUM('M', 'F', 'O'), allowNull: false },
     per_usuario: { type: DataTypes.STRING, allowNull: false, unique: true },
