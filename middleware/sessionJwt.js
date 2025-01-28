@@ -86,6 +86,8 @@ const authMiddleware = async (req, res, next) => {
       rol_id: req.session.rol_id || null,
     };
 
+    
+
     next();
   } catch (error) {
     console.error('Error en el middleware de autenticación:', error.message);

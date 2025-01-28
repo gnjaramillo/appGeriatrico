@@ -115,10 +115,13 @@ const loginPersona = async (req, res) => {
     req.session.rol_id = esSuperAdmin ? 1 : null; 
     req.session.esSuperAdmin = !!esSuperAdmin; 
 
-
-    console.log("rol_id en la sesión:", req.session.rol_id);
-
     
+    console.log("rol_id en la sesión:", req.session.rol_id);
+    console.log("Sesión disponible:", req.session); // Verifica si la sesión existe
+
+    // Asegurarse de guardar la sesión
+    req.session.save()
+
     const token = await tokenSign({
       per_id: persona.per_id,
       per_nombre_completo: persona.per_nombre_completo,

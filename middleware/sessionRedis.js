@@ -20,6 +20,7 @@ module.exports = session({
     secret: process.env.SESSION_SECRET || 'defaultSecret',  
     resave: false, // no vuelve a guardar sesion si no hay cambios
     saveUninitialized: false,
+    proxy: true, // Necesario para cookies "secure" detrás de un proxy
     cookie: {
         secure: process.env.NODE_ENV === "production", // True solo en producción (HTTPS)   
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // 'none' para producción (diferentes dominios) 
