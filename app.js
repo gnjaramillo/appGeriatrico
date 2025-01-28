@@ -14,6 +14,9 @@ const app = express()
 const NODE_ENV = process.env.NODE_ENV || 'development'
 const port = process.env.PORT || 3000; 
 
+// Habilita confianza en proxies (Railway usa proxy inverso)
+app.set("trust proxy", 1);
+
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());

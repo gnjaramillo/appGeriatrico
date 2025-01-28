@@ -15,7 +15,7 @@ const { validarRolGeriatrico } = require('../validators/geriatricopersonarol'); 
 // console.log({ asignarRolGeriatrico, validarRolGeriatrico });
 
 // rol q solo asigna el super administrador
-router.post('/rolGeriatrico', sessionMiddleware, checkRol([1]), validarRolGeriatrico, asignarRolGeriatrico);
+router.post('/rolGeriatrico', sessionMiddleware, authMiddleware, checkRol([1]), validarRolGeriatrico, asignarRolGeriatrico);
 
 
 
