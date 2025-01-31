@@ -1,13 +1,21 @@
 const express = require('express');
 const router = express.Router();
-const { crearRol, obtenerRoles, obtenerDetalleRol, actualizarRol, obtenerRolesSede } = require('../controllers/roles');
-const {validatorCrearRol, validatorDetalleRol, validatorActualizarRol } = require('../validators/roles');
+const authMiddleware = require('../middleware/sessionJwt')
+const sessionMiddleware = require('../middleware/sessionRedis')
+const checkRol = require('../middleware/rol');
+const { crearRol, obtenerRoles, obtenerDetalleRol, actualizarRol, obtenerRolesAsignados, seleccionarRol} = require('../controllers/roles');
+const {validatorCrearRol, validatorDetalleRol, validatorActualizarRol, validarRolSeleccionado } = require('../validators/roles');
+
+
 
 router.post('/',  validatorCrearRol, crearRol);
 router.get('/', obtenerRoles);
-router.get('/rolesSede',  obtenerRolesSede);
+router.get('/rolesAsignados', sessionMiddleware, authMiddleware,  obtenerRolesAsignados);
+router.post('/rolSeleccionado', sessionMiddleware, authMiddleware, validarRolSeleccionado,  seleccionarRol);
 router.get('/:rol_id', validatorDetalleRol, obtenerDetalleRol);
 router.put('/:rol_id', validatorActualizarRol, actualizarRol);
+// ver mis roles asignados como usuario
+
 
 
 module.exports = router;

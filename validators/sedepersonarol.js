@@ -67,35 +67,10 @@ const validarAsignarRol = [
 
 
 
-const validarRolSeleccionado = [
-    // Validar que al menos uno de los campos `se_id` o `ge_id` exista y sea un número válido
-    body('se_id').optional() .isInt({ min: 0 }).withMessage('El ID de la sede debe ser un número válido'),
-    body('ge_id').optional() .isInt({ min: 0 }).withMessage('El ID del geriátrico debe ser un número válido'),
-
-    // Validar que no se envíen ambos campos a la vez
-    body()
-        .custom((value) => {
-            if (!value.se_id && !value.ge_id) {
-                throw new Error('Debe enviar al menos un ID válido: `se_id` o `ge_id`.');
-            }
-            if (value.se_id && value.ge_id) {
-                throw new Error('No puede enviar ambos: `se_id` y `ge_id` al mismo tiempo.');
-            }
-            return true;
-        }),
-
-    // Validar que `rol_id` exista y sea un número entero mayor que 0
-    check('rol_id').isInt({ min: 1 }).exists().withMessage('El ID del rol debe ser un número válido'),
-
-    // Validar resultados
-    (req, res, next) => validateResults(req, res, next),
-];
-
-module.exports = { validarRolSeleccionado };
 
 
 
 
 
 
-module.exports = { validarAdminSede, validarAsignarRol , validarRolSeleccionado};
+module.exports = { validarAdminSede, validarAsignarRol };

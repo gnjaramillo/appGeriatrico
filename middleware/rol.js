@@ -1,27 +1,3 @@
-
-
-
-
-/* 
-const { handleHttpError } = require('../utils/handleError');
-const {rolModel } = require('../models');
-
-const checkRol = (allowedRoleIds) => (req, res, next) => {
-    try {
-        const rol_id = req.session.rol_id; 
-        
-        if (!allowedRoleIds.includes(rol_id)) {
-            return handleHttpError(res, 'No tienes permiso', 403);
-        }
-        next();
-    } catch (error) {
-        return handleHttpError(res, 'Error en la validación', 403);
-    }
-};
-
-module.exports = checkRol; */
-
-
 const { handleHttpError } = require('../utils/handleError');
 
 const checkRol = (allowedRoleIds) => (req, res, next) => {
@@ -45,3 +21,27 @@ const checkRol = (allowedRoleIds) => (req, res, next) => {
 };
 
 module.exports = checkRol;
+
+
+
+
+
+
+/* 
+const { handleHttpError } = require('../utils/handleError');
+const {rolModel } = require('../models');
+
+const checkRol = (allowedRoleIds) => (req, res, next) => {
+    try {
+        const rol_id = req.session.rol_id; 
+        
+        if (!allowedRoleIds.includes(rol_id)) {
+            return handleHttpError(res, 'No tienes permiso', 403);
+        }
+        next();
+    } catch (error) {
+        return handleHttpError(res, 'Error en la validación', 403);
+    }
+};
+
+module.exports = checkRol; */

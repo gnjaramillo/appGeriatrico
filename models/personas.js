@@ -26,6 +26,12 @@ const personaModel = sequelize.define('Personas', {
     per_usuario: { type: DataTypes.STRING, allowNull: false, unique: true },
     per_password: { type: DataTypes.STRING, allowNull: false },  
     per_correo: { type: DataTypes.STRING, allowNull: false, unique: true },    
+
+
+     // 🚀 Campos para recuperación de contraseña
+    resetPasswordToken: { type: DataTypes.STRING, allowNull: true },
+    resetPasswordExpires: { type: DataTypes.DATE, allowNull: true }
+
 }, 
 
 

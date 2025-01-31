@@ -1,5 +1,5 @@
 const { matchedData } = require('express-validator');
-const { rolModel } = require('../models');
+const { rolModel, sedePersonaRolModel, sedeModel, geriatricoPersonaRolModel, geriatricoModel } = require('../models');
 
 
 const crearRol = async (req, res) => {
@@ -39,33 +39,6 @@ const obtenerRoles = async (req, res) => {
       return res.status(500).json({ message: "Error al obtener roles." });
     }
 };
-
-
-/* Filtrar roles permitidos (por rol_nombre) para ser asignados dentro de las sedes
-los asigna el administrador de sede */
-const obtenerRolesSede = async (req, res) => {
-  try {
-      // Obtener todos los roles
-      const roles = await rolModel.findAll();
-
-      // Filtrar los roles no permitidos
-      const rolesPermitidos = roles.filter(role => role.rol_nombre !== 'Super Administrador' && role.rol_nombre !== 'administrador sede');
-
-      // Responder con los roles permitidos
-      return res.status(200).json({
-          message: 'Roles obtenidos exitosamente',
-          roles: rolesPermitidos,
-      });
-  } catch (error) {
-      console.error("Error al obtener roles:", error);
-      return res.status(500).json({
-          message: "Error al obtener roles",
-          error: error.message,
-      });
-  }
-};
-
-
 
 
 
@@ -121,10 +94,155 @@ const actualizarRol = async (req, res) => {
 
 
 
+// lista de sus roles visibles a cada usuario
+const obtenerRolesAsignados = async (req, res) => {
+  try {
+
+      // const per_id = req.user.id;
+
+
+      const { id } = req.user; // Se obtiene desde el token del middleware
+
+      // Obtener asignaciones de roles en sedes
+      const rolesSede = await sedePersonaRolModel.findAll({
+          where: { per_id: id },
+          include: [
+              { model: rolModel, as: 'rol', attributes: ['rol_id', 'rol_nombre'] },
+              { model: sedeModel, as: 'sede', attributes: ['se_id', 'se_nombre'] },
+          ],
+      });
+
+      // Obtener asignaciones de roles en geriátricos
+      const rolesGeriatrico = await geriatricoPersonaRolModel.findAll({
+          where: { per_id: id },
+          include: [
+              { model: rolModel, as: 'rol', attributes: ['rol_id', 'rol_nombre'] },
+              { model: geriatricoModel, as: 'geriatrico', attributes: ['ge_id', 'ge_nombre'] },
+          ],
+      });
+
+      // Determinar el mensaje según si tiene asignaciones
+      const message = (rolesSede.length === 0 && rolesGeriatrico.length === 0)
+          ? 'Aún no tienes roles ni sedes/geriátricos asignados. Comunícate con un administrador.'
+          : 'Selecciona un rol asignado para continuar.';
+
+
+      // Construir la respuesta
+      const opcionesSede = rolesSede.map(a => ({
+          rol_id: a.rol_id,
+          rol_nombre: a.rol.rol_nombre,
+          se_id: a.se_id,
+          se_nombre: a.sede.se_nombre,
+      }));
+
+      const opcionesGeriatrico = rolesGeriatrico.map(a => ({
+          rol_id: a.rol_id,
+          rol_nombre: a.rol.rol_nombre,
+          ge_id: a.ge_id,
+          ge_nombre: a.geriatrico.ge_nombre,
+      }));
+
+      return res.status(200).json({
+          message,
+          opcionesSede,
+          opcionesGeriatrico
+      });
+
+  } catch (error) {
+      console.error('Error al obtener roles:', error);
+      return res.status(500).json({ message: 'Error al obtener roles' });
+  }
+};
+
+
+
+
+// seleccionar uno de los roles asignados (aplica para todos, menos super usuario)
+const seleccionarRol = async (req, res) => {
+  try {
+      const { rol_id, se_id, ge_id } = req.body; // Incluimos `ge_id` para geriátricos
+      const { id } = req.user; // ID del usuario obtenido desde el token del middleware
+
+      let asignacion = null;
+      let tipoAsignacion = null;
+
+      // Verificar si se seleccionó una sede
+      if (se_id) {
+          asignacion = await sedePersonaRolModel.findOne({
+              where: { per_id: id, rol_id, se_id },
+              include: [
+                  { model: rolModel, as: 'rol', attributes: ['rol_nombre'] },
+                  { model: sedeModel, as: 'sede', attributes: ['se_nombre'] },
+              ],
+          });
+          tipoAsignacion = 'sede';
+      }
+
+      // Verificar si se seleccionó un geriátrico
+      if (ge_id) {
+          asignacion = await geriatricoPersonaRolModel.findOne({
+              where: { per_id: id, rol_id, ge_id },
+              include: [
+                  { model: rolModel, as: 'rol', attributes: ['rol_nombre'] },
+                  { model: geriatricoModel, as: 'geriatrico', attributes: ['ge_nombre'] },
+              ],
+          });
+          tipoAsignacion = 'geriatrico';
+      }
+
+      // Si no se encuentra asignación válida, retornar un error
+      if (!asignacion || !asignacion.rol || (!asignacion.sede && !asignacion.geriatrico)) {
+          return res.status(404).json({ message: 'Rol, sede o geriátrico no encontrados' });
+      }
+
+      // Guardar la información seleccionada en la sesión del usuario
+/*       req.session.rol_id = rol_id;
+      req.session[tipoAsignacion === 'sede' ? 'se_id' : 'ge_id'] = tipoAsignacion === 'sede' ? se_id : ge_id;
+ */
+
+      req.session.rol_id = rol_id;
+      req.session[tipoAsignacion === 'sede' ? 'se_id' : 'ge_id'] = tipoAsignacion === 'sede' ? se_id : ge_id;
+      req.session.nombre = tipoAsignacion === 'sede' ? asignacion.sede.se_nombre : asignacion.geriatrico.ge_nombre;
+
+
+
+      // Guardar la sesión
+      req.session.save((err) => {
+          if (err) {
+              console.error('Error al guardar la sesión:', err);
+          } else {
+              console.log('Sesión guardada correctamente:', req.session);
+          }
+      });
+
+      // Construir la respuesta
+      const response = {
+          message: 'Rol seleccionado exitosamente',
+          rol: asignacion.rol.rol_nombre,
+          rol_id: asignacion.rol_id,
+      };
+
+      if (tipoAsignacion === 'sede') {
+          response.sede = asignacion.sede.se_nombre;
+          response.se_id = asignacion.se_id;
+      } else {
+          response.geriatrico = asignacion.geriatrico.ge_nombre;
+          response.ge_id = asignacion.ge_id;
+      }
+
+      return res.status(200).json(response);
+  } catch (error) {
+      console.error('Error al seleccionar rol, sede o geriátrico:', error);
+      return res.status(500).json({ message: 'Error al seleccionar rol, sede o geriátrico' });
+  }
+};
 
 
 
 
 
 
-module.exports = { crearRol, obtenerRoles, obtenerDetalleRol, actualizarRol, obtenerRolesSede };
+
+
+
+module.exports = { crearRol, obtenerRoles, obtenerDetalleRol, actualizarRol, obtenerRolesAsignados, seleccionarRol };

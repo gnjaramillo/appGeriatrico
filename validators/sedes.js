@@ -7,7 +7,7 @@ const validatorCrearSede = [
     check('se_direccion').exists().notEmpty().isLength({ min: 5, max: 255 }),
     check('cupos_totales').exists().notEmpty().isInt({ min: 1 }).withMessage('Debe ser un número entero mayor a 0'),
     check('cupos_ocupados').exists().notEmpty().isInt({ min: 0 }).withMessage('Debe ser un número entero mayor o igual a 0'),
-    check('ge_id').exists().notEmpty().isInt().withMessage('Debe ser un ID de geriátrico válido'),
+    // check('ge_id').exists().notEmpty().isInt().withMessage('Debe ser un ID de geriátrico válido'),
     (req, res, next) => validateResults(req, res, next),
 ];
 

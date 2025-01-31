@@ -4,9 +4,9 @@ const authMiddleware = require('../middleware/sessionJwt')
 const sessionMiddleware = require('../middleware/sessionRedis')
 const checkRol = require('../middleware/rol');
 
-const { asignarRolAdminSede,  asignarRol, seleccionarRolYSede } = require('../controllers/sedepersonarol');
-const { obtenerRolesAsignados, obtenerPersonasConRoles } = require('../controllers/sedepersonarol');
-const { validarAdminSede, validarAsignarRol, validarRolSeleccionado } = require('../validators/sedepersonarol');
+const { asignarRolAdminSede,  asignarRol } = require('../controllers/sedepersonarol');
+const { obtenerPersonasConRoles } = require('../controllers/sedepersonarol');
+const { validarAdminSede, validarAsignarRol } = require('../validators/sedepersonarol');
 
 
 
@@ -16,9 +16,6 @@ const { validarAdminSede, validarAsignarRol, validarRolSeleccionado } = require(
 
 // rol q asigna el administrador geriatrico
 router.post('/rolesAdminSede', sessionMiddleware, authMiddleware,  checkRol([2]), validarAdminSede, asignarRolAdminSede);
-// ver mis roles asignados como usuario
-router.get('/rolesAsignados', sessionMiddleware, authMiddleware,  obtenerRolesAsignados);
-router.post('/rolSeleccionado', sessionMiddleware, authMiddleware, validarRolSeleccionado,  seleccionarRolYSede);
 router.post('/asignarRol', sessionMiddleware, authMiddleware, checkRol([3]), validarAsignarRol,  asignarRol);
 router.get('/listaPersonasRoles',sessionMiddleware, authMiddleware, checkRol([3]), obtenerPersonasConRoles);
 

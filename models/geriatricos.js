@@ -1,5 +1,5 @@
-const { sequelize } = require('../config/mysql'); // Asegúrate de que esta ruta sea correcta
-const { DataTypes } = require('sequelize'); // Usa "DataTypes" con T mayúscula
+const { sequelize } = require('../config/mysql'); 
+const { DataTypes } = require('sequelize'); 
 
 
 
@@ -17,7 +17,17 @@ const geriatricoModel  = sequelize.define('Geriatricos', {
     },
     ge_nombre: { 
         type: DataTypes.STRING, 
-        allowNull: false 
+        allowNull: false,
+        set(value) {
+            const capitalizeWords = (str) => {
+                return str
+                    .toLowerCase()
+                    .split(" ")
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(" ");
+            };
+            this.setDataValue('ge_nombre', capitalizeWords(value));
+        }
     },
     ge_nit: { 
         type: DataTypes.STRING, 

@@ -9,10 +9,10 @@ const {validatorCrearSede, validatorDetalleSede, validatorActualizarSede } = req
 const upload = require('../middleware/multer');
 
 
-router.post('/', sessionMiddleware, authMiddleware,  checkRol([1]), upload.single('se_foto'), validatorCrearSede, crearSede);
-router.get('/', obtenerSedes);
-router.get('/:se_id', sessionMiddleware, authMiddleware,  checkRol([1]), validatorDetalleSede, obtenerDetalleSede);
-router.put('/:se_id',sessionMiddleware, authMiddleware,  checkRol([1]), upload.single('se_foto'), validatorActualizarSede, actualizarSede);
+router.post('/', sessionMiddleware, authMiddleware,  checkRol([2]), upload.single('se_foto'), validatorCrearSede, crearSede);
+router.get('/', sessionMiddleware, authMiddleware,  checkRol([2]), obtenerSedes);
+router.get('/:se_id', sessionMiddleware, authMiddleware,  checkRol([2]), validatorDetalleSede, obtenerDetalleSede);
+router.put('/:se_id',sessionMiddleware, authMiddleware,  checkRol([2]), upload.single('se_foto'), validatorActualizarSede, actualizarSede);
 
 
 

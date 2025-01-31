@@ -39,7 +39,7 @@ const crearGeriatrico = async (req, res) => {
 
         return res.status(201).json({
             message: "Geriátrico creado exitosamente",
-            geriatrico: nuevoGeriatrico
+            geriatrico: nuevoGeriatrico,
         });
         
     } catch (error) {
@@ -85,7 +85,15 @@ const obtenerDetalleGeriatrico = async (req, res) => {
         const { ge_id } = req.params;
 
         // Obtener todos los geriátricos de la base de datos
-        const geriatrico = await geriatricoModel.findByPk(ge_id);
+        const geriatrico = await geriatricoModel.findByPk(ge_id, {
+          include: [
+            {
+              model: sedeModel, 
+              as: "sedes", 
+              attributes: ["se_id", "se_nombre", "se_direccion"], 
+            },
+          ],
+        });
 
         // Verificar si existen geriátricos en la base de datos
         if (!geriatrico) {
@@ -135,17 +143,17 @@ const actualizarGeriatrico = async (req, res) => {
 
     // Si se incluye una nueva foto en la solicitud, subirla a Cloudinary
     if (req.file) {
-      // Obtener el public_id de la imagen anterior si existe
+      // Obtener el public_id de la imagen anterior
       const oldLogo = geriatrico.ge_logo; // URL de la imagen actual
       const publicId = oldLogo
         ? oldLogo.split("/").slice(-1)[0].split(".")[0]
         : null; // Extraer el public_id
 
       try {
-        // Subir la nueva imagen a Cloudinary, usando la función modular
+        // Subir la nueva imagen a Cloudinary
         const result = await subirImagenACloudinary(req.file, "geriatricos");
 
-        // Si se subió una nueva imagen correctamente, eliminar la anterior
+        //  si se actualiza imagen, eliminar la antigua
         if (publicId) {
           await cloudinary.uploader.destroy(`geriatricos/${publicId}`);
         }

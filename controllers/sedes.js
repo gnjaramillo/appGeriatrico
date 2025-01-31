@@ -3,7 +3,7 @@ const { sedeModel, geriatricoModel } = require("../models");
 const { subirImagenACloudinary } = require('../utils/handleCloudinary'); 
 const cloudinary = require('../config/cloudinary'); 
 
-
+/* 
 const crearSede = async (req, res) => {
   try {
     // Obtener los datos validados del formulario
@@ -16,17 +16,10 @@ const crearSede = async (req, res) => {
       return res.status(400).json({
         message: "El geriátrico con el ID proporcionado no existe.",
       });
-    }
+    } 
 
-    // Verificar si ya existe una sede con el mismo nombre vinculada al mismo geriátrico
-    const existeSede = await sedeModel.findOne({
-      where: { se_nombre, ge_id },
-    });
-    if (existeSede) {
-      return res.status(400).json({ message: "Ya existe una sede con este nombre vinculada al mismo geriátrico" });
-    }
 
-    // Verificar si hay un archivo (foto de la sede) en la solicitud
+    // foto de la sede 
     if (!req.file) {
       return res.status(400).json({ message: "La foto de la sede es obligatoria." });
     }
@@ -46,7 +39,68 @@ const crearSede = async (req, res) => {
     });
 
     return res.status(201).json({
-      message: "Sede creada y vinculada al geriátrico exitosamente",
+      message: `Sede creada y vinculada al geriátrico "${geriatrico.ge_nombre}" exitosamente`,
+      sede: nuevaSede,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error al crear la sede" });
+  }
+}; 
+
+*/
+
+
+
+
+const crearSede = async (req, res) => {
+  try {
+    // Obtener los datos validados del formulario
+    const data = matchedData(req);
+    const { se_nombre, se_telefono, se_direccion, cupos_totales, cupos_ocupados } = data;
+
+    // cuando el admin geriatrico selecciona su rol, se guarda en sesion el id del geriatrico a su cargo
+    const ge_id = req.session.ge_id;
+    if (!ge_id) {
+        return res.status(403).json({ message: 'No se ha seleccionado un geriatrico.' });
+    } 
+
+        // Verificar si el geriátrico existe
+    const geriatrico = await geriatricoModel.findByPk(ge_id);
+    if (!geriatrico) {
+      return res.status(400).json({
+        message: "El geriátrico con el ID proporcionado no existe.",
+      });
+    } 
+
+    // Validar que los cupos ocupados no superen los cupos totales
+    if (cupos_ocupados > cupos_totales) {
+      return res.status(400).json({ message: "Los cupos ocupados no pueden superar los cupos totales." });
+    }
+
+
+  
+    // foto de la sede 
+    if (!req.file) {
+      return res.status(400).json({ message: "La foto de la sede es obligatoria." });
+    }
+
+    // Subir la foto de la sede a Cloudinary solo después de las validaciones
+    const result = await subirImagenACloudinary(req.file, "sedes");
+
+    // Crear la sede en la base de datos
+    const nuevaSede = await sedeModel.create({
+      se_foto: result.secure_url, // Guardar la URL de la foto de Cloudinary en la BD
+      se_nombre,
+      se_telefono,
+      se_direccion,
+      cupos_totales,
+      cupos_ocupados,
+      ge_id, // Vincular la sede al geriátrico correspondiente
+    });
+
+    return res.status(201).json({
+      message: `Sede creada y vinculada al geriátrico "${geriatrico.ge_nombre}" exitosamente`,
       sede: nuevaSede,
     });
   } catch (error) {
