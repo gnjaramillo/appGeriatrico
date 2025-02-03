@@ -1,6 +1,6 @@
 const { matchedData } = require('express-validator');
 const { rolModel, sedePersonaRolModel, sedeModel, geriatricoPersonaRolModel, geriatricoModel } = require('../models');
-
+const { limpiarSesion } = require('../utils/sessionUtils');
 
 const crearRol = async (req, res) => {
   try {
@@ -160,11 +160,14 @@ const obtenerRolesAsignados = async (req, res) => {
 // seleccionar uno de los roles asignados (aplica para todos, menos super usuario)
 const seleccionarRol = async (req, res) => {
   try {
-      const { rol_id, se_id, ge_id } = req.body; // Incluimos `ge_id` para geriátricos
-      const { id } = req.user; // ID del usuario obtenido desde el token del middleware
+      const { rol_id, se_id, ge_id } = req.body; // rol en sede o geriatrico
+      const { id } = req.user; // desde el token jwt
 
       let asignacion = null;
       let tipoAsignacion = null;
+
+      // Limpiar sesión antes de asignar nuevos valores
+      limpiarSesion(req);
 
       // Verificar si se seleccionó una sede
       if (se_id) {
@@ -194,26 +197,28 @@ const seleccionarRol = async (req, res) => {
       if (!asignacion || !asignacion.rol || (!asignacion.sede && !asignacion.geriatrico)) {
           return res.status(404).json({ message: 'Rol, sede o geriátrico no encontrados' });
       }
+     
+        // Guardar los datos en la sesión
+        req.session.rol_id = rol_id;
+        req.session.rol_nombre = asignacion.rol.rol_nombre;
+        req.session[tipoAsignacion === 'sede' ? 'se_id' : 'ge_id'] = tipoAsignacion === 'sede' ? se_id : ge_id;
+        req.session.nombre = tipoAsignacion === 'sede' ? asignacion.sede.se_nombre : asignacion.geriatrico.ge_nombre;
 
-      // Guardar la información seleccionada en la sesión del usuario
-/*       req.session.rol_id = rol_id;
-      req.session[tipoAsignacion === 'sede' ? 'se_id' : 'ge_id'] = tipoAsignacion === 'sede' ? se_id : ge_id;
- */
+        // Guardar la sesión
+        req.session.save((err) => {
+            if (err) {
+                console.error('Error al guardar la sesión:', err);
+            } else {
+                console.log('Sesión guardada correctamente:', req.session);
+            }
+        });
 
-      req.session.rol_id = rol_id;
-      req.session[tipoAsignacion === 'sede' ? 'se_id' : 'ge_id'] = tipoAsignacion === 'sede' ? se_id : ge_id;
-      req.session.nombre = tipoAsignacion === 'sede' ? asignacion.sede.se_nombre : asignacion.geriatrico.ge_nombre;
-
-
-
-      // Guardar la sesión
-      req.session.save((err) => {
-          if (err) {
-              console.error('Error al guardar la sesión:', err);
-          } else {
-              console.log('Sesión guardada correctamente:', req.session);
-          }
-      });
+        return res.status(200).json({
+            message: 'Rol seleccionado exitosamente',
+            rol: asignacion.rol.rol_nombre,
+            rol_id: asignacion.rol_id,
+            ...(tipoAsignacion === 'sede' ? { sede: asignacion.sede.se_nombre, se_id: asignacion.se_id } : { geriatrico: asignacion.geriatrico.ge_nombre, ge_id: asignacion.ge_id })
+        });
 
       // Construir la respuesta
       const response = {

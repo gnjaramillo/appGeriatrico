@@ -11,11 +11,12 @@ const config = {
         password: process.env.MYSQL_PASSWORD,
         host: process.env.MYSQL_HOST,
         dialect: 'mysql',
-        logging: (msg) => {
+        /* logging: (msg) => {
             if (msg.startsWith("UPDATE") || msg.startsWith("INSERT")) {
                 console.log(msg); // Solo muestra INSERTs y UPDATEs
             }
-        }
+        } */
+        logging: false
     },
     test: {
         database: process.env.MYSQL_DATABASE_TEST,

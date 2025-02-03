@@ -39,11 +39,11 @@ const geriatricoPersonaRolModel = sequelize.define('GeriatricoPersonasRoles', {
     onDelete: 'CASCADE',
     onUpdate: 'CASCADE'
   },
-  sp_fecha_inicio: { 
+  gp_fecha_inicio: { 
     type: DataTypes.DATEONLY, 
     allowNull: false 
   },
-  sp_fecha_fin: { 
+  gp_fecha_fin: { 
     type: DataTypes.DATEONLY, 
     allowNull: true, 
     defaultValue: null 

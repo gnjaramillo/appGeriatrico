@@ -64,7 +64,9 @@ sedePersonaRolModel.associate = (models) => {
 };
 
 
-module.exports = sedePersonaRolModel;
+module.exports = sedePersonaRolModel; 
+
+
 
 
 /* const { sequelize } = require('../config/mysql');

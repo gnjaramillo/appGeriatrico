@@ -5,6 +5,8 @@ const { personaModel, rolModel, sedeModel, geriatricoModel, sedePersonaRolModel,
 const { tokenSign } = require('../utils/handleJwt'); 
 const { subirImagenACloudinary } = require('../utils/handleCloudinary'); 
 const cloudinary = require('../config/cloudinary'); 
+const { limpiarSesion } = require('../utils/sessionUtils');
+
 
 
 const registrarPersona = async (req, res) => {
@@ -83,6 +85,8 @@ const loginPersona = async (req, res) => {
     const data = matchedData(req);
     const { per_usuario, per_password } = data;
 
+     // Limpiar sesión antes de asignar nuevos valores
+     limpiarSesion(req);
 
     const persona = await personaModel.findOne({ where: { per_usuario } });
     if (!persona) {
@@ -105,8 +109,8 @@ const loginPersona = async (req, res) => {
         ge_id: 0, // geriatrico id 0
         rol_id: 1, // ID del rol Super Administrador
         [Op.or]: [
-          { sp_fecha_fin: null },
-          { sp_fecha_fin: { [Op.gt]: new Date() } },
+          { gp_fecha_fin: null },
+          { gp_fecha_fin: { [Op.gt]: new Date() } },
         ],
       },
     });
@@ -114,13 +118,18 @@ const loginPersona = async (req, res) => {
     // Guardar en la sesión el rol si es super admin
     req.session.rol_id = esSuperAdmin ? 1 : null; 
     req.session.esSuperAdmin = !!esSuperAdmin; 
-
-    
-    console.log("rol_id en la sesión:", req.session.rol_id);
-    console.log("Sesión disponible:", req.session); // Verifica si la sesión existe
-
+    req.session.ge_id = esSuperAdmin ? 0 : null;
     // Asegurarse de guardar la sesión
-    req.session.save()
+    req.session.save((err) => {
+      if (err) {
+        console.error("Error al guardar la sesión:", err);
+      } else {
+        console.log("Sesión guardada correctamente:", req.session);
+      }
+    });
+    
+    // console.log("Sesión disponible:", req.session); 
+
 
     const token = await tokenSign({
       per_id: persona.per_id,
@@ -128,7 +137,6 @@ const loginPersona = async (req, res) => {
       esSuperAdmin: !!esSuperAdmin, // Booleano indicando si es Super Admin
     });
 
-    // **Guardar el token en las cookies**
     res.cookie("authToken", token, {
       httpOnly: true, // Previene acceso al token desde JavaScript en el navegador
       secure: process.env.NODE_ENV === "production", // True solo en producción (HTTPS)

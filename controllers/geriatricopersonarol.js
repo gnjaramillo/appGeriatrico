@@ -7,14 +7,14 @@ const jwt = require('jsonwebtoken');
 
 
 
-// ID de roles válidos para geriátricos
+// ID de roles válidos para geriátricos, los asigna el super admin
 const ROLES_GERIATRICO = [2]; // por ahora rol id 2: "Administrador Geriátrico" , se pueden añadir mas roles
 
 // Controlador para asignar roles de geriátrico
 const asignarRolGeriatrico = async (req, res) => {
     try {
         const data = matchedData(req);
-        const { per_id, ge_id, rol_id, sp_fecha_inicio, sp_fecha_fin } = data;
+        const { per_id, ge_id, rol_id, gp_fecha_inicio, gp_fecha_fin } = data;
 
         // Validar que el rol solicitado sea un rol válido para geriátricos
         if (!ROLES_GERIATRICO.includes(rol_id)) {
@@ -40,8 +40,8 @@ const asignarRolGeriatrico = async (req, res) => {
                 ge_id,
                 rol_id,
                 [Op.or]: [
-                    { sp_fecha_fin: null },
-                    { sp_fecha_fin: { [Op.gt]: new Date() } }
+                    { gp_fecha_fin: null },
+                    { gp_fecha_fin: { [Op.gt]: new Date() } }
                 ]
             }
         });
@@ -55,8 +55,8 @@ const asignarRolGeriatrico = async (req, res) => {
             per_id,
             ge_id,
             rol_id,
-            sp_fecha_inicio,
-            sp_fecha_fin: sp_fecha_fin || null
+            gp_fecha_inicio,
+            gp_fecha_fin: gp_fecha_fin || null
         });
 
         return res.status(201).json({

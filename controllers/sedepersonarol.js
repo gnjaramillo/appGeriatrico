@@ -10,7 +10,7 @@ const jwt = require('jsonwebtoken');
 // asignar roles administrativos dentro de una sede (lo hace el admin geriatrico)
 // ID de roles válidos para sedes
 const ROLES_ADMINISTRATIVOS_SEDE = [3]; // // por ahora rol id 3: "Administrador Sede" , se pueden añadir mas roles
-const ROLES_UNICOS_SEDE = [3]; // Definir explícitamente qué roles son únicos
+const ROLES_UNICOS_SEDE = [3]; // Definir explícitamente qué roles son únicos , solo 1 admin por sede?? 
 
 const asignarRolAdminSede = async (req, res) => {
     try {
@@ -19,7 +19,7 @@ const asignarRolAdminSede = async (req, res) => {
 
         // Validar que el rol solicitado sea un rol válido para sedes
         if (!ROLES_ADMINISTRATIVOS_SEDE.includes(rol_id)) {
-            return res.status(400).json({ message: 'Este rol no es válido para asignar roles administrativos en una Sede.' });
+            return res.status(400).json({ message: 'Este rol no es el indicado para asignar roles administrativos en una Sede.' });
         }
 
         // Verificar si la persona existe
@@ -163,52 +163,193 @@ const asignarRol = async (req, res) => {
 
 
 
-// trae todos los roles dentro de una sede especifica, omite el del admin sede
-const obtenerPersonasConRoles = async (req, res) => {
+// ver todas las personas con roles dentro de un geriatrico especifico, ruta disponible para administradores de geriatrico y/o sede
+const obtenerPersonasPorSede = async (req, res) => {
     try {
-         // Obtener el `se_id` de la sesión
-         const se_id = req.session.se_id;
+        console.log("Sesión del usuario:", req.session);
 
-        if (!se_id) return res.status(403).json({ message: 'No se ha seleccionado una sede' });
+        const { rol_id, se_id } = req.session;
 
-        // listado de personas con sus roles en la sede
-        const personasConRoles = await sedePersonaRolModel.findAll({
+        if (!rol_id || !se_id) {
+            return res.status(400).json({ message: 'No has seleccionado un rol o ubicación válida' });
+        }
+
+        // Obtener el geriátrico al que pertenece la sede
+        const sedeActual = await sedeModel.findOne({
             where: { se_id },
-            include: [
-                {
-                    model: personaModel, 
-                    as: 'persona',
-                    attributes: ['per_nombre_completo', 'per_usuario', 'per_telefono'] // Atributos básicos
-                },
-                {
-                    model: rolModel, 
-                    as: 'rol',
-                    attributes: ['rol_nombre'],
-                    where: {
-                        rol_nombre: { [Op.ne]: 'administrador sede' } // Excluir el rol "administrador sede"
-                    }
-                }
-            
-            ]
+            attributes: ['ge_id'],
         });
+
+        if (!sedeActual || !sedeActual.ge_id) {
+            return res.status(404).json({ message: 'No se encontró la sede o su geriátrico' });
+        }
+
+        // Obtener todas las sedes del geriátrico
+        const sedesDelGeriatrico = await sedeModel.findAll({
+            where: { ge_id: sedeActual.ge_id },
+            attributes: ['se_id'],
+        });
+
+        const idsSedes = sedesDelGeriatrico.map(s => s.se_id);
+
+        // Obtener personas con roles en las sedes del geriátrico
+        const personas = await sedePersonaRolModel.findAll({
+            where: { se_id: idsSedes },
+            include: [
+                { model: personaModel, as: 'persona', attributes: ['per_id', 'per_nombre_completo', 'per_documento', 'per_correo', 'per_telefono'] },
+                { model: rolModel, as: 'rol', attributes: ['rol_id', 'rol_nombre'] },
+                { model: sedeModel, as: 'sede', attributes: ['se_id', 'se_nombre', 'se_telefono'] },
+            ],
+            attributes: ['sp_fecha_inicio', 'sp_fecha_fin'],
+        });
+
+        // Obtener roles asignados directamente al geriátrico
+        const rolesGeriatrico = await geriatricoPersonaRolModel.findAll({
+            where: { ge_id: sedeActual.ge_id },
+            include: [
+                { model: personaModel, as: 'persona', attributes: ['per_id', 'per_nombre_completo', 'per_documento', 'per_correo', 'per_telefono'] },
+                { model: rolModel, as: 'rol', attributes: ['rol_id', 'rol_nombre'] },
+                { model: geriatricoModel, as: 'geriatrico', attributes: [ 'ge_nombre'] },
+
+            ],
+            attributes: ['gp_fecha_inicio', 'gp_fecha_fin'],
+        });
+
+        //🔹 Formatear datos de personas en sedes
+        const resultadoPersonas = personas.map(p => ({
+            per_id: p.persona.per_id,
+            per_nombre: p.persona.per_nombre_completo,
+            per_documento: p.persona.per_documento,
+            per_correo: p.persona.per_correo,
+            per_telefono: p.persona.per_telefono,
+            rol_id: p.rol.rol_id,
+            rol_nombre: p.rol.rol_nombre,
+            sede_id: p.sede ? p.sede.se_id : null,
+            sede: p.sede ? p.sede.se_nombre : null,
+            sede_tel: p.sede ? p.sede.se_telefono : null,
+            sp_fecha_inicio: p.sp_fecha_inicio, 
+            sp_fecha_fin: p.sp_fecha_fin 
+
+            
+        }));
+
+        // 🔹 Formatear datos de roles del geriátrico
+        const resultadoRolesGeriatrico = rolesGeriatrico.map(r => ({
+            per_id: r.persona.per_id,
+            per_nombre: r.persona.per_nombre_completo,
+            per_documento: r.persona.per_documento,
+            per_correo: r.persona.per_correo,
+            per_telefono: r.persona.per_telefono,
+            rol_id: r.rol.rol_id,
+            rol_nombre: r.rol.rol_nombre,
+            ge_nombre: r.geriatrico ? r.geriatrico.ge_nombre : null,
+            gp_fecha_inicio: r.gp_fecha_inicio, 
+            gp_fecha_fin: r.gp_fecha_fin 
+        }));
 
         return res.status(200).json({
-            message: 'Listado de personas con roles',
-            data: personasConRoles
+            resultadoPersonas,
+            resultadoRolesGeriatrico
         });
+
     } catch (error) {
-        console.error("Error al obtener el listado de personas con roles:", error);
-        return res.status(500).json({
-            message: "Error al obtener el listado de personas con roles",
-            error: error.message,
+        console.error('Error al obtener personas por sede:', error);
+        return res.status(500).json({ message: 'Error en el servidor' });
+    }
+};
+
+
+// ver todas las personas con roles dentro de un geriatrico especifico, ruta disponible para administradores de geriatrico y/o sede
+const obtenerPersonasPorGeriatrico = async (req, res) => {
+    try {
+        console.log("Sesión del usuario:", req.session);
+        const { rol_id, ge_id } = req.session;
+
+        if (!rol_id || !ge_id) {
+            return res.status(400).json({ message: 'No has seleccionado un rol o ubicación válida' });
+        }
+
+        // Obtener todas las sedes del geriátrico
+        const sedesDelGeriatrico = await sedeModel.findAll({
+            where: { ge_id },
+            attributes: ['se_id'],
         });
+
+        const idsSedes = sedesDelGeriatrico.map(s => s.se_id);
+
+        // Obtener personas con roles en las sedes del geriátrico        
+        const personas = await sedePersonaRolModel.findAll({
+            where: { se_id: idsSedes },
+            include: [
+                { model: personaModel, as: 'persona', attributes: ['per_id', 'per_nombre_completo', 'per_documento', 'per_correo', 'per_telefono'] },
+                { model: rolModel, as: 'rol', attributes: ['rol_id', 'rol_nombre'] },
+                { model: sedeModel, as: 'sede', attributes: ['se_id', 'se_nombre', 'se_telefono'] },
+            ],
+            attributes: ['sp_fecha_inicio', 'sp_fecha_fin'],
+
+        });
+
+        // Obtener roles asignados directamente al geriátrico
+        const rolesGeriatrico = await geriatricoPersonaRolModel.findAll({
+            where: { ge_id },
+            include: [
+                { model: personaModel, as: 'persona', attributes: ['per_id', 'per_nombre_completo', 'per_documento', 'per_correo', 'per_telefono'] },
+                { model: rolModel, as: 'rol', attributes: ['rol_id', 'rol_nombre'] },
+                { model: geriatricoModel, as: 'geriatrico', attributes: [ 'ge_nombre'] },
+
+            ],
+            attributes: ['gp_fecha_inicio', 'gp_fecha_fin'],
+
+        });
+
+                //🔹 Formatear datos de personas en sedes
+        const resultadoPersonas = personas.map(p => ({
+            per_id: p.persona.per_id,
+            per_nombre: p.persona.per_nombre_completo,
+            per_documento: p.persona.per_documento,
+            per_correo: p.persona.per_correo,
+            per_telefono: p.persona.per_telefono,
+            rol_id: p.rol.rol_id,
+            rol_nombre: p.rol.rol_nombre,
+            sede_id: p.sede ? p.sede.se_id : null,
+            sede: p.sede ? p.sede.se_nombre : null,
+            sede_tel: p.sede ? p.sede.se_telefono : null,
+            sp_fecha_inicio: p.sp_fecha_inicio, 
+            sp_fecha_fin: p.sp_fecha_fin 
+
+            
+        }));
+
+        // 🔹 Formatear datos de roles del geriátrico
+        const resultadoRolesGeriatrico = rolesGeriatrico.map(r => ({
+            per_id: r.persona.per_id,
+            per_nombre: r.persona.per_nombre_completo,
+            per_documento: r.persona.per_documento,
+            per_correo: r.persona.per_correo,
+            per_telefono: r.persona.per_telefono,
+            rol_id: r.rol.rol_id,
+            rol_nombre: r.rol.rol_nombre,
+            ge_nombre: r.geriatrico ? r.geriatrico.ge_nombre : null,
+            gp_fecha_inicio: r.gp_fecha_inicio, 
+            gp_fecha_fin: r.gp_fecha_fin 
+        }));
+
+        return res.status(200).json({
+            resultadoPersonas,
+            resultadoRolesGeriatrico
+        });
+
+
+
+    } catch (error) {
+        console.error('Error al obtener personas por geriátrico:', error);
+        return res.status(500).json({ message: 'Error en el servidor' });
     }
 };
 
 
 
 
-
-module.exports = { asignarRolAdminSede, asignarRol, obtenerPersonasConRoles };
+module.exports = { asignarRolAdminSede, asignarRol, obtenerPersonasPorSede, obtenerPersonasPorGeriatrico };
 
 

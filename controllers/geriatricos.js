@@ -4,6 +4,7 @@ const { subirImagenACloudinary } = require('../utils/handleCloudinary');
 const cloudinary = require('../config/cloudinary'); 
 
 
+
 const crearGeriatrico = async (req, res) => {
     try {
 
@@ -80,7 +81,8 @@ const obtenerGeriatricos = async (req, res) => {
 
 
 const obtenerDetalleGeriatrico = async (req, res) => {
-    try {
+    try {        
+
         // Obtener el ID del geriátrico desde los parámetros de la URL
         const { ge_id } = req.params;
 
@@ -188,7 +190,40 @@ const actualizarGeriatrico = async (req, res) => {
 };
 
 
+// me carga los datos del geriatrico al q pertenezco
+const homeMiGeriatrico = async (req, res) => {
+  try {
+      const { ge_id } = req.session; // geriátrico de la sesión, cuando elijo mi rol
+      const rol_nombre = req.session.rol_nombre; 
+
+      if (!ge_id) {
+          return res.status(400).json({ message: "No tienes un geriátrico asignado" });
+      }
+
+      // Buscar información del geriátrico en la base de datos
+      const geriatrico = await geriatricoModel.findOne({
+          where: { ge_id },
+          attributes: ['ge_id', 'ge_nombre', 'ge_logo', 'ge_color_principal', 'ge_color_secundario', 'ge_color_terciario']
+      });
+
+      if (!geriatrico) {
+          return res.status(404).json({ message: "Geriátrico no encontrado" });
+      }
+
+      return res.status(200).json(
+        {geriatrico,           
+          rol: rol_nombre // Se obtiene directamente desde la sesión
+      });
+
+  } catch (error) {
+      console.error("Error al obtener geriátrico:", error);
+      return res.status(500).json({ message: "Error al obtener geriátrico" });
+  }
+};
 
 
 
-module.exports = { crearGeriatrico, obtenerGeriatricos, obtenerDetalleGeriatrico, actualizarGeriatrico};
+
+
+
+module.exports = { crearGeriatrico, obtenerGeriatricos, obtenerDetalleGeriatrico, actualizarGeriatrico, homeMiGeriatrico};
