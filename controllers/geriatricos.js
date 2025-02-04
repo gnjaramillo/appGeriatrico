@@ -190,7 +190,7 @@ const actualizarGeriatrico = async (req, res) => {
 };
 
 
-// me carga los datos del geriatrico al q pertenezco
+// me carga los datos del geriatrico al q pertenezco (diseño)
 const homeMiGeriatrico = async (req, res) => {
   try {
       const { ge_id } = req.session; // geriátrico de la sesión, cuando elijo mi rol
@@ -223,7 +223,39 @@ const homeMiGeriatrico = async (req, res) => {
 
 
 
+// Función para obtener colores del geriátrico por ID
+const obtenerColoresGeriatrico = async (req, res) => {
+    try {
+        const { ge_id } = req.params;
+
+        // Buscar el geriátrico por ID
+        const geriatrico = await geriatricoModel.findOne({
+            where: { ge_id },
+            attributes: ['ge_color_principal', 'ge_color_secundario', 'ge_color_terciario']
+        });
+
+        if (!geriatrico) {
+            return res.status(404).json({ message: "Geriátrico no encontrado" });
+        }
+
+        return res.status(200).json({
+            message: "Colores obtenidos correctamente",
+            colores: {
+                principal: geriatrico.ge_color_principal,
+                secundario: geriatrico.ge_color_secundario,
+                terciario: geriatrico.ge_color_terciario
+            }
+        });
+
+    } catch (error) {
+        console.error("Error al obtener colores del geriátrico:", error);
+        return res.status(500).json({ message: "Error al obtener colores del geriátrico" });
+    }
+};
+
+    
 
 
 
-module.exports = { crearGeriatrico, obtenerGeriatricos, obtenerDetalleGeriatrico, actualizarGeriatrico, homeMiGeriatrico};
+
+module.exports = { crearGeriatrico, obtenerGeriatricos, obtenerDetalleGeriatrico, actualizarGeriatrico, homeMiGeriatrico, obtenerColoresGeriatrico};

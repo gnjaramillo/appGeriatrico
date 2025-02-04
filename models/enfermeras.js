@@ -16,9 +16,15 @@ const enfermeraModel = sequelize.define('Enfermeras', {
 
 // cada enfermera pertenece a una persona
 enfermeraModel.associate = (models) => {
+
     enfermeraModel.belongsTo(models.personaModel, { 
+        foreignKey: 'per_id',
+        as: 'persona' 
+    });
+    
+    /* enfermeraModel.belongsTo(models.personaModel, { 
     foreignKey: 'per_id', 
-    as: 'persona' });
+    as: 'persona' }); */
 
 
 //Cada enfermera puede tener varios turnos asignados.

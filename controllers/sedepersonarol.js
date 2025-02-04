@@ -3,6 +3,7 @@ const { matchedData } = require('express-validator');
 const { personaModel, rolModel, sedeModel, geriatricoModel, sedePersonaRolModel, geriatricoPersonaRolModel } = require('../models');
 const { tokenSign } = require('../utils/handleJwt'); 
 const jwt = require('jsonwebtoken');
+const { registroDatosSegunRol } = require('../utils/datosSegunRol');
 
 
 
@@ -94,8 +95,8 @@ const asignarRolAdminSede = async (req, res) => {
 
 
 
-// roles asignados dentro de la sede (asignados por el admin sede)
-const asignarRol = async (req, res) => {
+// roles dentro de la sede (asignados por el admin sede)
+const asignarRolesSede = async (req, res) => {
     try {
         const data = matchedData(req);
         const { per_id, rol_id, sp_fecha_inicio, sp_fecha_fin } = data;
@@ -148,10 +149,15 @@ const asignarRol = async (req, res) => {
         });
 
 
+        // Llamamos a la función que registra los datos adicionales según el rol
+        const mensajeAdicional = await registroDatosSegunRol(per_id, rol_id);
+
         return res.status(200).json({
             message: 'Rol asignado correctamente.',
             nuevaVinculacion,
+            mensajeAdicional,  
         });
+
     } catch (error) {
         console.error('Error al asignar rol:', error);
         return res.status(500).json({
@@ -159,11 +165,11 @@ const asignarRol = async (req, res) => {
             error: error.message,
         });
     }
-};
+}; 
 
 
 
-// ver todas las personas con roles dentro de un geriatrico especifico, ruta disponible para administradores de geriatrico y/o sede
+// ver  personas con roles dentro de un geriatrico especifico, ruta disponible para administradores de geriatrico y/o sede
 const obtenerPersonasPorSede = async (req, res) => {
     try {
         console.log("Sesión del usuario:", req.session);
@@ -350,6 +356,6 @@ const obtenerPersonasPorGeriatrico = async (req, res) => {
 
 
 
-module.exports = { asignarRolAdminSede, asignarRol, obtenerPersonasPorSede, obtenerPersonasPorGeriatrico };
+module.exports = { asignarRolAdminSede, asignarRolesSede, obtenerPersonasPorSede, obtenerPersonasPorGeriatrico };
 
 

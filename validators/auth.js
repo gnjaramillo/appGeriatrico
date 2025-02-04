@@ -18,7 +18,7 @@ const validarRegistroPersona = [
     check("per_nombre_completo").exists().notEmpty().isLength({ min: 3, max: 255 }).withMessage("El nombre completo es obligatorio y debe tener entre 3 y 255 caracteres."),
     check("per_telefono").exists().notEmpty().isLength({ min: 7, max: 15 }).withMessage("El teléfono es obligatorio, debe contener solo números y tener entre 7 y 15 caracteres."),
     check("per_genero").exists().notEmpty().isIn(["M", "F", "O"]).withMessage("El género es obligatorio y debe ser M, F u O."),
-    check("per_usuario").exists().notEmpty().isLength({ min: 3, max: 15 }).withMessage("El usuario es obligatorio y debe tener entre 3 y 255 caracteres."),
+    check("per_usuario").exists().notEmpty().isLength({ min: 3, max: 15 }).withMessage("El usuario es obligatorio y debe tener entre 3 y 15 caracteres."),
     check("per_password")
         .exists().isLength({ min: 6, max: 15 }).notEmpty().trim().escape().withMessage("La contraseña debe tener al menos 6 caracteres")
         .matches(/^(?=.*[a-zA-Z])(?=.*\d)[a-zA-Z\d]{6,}$/).withMessage("La contraseña debe tener una longitud mínima de 6 caracteres y contener al menos una letra y un número"),

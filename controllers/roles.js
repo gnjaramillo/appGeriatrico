@@ -220,22 +220,6 @@ const seleccionarRol = async (req, res) => {
             ...(tipoAsignacion === 'sede' ? { sede: asignacion.sede.se_nombre, se_id: asignacion.se_id } : { geriatrico: asignacion.geriatrico.ge_nombre, ge_id: asignacion.ge_id })
         });
 
-      // Construir la respuesta
-      const response = {
-          message: 'Rol seleccionado exitosamente',
-          rol: asignacion.rol.rol_nombre,
-          rol_id: asignacion.rol_id,
-      };
-
-      if (tipoAsignacion === 'sede') {
-          response.sede = asignacion.sede.se_nombre;
-          response.se_id = asignacion.se_id;
-      } else {
-          response.geriatrico = asignacion.geriatrico.ge_nombre;
-          response.ge_id = asignacion.ge_id;
-      }
-
-      return res.status(200).json(response);
   } catch (error) {
       console.error('Error al seleccionar rol, sede o geriátrico:', error);
       return res.status(500).json({ message: 'Error al seleccionar rol, sede o geriátrico' });

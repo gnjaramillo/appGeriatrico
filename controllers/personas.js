@@ -7,7 +7,7 @@ const cloudinary = require('../config/cloudinary');
 const { sequelize } = require('../config/mysql');
 
 
-const obtenerPersonasRegistradas = async (req, res) => {
+/* const obtenerPersonasRegistradas = async (req, res) => {
     try {
         const personas = await personaModel.findAll();
         
@@ -34,7 +34,40 @@ const obtenerPersonasRegistradas = async (req, res) => {
         res.status(500).json({ message: 'Error al obtener personas' });
     }
 };
+ */
 
+const obtenerPersonasRegistradas = async (req, res) => {
+    try {
+        const personas = await personaModel.findAll();
+        
+        if (personas.length === 0) {
+            return res.status(404).json({ message: 'No se han encontrado personas registradas' });
+        }
+
+        // Mapear todos los campos de la tabla
+        const personasFiltradas = personas.map(persona => ({
+            id: persona.per_id,
+            fechaRegistro: persona.per_fecha,
+            foto: persona.per_foto,
+            correo: persona.per_correo,
+            documento: persona.per_documento,
+            nombre: persona.per_nombre_completo,
+            telefono: persona.per_telefono,
+            genero: persona.per_genero,
+            usuario: persona.per_usuario
+            
+        }));
+
+        return res.status(200).json({
+            message: 'Personas obtenidas exitosamente',
+            personas: personasFiltradas
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error al obtener personas' });
+    }
+};
 
 
 
