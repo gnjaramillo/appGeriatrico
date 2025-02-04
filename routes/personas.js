@@ -10,8 +10,8 @@ const { validarUpdatePersona, validarUpdatePerfil } = require('../validators/per
 
 
 router.get('/', obtenerPersonasRegistradas);
-router.put('/:per_id', sessionMiddleware, authMiddleware, checkRol([1,2,3]),  upload.single('per_foto'), validarUpdatePersona, actualizarPersona);
 router.put('/perfil', sessionMiddleware, authMiddleware, upload.single('per_foto'), validarUpdatePerfil, actualizarPerfil);
+router.put('/:per_id', sessionMiddleware, authMiddleware, checkRol([1,2,3]),  upload.single('per_foto'), validarUpdatePersona, actualizarPersona);
 router.put('/:per_id', upload.single('per_foto'), validarUpdatePersona, actualizarPersona);
 
 

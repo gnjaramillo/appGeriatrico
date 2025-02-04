@@ -7,70 +7,43 @@ const cloudinary = require('../config/cloudinary');
 const { sequelize } = require('../config/mysql');
 
 
-/* const obtenerPersonasRegistradas = async (req, res) => {
-    try {
-        const personas = await personaModel.findAll();
-        
-        if (personas.length === 0) {
-            return res.status(404).json({ message: 'No se han encontrado personas registradas' });
-        }
-
-        // Filtrar campos necesarios
-        const personasFiltradas = personas.map(persona => ({
-            id: persona.per_id,
-            fechaRegistro: persona.per_fecha,
-            nombre: persona.per_nombre_completo,
-            documento: persona.per_documento, 
-            correo: persona.per_correo
-        }));
-
-        return res.status(200).json({
-            message: 'Personas obtenidas exitosamente',
-            personas: personasFiltradas
-        });
-
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error al obtener personas' });
-    }
-};
- */
 
 const obtenerPersonasRegistradas = async (req, res) => {
     try {
-        const personas = await personaModel.findAll();
-        
-        if (personas.length === 0) {
-            return res.status(404).json({ message: 'No se han encontrado personas registradas' });
-        }
-
-        // Mapear todos los campos de la tabla
-        const personasFiltradas = personas.map(persona => ({
-            id: persona.per_id,
-            fechaRegistro: persona.per_fecha,
-            foto: persona.per_foto,
-            correo: persona.per_correo,
-            documento: persona.per_documento,
-            nombre: persona.per_nombre_completo,
-            telefono: persona.per_telefono,
-            genero: persona.per_genero,
-            usuario: persona.per_usuario
-            
-        }));
-
-        return res.status(200).json({
-            message: 'Personas obtenidas exitosamente',
-            personas: personasFiltradas
-        });
-
+      const personas = await personaModel.findAll();
+  
+      if (personas.length === 0) {
+        return res
+          .status(404)
+          .json({ message: "No se han encontrado personas registradas" });
+      }
+  
+      // Mapear todos los campos de la tabla
+      const personasFiltradas = personas.map((persona) => ({
+        id: persona.per_id,
+        fechaRegistro: persona.per_fecha,
+        foto: persona.per_foto,
+        correo: persona.per_correo,
+        documento: persona.per_documento,
+        nombre: persona.per_nombre_completo,
+        telefono: persona.per_telefono,
+        genero: persona.per_genero,
+        usuario: persona.per_usuario,
+      }));
+  
+      return res.status(200).json({
+        message: "Personas obtenidas exitosamente",
+        personas: personasFiltradas,
+      });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Error al obtener personas' });
+      console.error(error);
+      res.status(500).json({ message: "Error al obtener personas" });
     }
-};
+  };
 
+  
 
-
+// administradores puedan actualizar un dato mal registrado
 const actualizarPersona = async (req, res) => {
     const { per_id } = req.params;
     const data = matchedData(req); 
@@ -154,18 +127,15 @@ const actualizarPersona = async (req, res) => {
 
 
 
-// datos q puede actualizar: correo, telefono, usuario, contraseña, foto
+// datos q puede actualizar cada usuario en su perfil: correo, telefono, usuario, contraseña, foto
 const actualizarPerfil = async (req, res) => {
-
     const per_id = req.user.id;
-    const data = matchedData(req); // Filtra solo los datos validados
-    console.log(data)
-    console.log("Datos recibidos:", req.body);
-
+    const data = matchedData(req); 
+    console.log("Datos recibidos:", data);
 
     const camposPermitidos = ['per_correo', 'per_telefono', 'per_usuario', 'per_password', 'per_foto'];
-
-    // Verificar que no se estén enviando campos no permitidos
+    
+    // Verificar si hay campos no permitidos
     const camposInvalidos = Object.keys(req.body).filter(field => !camposPermitidos.includes(field));
     if (camposInvalidos.length > 0) {
         return res.status(400).json({
@@ -190,7 +160,6 @@ const actualizarPerfil = async (req, res) => {
             updateData.per_correo = data.per_correo;
         }
 
-
         if (data.per_usuario && data.per_usuario !== persona.per_usuario) {
             const usuarioExiste = await personaModel.findOne({ where: { per_usuario: data.per_usuario } });
             if (usuarioExiste) {
@@ -203,8 +172,9 @@ const actualizarPerfil = async (req, res) => {
             updateData.per_password = await encrypt(data.per_password);
         }
 
-        if (data.per_telefono !== undefined) updateData.per_telefono = data.per_telefono;
-
+        if (data.per_telefono) {
+            updateData.per_telefono = data.per_telefono;
+        }
 
         // Manejar la actualización de la imagen
         if (req.file) {
@@ -223,24 +193,37 @@ const actualizarPerfil = async (req, res) => {
                 }
 
                 updateData.per_foto = result.secure_url;
-
             } catch (error) {
                 return res.status(500).json({ message: "Error al subir la imagen", error });
             }
         }
-
 
         // Si hay datos para actualizar, proceder
         if (Object.keys(updateData).length > 0) {
             await persona.update(updateData);
         }
 
-        return res.status(200).json({ message: "Perfil actualizado con éxito", persona, camposInvalidos });
+        // Volver a obtener los datos completos para enviarlos en la respuesta
+        const personaActualizada = await personaModel.findByPk(per_id);
+
+        return res.status(200).json({
+            message: "Perfil actualizado con éxito",
+            persona: {
+                id: personaActualizada.per_id,
+                fechaRegistro: personaActualizada.per_fecha,
+                foto: personaActualizada.per_foto,
+                nombre: personaActualizada.per_nombre_completo,
+                documento: personaActualizada.per_documento,
+                genero: personaActualizada.per_genero,
+                correo: personaActualizada.per_correo,
+                telefono: personaActualizada.per_telefono,
+                usuario: personaActualizada.per_usuario
+            }
+        });
     } catch (error) {
         return res.status(500).json({ message: "Error al actualizar perfil", error: error.message });
     }
 };
-
 
 
 
