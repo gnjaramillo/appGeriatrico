@@ -3,7 +3,6 @@ const { matchedData } = require('express-validator');
 const { personaModel, rolModel, sedeModel, geriatricoModel, sedePersonaRolModel, geriatricoPersonaRolModel } = require('../models');
 const { tokenSign } = require('../utils/handleJwt'); 
 const jwt = require('jsonwebtoken');
-const { registroDatosSegunRol } = require('../utils/datosSegunRol');
 
 
 
@@ -148,13 +147,29 @@ const asignarRolesSede = async (req, res) => {
             sp_fecha_fin: sp_fecha_fin || null, // Si no se proporciona, será indefinido
         });
 
+        const rolNombre = await rolModel.findOne({
+            where: {rol_id },
+            attributes: ['rol_nombre'],
+        })
 
-        // Llamamos a la función que registra los datos adicionales según el rol
-        const mensajeAdicional = await registroDatosSegunRol(per_id, rol_id);
+
+
+        let mensajeAdicional = '';
+
+        if (rol_id === 4) { // Paciente
+            mensajeAdicional = 'Has asignado el rol Paciente. Registra los datos adicionales de la enfermera.';
+        } else if (rol_id === 5) { // Enfermera(o)
+            mensajeAdicional = 'Has asignado el rol Enfermera(o). Registra los datos adicionales del paciente.';
+        } else if (rol_id === 6) { // Acudiente
+            mensajeAdicional = 'Has asignado el rol de Acudiente. Registra los datos adicionales del acudiente.';
+        }
+
+
 
         return res.status(200).json({
             message: 'Rol asignado correctamente.',
             nuevaVinculacion,
+            rolNOmbre,
             mensajeAdicional,  
         });
 
@@ -263,6 +278,7 @@ const obtenerPersonasPorSede = async (req, res) => {
         return res.status(500).json({ message: 'Error en el servidor' });
     }
 };
+
 
 
 // ver todas las personas con roles dentro de un geriatrico especifico, ruta disponible para administradores de geriatrico y/o sede

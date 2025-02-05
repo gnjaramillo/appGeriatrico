@@ -126,6 +126,43 @@ const actualizarPersona = async (req, res) => {
 };
 
 
+// ver mi perfil
+const obtenerMiPerfil = async (req, res) => {
+    try {
+        const per_id = req.user.id; 
+
+        // Buscar la persona en la base de datos
+        const persona = await personaModel.findOne({ where: { per_id } });
+
+        if (!persona) {
+            return res.status(404).json({ message: "Persona no encontrada" });
+        }
+
+        // Formatear la respuesta con los datos necesarios
+        const personaFiltrada = {
+            id: persona.per_id,
+            fechaRegistro: persona.per_fecha,
+            foto: persona.per_foto,
+            correo: persona.per_correo,
+            documento: persona.per_documento,
+            nombre: persona.per_nombre_completo,
+            telefono: persona.per_telefono,
+            genero: persona.per_genero,
+            usuario: persona.per_usuario,
+        };
+
+        return res.status(200).json({
+            message: "Persona autenticada obtenida exitosamente",
+            persona: personaFiltrada,
+        });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error al obtener la persona autenticada" });
+    }
+};
+
+
 
 // datos q puede actualizar cada usuario en su perfil: correo, telefono, usuario, contraseña, foto
 const actualizarPerfil = async (req, res) => {
@@ -227,5 +264,5 @@ const actualizarPerfil = async (req, res) => {
 
 
 
-module.exports = { obtenerPersonasRegistradas, actualizarPersona, actualizarPerfil };
+module.exports = { obtenerPersonasRegistradas, actualizarPersona, actualizarPerfil, obtenerMiPerfil  };
 
