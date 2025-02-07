@@ -1,4 +1,6 @@
 const { Op } = require('sequelize');
+const { sequelize } = require('../config/mysql'); 
+
 const { matchedData } = require('express-validator');
 const { personaModel, rolModel, sedeModel, geriatricoModel, sedePersonaRolModel, geriatricoPersonaRolModel } = require('../models');
 const { tokenSign } = require('../utils/handleJwt'); 
@@ -95,41 +97,39 @@ const asignarRolAdminSede = async (req, res) => {
 
 
 // roles dentro de la sede (asignados por el admin sede)
+// ROLES_NO_PERMITIDOS = [1, 2, 3]; // Super Administrador, Admin Geriátrico, Admin Sede
+
 const asignarRolesSede = async (req, res) => {
+    const t = await sequelize.transaction(); // Iniciar transacción
+
     try {
         const data = matchedData(req);
         const { per_id, rol_id, sp_fecha_inicio, sp_fecha_fin } = data;
-
-        // Obtener el `se_id` de la sesión
         const se_id = req.session.se_id;
+
         if (!se_id) {
             return res.status(403).json({ message: 'No se ha seleccionado una sede.' });
         }
 
-        // Definir los roles que pueden ser asignados por el Administrador de Sede
-        const ROLES_NO_PERMITIDOS = [1, 2, 3]; // Super Administrador, Admin Geriátrico, Admin Sede
-        const ROLES_PERMITIDOS = [4, 5, 6, 7]; // Paciente, Enfermera(o), Acudiente, Colaborador
+        const ROLES_PERMITIDOS = [4, 5, 6, 7]; // paciente, enfermeros, acuediente, colaborador
 
-        // Validar que el rol solicitado esté permitido
         if (!ROLES_PERMITIDOS.includes(rol_id)) {
             return res.status(403).json({ message: 'Rol no permitido para asignar en esta sede.' });
         }
 
-        // Validar que la persona exista
         const persona = await personaModel.findOne({ where: { per_id } });
         if (!persona) {
             return res.status(404).json({ message: 'Persona no encontrada.' });
         }
 
-        // Verificar si ya tiene el rol asignado en esta sede
         const rolExistenteSede = await sedePersonaRolModel.findOne({
             where: {
                 per_id,
                 se_id,
                 rol_id,
                 [Op.or]: [
-                    { sp_fecha_fin: null }, // Rol activo
-                    { sp_fecha_fin: { [Op.gt]: new Date() } }, // Fecha de finalización futura
+                    { sp_fecha_fin: null },
+                    { sp_fecha_fin: { [Op.gt]: new Date() } },
                 ],
             },
         });
@@ -138,50 +138,84 @@ const asignarRolesSede = async (req, res) => {
             return res.status(400).json({ message: 'Este rol ya está asignado a la persona en esta sede.' });
         }
 
-        // Crear la nueva asignación
+        let cuposTotales = null;
+        let cuposOcupados = null;
+
+        if (rol_id === 4) {
+            // 🔥 Aquí aseguramos que `sede` exista antes de actualizarla
+            const sede = await sedeModel.findOne({
+                where: { se_id },
+                attributes: ['se_id', 'cupos_totales', 'cupos_ocupados'],
+                transaction: t,
+                lock: t.LOCK.UPDATE, // Bloquea la fila para evitar problemas de concurrencia
+            });
+
+            if (!sede) {
+                return res.status(404).json({ message: 'Sede no encontrada.' });
+            }
+
+            if (sede.cupos_ocupados >= sede.cupos_totales) {
+                return res.status(400).json({ message: 'No hay cupos disponibles en esta sede.' });
+            }
+
+            // ✅ Actualizar los cupos ocupados de forma correcta
+            await sedeModel.update(
+                { cupos_ocupados: sede.cupos_ocupados + 1 },
+                { where: { se_id }, transaction: t } // 👈 Aquí agregamos `where`
+            );
+
+            cuposTotales = sede.cupos_totales;
+            cuposOcupados = sede.cupos_ocupados + 1;
+        }
+
         const nuevaVinculacion = await sedePersonaRolModel.create({
             per_id,
             se_id,
             rol_id,
             sp_fecha_inicio,
-            sp_fecha_fin: sp_fecha_fin || null, // Si no se proporciona, será indefinido
+            sp_fecha_fin: sp_fecha_fin || null,
+        }, { transaction: t });
+
+        const rol = await rolModel.findOne({
+            where: { rol_id },
+            attributes: ['rol_nombre'],
+            transaction: t,
         });
 
-        const rolNombre = await rolModel.findOne({
-            where: {rol_id },
-            attributes: ['rol_nombre'],
-        })
-
-
-
         let mensajeAdicional = '';
-
-        if (rol_id === 4) { // Paciente
-            mensajeAdicional = 'Has asignado el rol Paciente. Registra los datos adicionales de la enfermera.';
-        } else if (rol_id === 5) { // Enfermera(o)
-            mensajeAdicional = 'Has asignado el rol Enfermera(o). Registra los datos adicionales del paciente.';
-        } else if (rol_id === 6) { // Acudiente
+        if (rol_id === 4) {
+            mensajeAdicional = 'Has asignado el rol Paciente. Registra los datos adicionales del Paciente.';
+        } else if (rol_id === 5) {
+            mensajeAdicional = 'Has asignado el rol Enfermera(o). Registra los datos adicionales del Enfermera(o).';
+        } else if (rol_id === 6) {
             mensajeAdicional = 'Has asignado el rol de Acudiente. Registra los datos adicionales del acudiente.';
         }
 
+        await t.commit();
 
-
-        return res.status(200).json({
+        const response = {
             message: 'Rol asignado correctamente.',
             nuevaVinculacion,
-            rolNOmbre,
-            mensajeAdicional,  
-        });
+            rolNombre: rol.rol_nombre,
+            mensajeAdicional
+        };
+
+        if (rol_id === 4) {
+            response.cuposTotales = cuposTotales;
+            response.cuposOcupados = cuposOcupados;
+        }
+
+        return res.status(200).json(response);
 
     } catch (error) {
+        await t.rollback();
         console.error('Error al asignar rol:', error);
         return res.status(500).json({
             message: 'Error al asignar rol.',
             error: error.message,
         });
     }
-}; 
-
+};
 
 
 // ver  personas con roles dentro de un geriatrico especifico, ruta disponible para administradores de geriatrico y/o sede

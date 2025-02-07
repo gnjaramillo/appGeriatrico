@@ -18,7 +18,7 @@ const acudienteModel = sequelize.define('acudientes', {
       },
       acu_parentesco: {
         type: DataTypes.STRING,
-        allowNull: false,  // Relación entre el acudiente y el paciente
+        allowNull: false,  
       },
       acu_foto: {
         type: DataTypes.STRING,

@@ -18,29 +18,37 @@ const port = process.env.PORT || 3000;
 app.set("trust proxy", 1);
 
 
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+/* app.use(express.urlencoded({ extended: true }));
+app.use(express.json()); */
+
+app.use(express.urlencoded({ extended: true, limit: "50mb" }));
+app.use(express.json({ limit: "50mb" }));
+
+
+
 app.use(express.static('storage'))
 app.use(cookieParser());
 
 
 // Configuración de CORS
-/* app.use(cors({
+app.use(cors({
     origin: [
-      'http://localhost:5173', // ejemplo Dominio local del frontend
+      'http://localhost:4000', // Dominio local del frontend
     ],
     credentials: true, // Permitir el envío de cookies/credenciales
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization'], // Encabezados permitidos
     optionsSuccessStatus: 200, // Resolver problemas con navegadores antiguos
-  })); */
-
-
-  app.use(cors({
-    origin: true, // Permitir cualquier origen
-    credentials: true, // Permitir el envío de cookies
   }));
   
+
+/*   app.use(cors({
+    origin: true,
+    credentials: true, // Permitir el envío de cookies/credenciales
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization'], // Encabezados permitidos
+    optionsSuccessStatus: 200, // Resolver problemas con navegadores antiguos
+  }));  */
 
 
 

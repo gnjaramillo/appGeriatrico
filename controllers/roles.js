@@ -199,6 +199,7 @@ const seleccionarRol = async (req, res) => {
       }
      
         // Guardar los datos en la sesión
+        req.session.per_id = id; // Guardar per_id en sesión
         req.session.rol_id = rol_id;
         req.session.rol_nombre = asignacion.rol.rol_nombre;
         req.session[tipoAsignacion === 'sede' ? 'se_id' : 'ge_id'] = tipoAsignacion === 'sede' ? se_id : ge_id;

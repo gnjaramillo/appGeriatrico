@@ -1,5 +1,5 @@
 const { matchedData } = require("express-validator");
-const { sedeModel, geriatricoModel } = require("../models");
+const { sedeModel, geriatricoModel, sedePersonaRolModel, personaModel } = require("../models");
 const { subirImagenACloudinary } = require('../utils/handleCloudinary'); 
 const cloudinary = require('../config/cloudinary'); 
 
@@ -117,7 +117,7 @@ const crearSede = async (req, res) => {
 
 
 // sedes visibles para cada admin de su geriatrico
-const obtenerSedesPorGeriatrico = async (req, res) => {
+const obtenerSedes = async (req, res) => {
   try {
     // Obtener todas las sedes de la base de datos
     const sedes = await sedeModel.findAll({
@@ -147,7 +147,7 @@ const obtenerSedesPorGeriatrico = async (req, res) => {
 
 
 // obtener sedes de todos los geriatricos (vista super admin)
-const obtenerSedes = async (req, res) => {
+const obtenerSedesPorGeriatrico = async (req, res) => {
   try {
     // Obtener el ID del geriátrico desde la sesión
     const ge_id = req.session.ge_id;
@@ -299,7 +299,7 @@ const actualizarSede = async (req, res) => {
 
 
 // me carga los datos del geriatrico al q pertenezco
-const obtenerHomeSede = async (req, res) => {
+/* const obtenerHomeSede = async (req, res) => {
   try {
       const { se_id } = req.session; 
       const rol_nombre = req.session.rol_nombre; 
@@ -353,7 +353,92 @@ const obtenerHomeSede = async (req, res) => {
       console.error('Error al obtener el home de la sede:', error);
       return res.status(500).json({ message: "Error al obtener la información de la sede." });
   }
+}; */
+
+
+
+const obtenerHomeSede = async (req, res) => {
+  try {
+    
+      const { se_id, per_id, rol_id } = req.session; // Datos guardados en sesión
+      const rol_nombre = req.session.rol_nombre; 
+
+      if (!se_id) {
+          return res.status(400).json({ message: "No se ha seleccionado una sede." });
+      }
+
+      // Obtener datos de la sede junto con el geriátrico al que pertenece
+      const sede = await sedeModel.findOne({
+          where: { se_id },
+          attributes: ['se_id', 'se_nombre', 'se_foto', 'se_telefono', 'se_direccion', 'cupos_totales', 'cupos_ocupados', 'ge_id'],
+          include: [
+              {
+                  model: geriatricoModel,
+                  as: 'geriatrico',
+                  attributes: ['ge_id', 'ge_nombre', 'ge_logo', 'ge_color_principal', 'ge_color_secundario', 'ge_color_terciario']
+              }
+          ]
+      });
+
+      if (!sede) {
+          return res.status(404).json({ message: "No se encontró la sede." });
+      }
+
+      // Obtener información del rol en la sede
+      const sedeRol = await sedePersonaRolModel.findOne({
+          where: {  se_id, per_id, rol_id },
+          attributes: ['sp_fecha_inicio', 'sp_fecha_fin']
+      });
+
+      // Obtener datos de la persona
+      const persona = await personaModel.findOne({
+          where: { per_id },
+          attributes: ['per_nombre_completo', 'per_documento', 'per_correo', 'per_telefono', 'per_foto']
+      });
+
+      return res.status(200).json({
+          message: "Información de la sede y usuario obtenida correctamente",
+          sede: {
+              se_id: sede.se_id,
+              se_nombre: sede.se_nombre,
+              se_foto: sede.se_foto,
+              se_telefono: sede.se_telefono,
+              se_direccion: sede.se_direccion,
+              cupos_totales: sede.cupos_totales,
+              cupos_ocupados: sede.cupos_ocupados
+          },
+          geriatrico: {
+              ge_id: sede.geriatrico.ge_id,
+              ge_nombre: sede.geriatrico.ge_nombre,
+              ge_logo: sede.geriatrico.ge_logo,
+              colores: {
+                  principal: sede.geriatrico.ge_color_principal,
+                  secundario: sede.geriatrico.ge_color_secundario,
+                  terciario: sede.geriatrico.ge_color_terciario
+              }
+          },
+          rol: {
+              nombre: rol_nombre,
+              fecha_inicio: sedeRol ? sedeRol.sp_fecha_inicio : null,
+              fecha_fin: sedeRol ? sedeRol.sp_fecha_fin : null
+          },
+          usuario: {
+              nombre_completo: persona.per_nombre_completo,
+              documento: persona.per_documento,
+              correo: persona.per_correo,
+              telefono: persona.per_telefono,
+              foto: persona.per_foto
+          }
+      });
+
+  } catch (error) {
+      console.error('Error al obtener el home de la sede:', error);
+      return res.status(500).json({ message: "Error al obtener la información de la sede." });
+  }
 };
+
+
+
 
 
 module.exports = { crearSede, crearSedeSuperAdmin,  obtenerSedes, obtenerSedesPorGeriatrico, obtenerDetalleSede,  actualizarSede, obtenerHomeSede};

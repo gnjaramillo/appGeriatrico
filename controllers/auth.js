@@ -1,15 +1,15 @@
 const { Op } = require('sequelize');
+const { sequelize } = require('../config/mysql'); 
 const { matchedData } = require('express-validator');
 const { encrypt, compare } = require('../utils/handlePassword');
-const { personaModel, rolModel, sedeModel, geriatricoModel, sedePersonaRolModel, geriatricoPersonaRolModel } = require('../models');
 const { tokenSign } = require('../utils/handleJwt'); 
 const { subirImagenACloudinary } = require('../utils/handleCloudinary'); 
-const cloudinary = require('../config/cloudinary'); 
 const { limpiarSesion } = require('../utils/sessionUtils');
+const { personaModel, geriatricoPersonaRolModel } = require('../models');
 
 
 
-const registrarPersona = async (req, res) => {
+/* const registrarPersona = async (req, res) => {
     try {
         const data = matchedData(req);
         const { per_correo, per_documento, per_nombre_completo, per_telefono, per_genero, per_usuario, per_password } = data;
@@ -76,6 +76,77 @@ const registrarPersona = async (req, res) => {
         });
     }
 };
+ */
+
+
+const registrarPersona = async (req, res) => {
+  const transaction = await personaModel.sequelize.transaction(); // Iniciar transacción
+
+  try {
+      const data = matchedData(req);
+      const { per_correo, per_documento, per_nombre_completo, per_telefono, per_genero, per_usuario, per_password } = data;
+
+      // Validar correo
+      const correoExiste = await personaModel.findOne({ where: { per_correo } });
+      if (correoExiste) {
+          return res.status(400).json({ message: 'El correo ya está registrado' });
+      }
+
+      // Validar documento
+      const documentoExiste = await personaModel.findOne({ where: { per_documento } });
+      if (documentoExiste) {
+          return res.status(400).json({ message: 'El documento ya está registrado' });
+      }
+
+      // Encriptar la contraseña del usuario
+      const per_password_encriptada = await encrypt(per_password);
+
+      // Crear la persona en la base de datos dentro de la transacción
+      const nuevaPersona = await personaModel.create({
+          per_correo,
+          per_documento,
+          per_nombre_completo,
+          per_telefono,
+          per_genero,
+          per_usuario,
+          per_password: per_password_encriptada, 
+      }, { transaction });
+
+      // Subir foto (foto es opcional en registro)
+      let per_foto = null;
+      if (req.file) {
+          try {
+              const resultado = await subirImagenACloudinary(req.file, "personas");
+              per_foto = resultado.secure_url; // URL imagen 
+              nuevaPersona.per_foto = per_foto;
+              await nuevaPersona.save({ transaction });
+          } catch (error) {
+              console.error("Error al subir la imagen:", error);
+              await transaction.rollback(); // Deshacer todo si la imagen falla
+              return res.status(500).json({ message: "Error al subir la imagen" });
+          }
+      }
+
+      // Confirmar la transacción
+      await transaction.commit();
+
+      // Ocultar la contraseña en la respuesta
+      nuevaPersona.set('per_password', undefined, { strict: false });
+
+      return res.status(201).json({
+          message: "Persona registrada con éxito",
+          data: {
+              per_id: nuevaPersona.per_id,
+              user: nuevaPersona,
+          },
+      });
+
+  } catch (error) {
+      await transaction.rollback(); // Deshacer cualquier cambio en caso de error
+      console.error("Error al registrar persona:", error);
+      return res.status(500).json({ message: "Error al registrar persona", error: error.message });
+  }
+};
 
 
 
@@ -119,7 +190,7 @@ const loginPersona = async (req, res) => {
     req.session.rol_id = esSuperAdmin ? 1 : null; 
     req.session.esSuperAdmin = !!esSuperAdmin; 
     req.session.ge_id = esSuperAdmin ? 0 : null;
-    // Asegurarse de guardar la sesión
+    // guardar la sesión
     req.session.save((err) => {
       if (err) {
         console.error("Error al guardar la sesión:", err);

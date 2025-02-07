@@ -1,5 +1,5 @@
 const { matchedData } = require('express-validator');
-const { sedeModel, geriatricoModel } = require('../models');
+const { sedeModel, geriatricoModel, geriatricoPersonaRolModel, personaModel } = require('../models');
 const { subirImagenACloudinary } = require('../utils/handleCloudinary'); 
 const cloudinary = require('../config/cloudinary'); 
 
@@ -191,9 +191,9 @@ const actualizarGeriatrico = async (req, res) => {
 
 
 // me carga los datos del geriatrico al q pertenezco (diseño)
-const homeMiGeriatrico = async (req, res) => {
+/* const homeMiGeriatrico = async (req, res) => {
   try {
-      const { ge_id } = req.session; // geriátrico de la sesión, cuando elijo mi rol
+      const { ge_id} = req.session; // geriátrico de la sesión, cuando elijo mi rol
       const rol_nombre = req.session.rol_nombre; 
 
       if (!ge_id) {
@@ -218,6 +218,82 @@ const homeMiGeriatrico = async (req, res) => {
   } catch (error) {
       console.error("Error al obtener geriátrico:", error);
       return res.status(500).json({ message: "Error al obtener geriátrico" });
+  }
+}; */
+
+
+const homeMiGeriatrico = async (req, res) => {
+  try {
+    const { ge_id, per_id, rol_id } = req.session; // geriátrico de la sesión, cuando elijo mi rol
+    const rol_nombre = req.session.rol_nombre;
+
+    if (!ge_id) {
+      return res
+        .status(400)
+        .json({ message: "No tienes un geriátrico asignado" });
+    }
+
+    // Buscar información del geriátrico en la base de datos
+    const geriatrico = await geriatricoModel.findOne({
+      where: { ge_id },
+      attributes: [
+        "ge_id",
+        "ge_nombre",
+        "ge_logo",
+        "ge_color_principal",
+        "ge_color_secundario",
+        "ge_color_terciario",
+      ],
+    });
+
+    if (!geriatrico) {
+      return res.status(404).json({ message: "Geriátrico no encontrado" });
+    }
+
+    const geriatricoRol = await geriatricoPersonaRolModel.findOne({
+      where: { ge_id, per_id, rol_id },
+      attributes: ["gp_fecha_inicio", "gp_fecha_fin"],
+    });
+
+    // Obtener datos de la persona
+    const persona = await personaModel.findOne({
+      where: { per_id },
+      attributes: [
+        "per_nombre_completo",
+        "per_documento",
+        "per_correo",
+        "per_telefono",
+        "per_foto",
+      ],
+    });
+
+    return res.status(200).json({
+      message: "Información del geriátrico y usuario obtenida correctamente.",
+      geriatrico: {
+        ge_id: geriatrico.ge_id,
+        ge_nombre: geriatrico.ge_nombre,
+        ge_logo: geriatrico.ge_logo,
+        color_principal: geriatrico.ge_color_principal,
+        color_secundario: geriatrico.ge_color_secundario,
+        color_terciario: geriatrico.ge_color_terciario,
+        
+      },
+      rol: {
+        nombre: rol_nombre,
+        fecha_inicio: geriatricoRol ? geriatricoRol.gp_fecha_inicio : null,
+        fecha_fin: geriatricoRol ? geriatricoRol.gp_fecha_fin : null,
+      },
+      usuario: {
+        nombre_completo: persona.per_nombre_completo,
+        documento: persona.per_documento,
+        correo: persona.per_correo,
+        telefono: persona.per_telefono,
+        foto: persona.per_foto,
+      },
+    });
+  } catch (error) {
+    console.error("Error al obtener geriátrico:", error);
+    return res.status(500).json({ message: "Error al obtener geriátrico" });
   }
 };
 

@@ -13,7 +13,7 @@ router.post('/', sessionMiddleware, authMiddleware,  checkRol([2]), upload.singl
 router.post('/crearSede', sessionMiddleware, authMiddleware,  checkRol([1]), upload.single('se_foto'), validatorCrearSedeSuperAdmin, crearSedeSuperAdmin);
 router.get('/', sessionMiddleware, authMiddleware,  checkRol([1]), obtenerSedes);
 router.get('/homeSede', sessionMiddleware, authMiddleware,  checkRol([ 2, 3, 4, 5, 6]), obtenerHomeSede);
-router.get('/', sessionMiddleware, authMiddleware,  checkRol([2]), obtenerSedesPorGeriatrico);
+router.get('/sedesGeriatrico', sessionMiddleware, authMiddleware,  checkRol([2]), obtenerSedesPorGeriatrico);
 router.get('/:se_id', sessionMiddleware, authMiddleware,  checkRol([2, 3]), validatorDetalleSede, obtenerDetalleSede);
 router.put('/:se_id',sessionMiddleware, authMiddleware,  checkRol([2]), upload.single('se_foto'), validatorActualizarSede, actualizarSede);
 
