@@ -6,9 +6,6 @@ const cloudinary = require('../config/cloudinary');
 
 
 
-
-
-
 // admin geriatrico crea sus sedes, quedan vinculadas al geriatrico a su cargo (ge id sesion)
 const crearSede = async (req, res) => {
   try {
@@ -52,7 +49,7 @@ const crearSede = async (req, res) => {
       se_telefono,
       se_direccion,
       cupos_totales,
-      cupos_ocupados,
+      cupos_ocupados: cupos_ocupados || 0, // será 0 por defecto,
       ge_id, // Vincular la sede al geriátrico correspondiente
     });
 
@@ -65,6 +62,7 @@ const crearSede = async (req, res) => {
     return res.status(500).json({ message: "Error al crear la sede" });
   }
 };
+
 
 
 // todas las sedes visibles 
@@ -96,6 +94,69 @@ const obtenerSedes = async (req, res) => {
   }
 };
 
+
+
+// Obtener sedes activos con el geriatrico al q pertenecen (super admin)
+const obtenerSedesActivas = async (req, res) => {
+  try {
+    // Obtener todas las sedes de la base de datos
+    const sedes = await sedeModel.findAll({
+      where: { se_activo: true }, // Filtrar solo los activos
+      include: [
+        {
+          model: geriatricoModel,
+          as: "geriatrico",
+          attributes: ["ge_nombre", "ge_nit", "ge_activo"],
+        },
+      ],
+    });
+
+    // Verificar si existen sedes en la base de datos
+    if (sedes.length === 0) {
+      return res.status(404).json({ message: "No se han encontrado sedes." });
+    }
+
+    return res.status(200).json({
+      message: "sedes obtenidas exitosamente",
+      sedes,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error al obtener los sedes" });
+  }
+};
+
+
+
+// obtener sedes inactivas junto con el geriatrico al q pertenecen (super admin)
+const obtenerSedesInactivas = async (req, res) => {
+  try {
+    // Obtener todas las sedes de la base de datos
+    const sedes = await sedeModel.findAll({
+      where: { se_activo: false }, // Filtrar solo los activos
+      include: [
+        {
+          model: geriatricoModel,
+          as: "geriatrico",
+          attributes: ["ge_nombre", "ge_nit", "ge_activo"],
+        },
+      ],
+    });
+
+    // Verificar si existen sedes en la base de datos
+    if (sedes.length === 0) {
+      return res.status(404).json({ message: "No se han encontrado sedes inactivas." });
+    }
+
+    return res.status(200).json({
+      message: "sedes inactivas obtenidas exitosamente",
+      sedes,
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error al obtener los sedes inactivas" });
+  }
+};
 
 
 
@@ -134,6 +195,7 @@ const obtenerSedesPorGeriatrico = async (req, res) => {
     return res.status(500).json({ message: "Error al obtener las sedes" });
   }
 };
+
 
 
 const obtenerDetalleSede = async (req, res) => {
@@ -252,8 +314,6 @@ const actualizarSede = async (req, res) => {
 
 
 
-
-
 // me carga los datos de la sede/geriatrico al q pertenezco en mi rol seleccionado antes
 const obtenerHomeSede = async (req, res) => {
   try {
@@ -337,6 +397,110 @@ const obtenerHomeSede = async (req, res) => {
 
 
 
+// Se inactiva una sede (super admin)
+const inactivarSede = async (req, res) => {
+  try {
+    const { se_id } = req.params;
+
+    // Buscar la sede por ID con la relación al geriátrico
+    const sede = await sedeModel.findByPk(se_id, {
+      include: {
+        model: geriatricoModel,
+        as: "geriatrico",
+        attributes: ["ge_nombre", "ge_activo"],
+      }
+    });
+
+    if (!sede) {
+      return res.status(404).json({ message: "Sede no encontrada" });
+    }
+
+    // Verificar si la sede ya está inactiva
+    if (!sede.se_activo) {
+      return res.status(400).json({ message: "La sede ya está inactiva" });
+    }
+
+    // Inactivar la sede
+    sede.se_activo = false;
+    await sede.save();
+
+    return res.status(200).json({
+      message: `Sede vinculada al geriátrico: "${sede.geriatrico.ge_nombre}" ha sido inactivada correctamente`,
+      sede: {
+        se_nombre: sede.se_nombre,
+        se_telefono: sede.se_telefono,
+        // geriatrico: sede.geriatrico.ge_nombre, 
+      },
+    });
+  } catch (error) {
+    console.error("Error al inactivar sede:", error);
+    return res.status(500).json({ message: "Error al inactivar la sede" });
+  }
+};
 
 
-module.exports = { crearSede, obtenerSedes, obtenerSedesPorGeriatrico, obtenerDetalleSede,  actualizarSede, obtenerHomeSede};
+
+// Se reactiva una sede (super admin)
+const reactivarSede = async (req, res) => {
+  try {
+    const { se_id } = req.params;
+
+    // Buscar la sede por ID con la relación al geriátrico
+    const sede = await sedeModel.findByPk(se_id, {
+      include: {
+        model: geriatricoModel,
+        as: "geriatrico",
+        attributes: ["ge_nombre", "ge_activo"],
+      }
+    });
+
+    if (!sede) {
+      return res.status(404).json({ message: "Sede no encontrada" });
+    }
+
+    // Verificar si la sede ya está activa
+    if (sede.se_activo) {
+      return res.status(400).json({ message: "La sede ya está activa" });
+    }
+
+    // Reactivar la sede
+    await sede.update({ se_activo: true });
+
+    // Mensaje de advertencia si el geriátrico está inactivo
+    let message = `Sede vinculada al geriátrico: "${sede.geriatrico.ge_nombre}" ha sido activada correctamente`
+
+    if (!sede.geriatrico.ge_activo) {
+      message += `
+        - Advertencia: El geriátrico "${sede.geriatrico.ge_nombre}" al que pertenece esta sede está inactivo.
+        - Aun así, la sede ha sido activada individualmente.
+      `;
+    }
+
+    return res.status(200).json({
+      message: message,
+      sede: {
+        se_nombre: sede.se_nombre,
+        se_telefono: sede.se_telefono,
+        // geriatrico: sede.geriatrico.ge_nombre, 
+      },
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error al reactivar la sede" });
+  }
+};
+
+
+
+module.exports = { 
+  crearSede, 
+  obtenerSedes, 
+  obtenerSedesActivas,
+  obtenerSedesInactivas,
+  obtenerSedesPorGeriatrico, 
+  obtenerDetalleSede,  
+  actualizarSede, 
+  obtenerHomeSede,
+  inactivarSede,
+  reactivarSede
+};

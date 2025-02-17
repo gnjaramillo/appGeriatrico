@@ -1,4 +1,4 @@
-const { check } = require('express-validator');
+const { check, param } = require('express-validator');
 const validateResults = require('../utils/handleValidator');
 
 const validatorCrearGeriatrico = [
@@ -13,7 +13,7 @@ const validatorCrearGeriatrico = [
     },
 ];
 
-const validatorDetalleGeriatrico = [
+const validatorIdGeriatrico = [
     check('ge_id').exists().isInt().withMessage('El ID del geriátrico debe ser un número válido'),
     (req, res, next) => {
         return validateResults(req, res, next);
@@ -34,4 +34,12 @@ const validatorActualizarGeriatrico = [
 
 
 
-module.exports = { validatorCrearGeriatrico, validatorDetalleGeriatrico, validatorActualizarGeriatrico };
+
+
+
+
+module.exports = { 
+    validatorCrearGeriatrico, 
+    validatorIdGeriatrico, 
+    validatorActualizarGeriatrico 
+};

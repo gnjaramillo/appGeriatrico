@@ -45,10 +45,16 @@ const geriatricoModel  = sequelize.define('Geriatricos', {
     ge_color_terciario: { 
         type: DataTypes.STRING, 
         allowNull: false 
-    }
+    },
+    ge_activo: { 
+        type: DataTypes.BOOLEAN, 
+        defaultValue: true 
+    } // Soft Delete
+
   }, 
   
-  { tableName: 'geriatricos', timestamps: false });
+  { tableName: 'geriatricos', 
+    timestamps: false });
 
 
 // un geriatrico puede tener muchas sedes

@@ -34,7 +34,11 @@ const sedeModel = sequelize.define('Sedes', {
         },
         onDelete: 'CASCADE',
         onUpdate: 'CASCADE'
-    }
+    },
+    se_activo: { 
+        type: DataTypes.BOOLEAN, 
+        defaultValue: true 
+    } 
     
     
 

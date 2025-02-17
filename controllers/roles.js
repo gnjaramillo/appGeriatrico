@@ -100,7 +100,6 @@ const obtenerRolesAsignados = async (req, res) => {
 
       // const per_id = req.user.id;
 
-
       const { id } = req.user; // Se obtiene desde el token del middleware
 
       // Obtener asignaciones de roles en sedes
@@ -108,7 +107,9 @@ const obtenerRolesAsignados = async (req, res) => {
           where: { per_id: id },
           include: [
               { model: rolModel, as: 'rol', attributes: ['rol_id', 'rol_nombre'] },
-              { model: sedeModel, as: 'sede', attributes: ['se_id', 'se_nombre'] },
+              { model: sedeModel, as: 'sede', attributes: ['se_id', 'se_nombre'], 
+                where: { se_activo: true }  // Filtrar solo sedes activas 
+              },
           ],
       });
 
@@ -117,7 +118,9 @@ const obtenerRolesAsignados = async (req, res) => {
           where: { per_id: id },
           include: [
               { model: rolModel, as: 'rol', attributes: ['rol_id', 'rol_nombre'] },
-              { model: geriatricoModel, as: 'geriatrico', attributes: ['ge_id', 'ge_nombre'] },
+              { model: geriatricoModel, as: 'geriatrico', attributes: ['ge_id', 'ge_nombre'],
+                where: { ge_activo: true } // Filtrar solo geriátricos activos
+              },
           ],
       });
 

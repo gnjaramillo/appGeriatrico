@@ -13,7 +13,7 @@ const validatorCrearSede = [
 
 
 
-const validatorDetalleSede = [
+const validatorIdSede = [
     check('se_id').exists().isInt().withMessage('El ID de la sede debe ser un número válido'),
     (req, res, next) => {
         return validateResults(req, res, next);
@@ -32,4 +32,4 @@ const validatorActualizarSede = [
 ];
 
 
-module.exports = { validatorCrearSede, validatorDetalleSede, validatorActualizarSede };
+module.exports = { validatorCrearSede, validatorIdSede, validatorActualizarSede };

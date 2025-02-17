@@ -4,7 +4,7 @@ const { subirImagenACloudinary } = require('../utils/handleCloudinary');
 const cloudinary = require('../config/cloudinary'); 
 
 
-
+// (super admin)
 const crearGeriatrico = async (req, res) => {
     try {
 
@@ -51,6 +51,7 @@ const crearGeriatrico = async (req, res) => {
 
 
 
+// obtener todos los geriatricos
 const obtenerGeriatricos = async (req, res) => {
   try {
     // Obtener todos los geriátricos de la base de datos
@@ -75,6 +76,65 @@ const obtenerGeriatricos = async (req, res) => {
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Error al obtener los geriátricos" });
+  }
+};
+
+
+
+// Obtener los geriátricos activos junto con sus sedes (super admin)
+const obtenerGeriatricosActivos = async (req, res) => {
+  try {
+    const geriatricos = await geriatricoModel.findAll({
+      where: { ge_activo: true }, // Filtrar solo los activos
+      include: [
+        {
+          model: sedeModel, // Incluir las sedes
+          as: "sedes",
+        },
+      ],
+    });
+
+    if (geriatricos.length === 0) {
+      return res.status(404).json({ message: "No hay geriátricos activos." });
+    }
+
+    return res.status(200).json({
+      message: "Geriátricos activos obtenidos exitosamente",
+      geriatricos,
+    });
+  } catch (error) {
+    console.error("Error al obtener geriátricos activos:", error);
+    return res.status(500).json({ message: "Error al obtener los geriátricos activos" });
+  }
+};
+
+
+
+// Obtener los geriátricos inactivos junto con sus sedes (super admin)
+const obtenerGeriatricosInactivos = async (req, res) => {
+  try {
+      
+      const geriatricosInactivos = await geriatricoModel.findAll({
+          where: { ge_activo: false }, // Filtrar solo inactivos
+          attributes: ['ge_id', 'ge_nombre'],
+          include: [
+              {
+                  model: sedeModel, 
+                  as: 'sedes', // Alias definido en la relación
+                  attributes: ['se_id', 'se_nombre', 'se_activo'] 
+              }
+          ]
+      });
+
+      if (geriatricosInactivos.length === 0) {
+          return res.status(404).json({ message: 'No hay geriátricos inactivos' });
+      }
+
+      return res.status(200).json({ geriatricosInactivos });
+
+  } catch (error) {
+      console.error('Error al obtener geriátricos inactivos:', error);
+      return res.status(500).json({ message: 'Error al obtener geriátricos inactivos' });
   }
 };
 
@@ -115,6 +175,7 @@ const obtenerDetalleGeriatrico = async (req, res) => {
 
 
 
+// (super admin)
 const actualizarGeriatrico = async (req, res) => {
   try {
     const { ge_id } = req.params;
@@ -188,6 +249,7 @@ const actualizarGeriatrico = async (req, res) => {
     return res.status(500).json({ message: "Error al actualizar el geriátrico" });
   }
 };
+
 
 
 // me carga los datos del geriatrico al q pertenezco (diseño)
@@ -300,7 +362,93 @@ const obtenerColoresGeriatrico = async (req, res) => {
 
     
 
+// se inactiva un geriatrico y todas sus sedes vinculadas (super admin)
+const inactivarGeriatrico = async (req, res) => {
+  try {
+    const { ge_id } = req.params;
+
+    // Buscar el geriátrico
+    const geriatrico = await geriatricoModel.findByPk(ge_id);
+    if (!geriatrico) {
+      return res.status(404).json({ message: "Geriátrico no encontrado" });
+    }
+
+    // Verificar si el geriátrico ya está inactivo
+    if (!geriatrico.ge_activo) {
+      return res.status(400).json({ message: "El geriátrico ya está inactivo" });
+    }
+
+    // Inactivar el geriátrico
+    geriatrico.ge_activo = false;
+    await geriatrico.save();
+
+    // Inactivar todas sus sedes asociadas
+    await sedeModel.update({ se_activo: false }, { where: { ge_id } });
+
+    return res.status(200).json({
+      message: "Geriátrico y sus sedes inactivados correctamente",
+      geriatrico: {
+        ge_nombre: geriatrico.ge_nombre,
+        ge_nit: geriatrico.ge_nit
+      }
+    });
+  } catch (error) {
+    console.error("Error al inactivar geriátrico:", error);
+    return res.status(500).json({ message: "Error al inactivar el geriátrico" });
+  }
+};
 
 
 
-module.exports = { crearGeriatrico, obtenerGeriatricos, obtenerDetalleGeriatrico, actualizarGeriatrico, homeMiGeriatrico, obtenerColoresGeriatrico};
+// se reactiva un geriatrico y todas sus sedes vinculadas (super admin)
+const reactivarGeriatrico = async (req, res) => {
+  try {
+    const { ge_id } = req.params;
+
+    // Buscar el geriátrico por ID
+    const geriatrico = await geriatricoModel.findByPk(ge_id);
+    if (!geriatrico) {
+      return res.status(404).json({ message: "Geriátrico no encontrado" });
+    }
+
+    // Verificar si el geriátrico ya está activo
+    if (geriatrico.ge_activo) {
+      return res.status(400).json({ message: "El geriátrico ya está activo" });
+    }
+
+    // Reactivar el geriátrico
+    await geriatrico.update({ ge_activo: true });
+
+    // Reactivar todas las sedes asociadas a ese geriátrico
+    await sedeModel.update({ se_activo: true }, { where: { ge_id } });
+
+    return res.status(200).json({
+      message: "Geriátrico y sus sedes activados correctamente",
+      geriatrico: {
+        ge_nombre: geriatrico.ge_nombre,
+        ge_nit: geriatrico.ge_nit
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Error al reactivar el geriátrico y sus sedes" });
+  }
+};
+
+
+
+
+
+
+module.exports = { 
+  crearGeriatrico, 
+  obtenerGeriatricos,
+  obtenerGeriatricosActivos, 
+  obtenerGeriatricosInactivos,
+  obtenerDetalleGeriatrico, 
+  actualizarGeriatrico, 
+  homeMiGeriatrico, 
+  obtenerColoresGeriatrico, 
+  inactivarGeriatrico, 
+  reactivarGeriatrico
+};
