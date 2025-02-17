@@ -47,6 +47,11 @@ const geriatricoPersonaRolModel = sequelize.define('GeriatricoPersonasRoles', {
     type: DataTypes.DATEONLY, 
     allowNull: true, 
     defaultValue: null 
+  },
+  gp_activo: { 
+    type: DataTypes.BOOLEAN, 
+    allowNull: false, 
+    defaultValue: true 
   }
 }, 
 

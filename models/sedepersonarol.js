@@ -47,6 +47,11 @@ const sedePersonaRolModel = sequelize.define('SedePersonasRoles', {
     type: DataTypes.DATEONLY, 
     allowNull: true, 
     defaultValue: null 
+  },
+  sp_activo: { 
+    type: DataTypes.BOOLEAN, 
+    allowNull: false, 
+    defaultValue: true 
   }
 }, 
 
