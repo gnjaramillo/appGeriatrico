@@ -5,56 +5,7 @@ const cloudinary = require('../config/cloudinary');
 
 
 
-// crear sedes de cualquier geriatrico (permiso para super admin)
-const crearSedeSuperAdmin = async (req, res) => {
-  try {
-    const data = matchedData(req);
-    const { se_nombre, se_telefono, se_direccion, cupos_totales, cupos_ocupados, ge_id } = data;
 
-    // Verificar que el usuario es SuperAdmin
-    if (!req.session.esSuperAdmin) {
-      return res.status(403).json({ message: "Acceso denegado. Solo el superadministrador puede crear sedes de cualquier geriátrico." });
-    }
-
-    // Verificar si el geriátrico existe
-    const geriatrico = await geriatricoModel.findByPk(ge_id);
-    if (!geriatrico) {
-      return res.status(400).json({ message: "El geriátrico con el ID proporcionado no existe." });
-    }
-
-    // Validar cupos
-    if (cupos_ocupados > cupos_totales) {
-      return res.status(400).json({ message: "Los cupos ocupados no pueden superar los cupos totales." });
-    }
-
-    // Foto obligatoria
-    if (!req.file) {
-      return res.status(400).json({ message: "La foto de la sede es obligatoria." });
-    }
-
-    // Subir imagen
-    const result = await subirImagenACloudinary(req.file, "sedes");
-
-    // Crear sede
-    const nuevaSede = await sedeModel.create({
-      se_foto: result.secure_url,
-      se_nombre,
-      se_telefono,
-      se_direccion,
-      cupos_totales,
-      cupos_ocupados,
-      ge_id, // SuperAdmin puede vincularlo a cualquier geriátrico
-    });
-
-    return res.status(201).json({
-      message: `Sede creada en el geriátrico "${geriatrico.ge_nombre}" exitosamente`,
-      sede: nuevaSede,
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Error al crear la sede" });
-  }
-};
 
 
 
@@ -116,7 +67,7 @@ const crearSede = async (req, res) => {
 };
 
 
-// sedes visibles para cada admin de su geriatrico
+// todas las sedes visibles 
 const obtenerSedes = async (req, res) => {
   try {
     // Obtener todas las sedes de la base de datos
@@ -146,7 +97,9 @@ const obtenerSedes = async (req, res) => {
 };
 
 
-// obtener sedes de todos los geriatricos (vista super admin)
+
+
+// obtener sedes del geriatrico q administro (vista admin geriatrico)
 const obtenerSedesPorGeriatrico = async (req, res) => {
   try {
     // Obtener el ID del geriátrico desde la sesión
@@ -298,69 +251,14 @@ const actualizarSede = async (req, res) => {
 };
 
 
-// me carga los datos del geriatrico al q pertenezco
-/* const obtenerHomeSede = async (req, res) => {
-  try {
-      const { se_id } = req.session; 
-      const rol_nombre = req.session.rol_nombre; 
-
-      if (!se_id) {
-          return res.status(400).json({ message: "No se ha seleccionado una sede." });
-      }
-
-      // Obtener datos de la sede junto con el geriátrico al que pertenece
-      const sede = await sedeModel.findOne({
-          where: { se_id },
-          attributes: ['se_id', 'se_nombre', 'se_foto', 'se_telefono', 'se_direccion', 'cupos_totales', 'cupos_ocupados', 'ge_id'],
-          include: [
-              {
-                  model: geriatricoModel,
-                  as: 'geriatrico',
-                  attributes: ['ge_id', 'ge_nombre', 'ge_logo', 'ge_color_principal', 'ge_color_secundario', 'ge_color_terciario']
-              }
-          ]
-      });
-
-      if (!sede) {
-          return res.status(404).json({ message: "No se encontró la sede." });
-      }
-
-      return res.status(200).json({
-          message: "Información de la sede obtenida correctamente",
-          sede: {
-              se_id: sede.se_id,
-              se_nombre: sede.se_nombre,
-              se_foto: sede.se_foto,
-              se_telefono: sede.se_telefono,
-              se_direccion: sede.se_direccion,
-              cupos_totales: sede.cupos_totales,
-              cupos_ocupados: sede.cupos_ocupados
-          },
-          geriatrico: {
-              ge_id: sede.geriatrico.ge_id,
-              ge_nombre: sede.geriatrico.ge_nombre,
-              ge_logo: sede.geriatrico.ge_logo,
-              colores: {
-                  principal: sede.geriatrico.ge_color_principal,
-                  secundario: sede.geriatrico.ge_color_secundario,
-                  terciario: sede.geriatrico.ge_color_terciario
-              }
-          },
-          rol: rol_nombre // Se obtiene directamente desde la sesión
-      });
-
-  } catch (error) {
-      console.error('Error al obtener el home de la sede:', error);
-      return res.status(500).json({ message: "Error al obtener la información de la sede." });
-  }
-}; */
 
 
 
+// me carga los datos de la sede/geriatrico al q pertenezco en mi rol seleccionado antes
 const obtenerHomeSede = async (req, res) => {
   try {
     
-      const { se_id, per_id, rol_id } = req.session; // Datos guardados en sesión
+      const { se_id, per_id, rol_id } = req.session; // Datos guardados en sesión con mi rol escogido
       const rol_nombre = req.session.rol_nombre; 
 
       if (!se_id) {
@@ -441,4 +339,4 @@ const obtenerHomeSede = async (req, res) => {
 
 
 
-module.exports = { crearSede, crearSedeSuperAdmin,  obtenerSedes, obtenerSedesPorGeriatrico, obtenerDetalleSede,  actualizarSede, obtenerHomeSede};
+module.exports = { crearSede, obtenerSedes, obtenerSedesPorGeriatrico, obtenerDetalleSede,  actualizarSede, obtenerHomeSede};

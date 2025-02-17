@@ -3,15 +3,24 @@ const { DataTypes } = require('sequelize');
 
 
 
-
-
 const rolModel = sequelize.define('Roles', {
     rol_id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-    rol_nombre: { type: DataTypes.STRING, allowNull: false, unique: true },
+    rol_nombre: { 
+        type: DataTypes.STRING, 
+        allowNull: false, 
+        unique: true,
+        set(value) {
+            // Convertir a mayúscula inicial cada palabra
+            this.setDataValue('rol_nombre', value.toLowerCase().replace(/\b\w/g, char => char.toUpperCase()));
+        }
+    },
     rol_descripcion: { type: DataTypes.STRING }
 }, 
+{ 
+    tableName: 'roles', 
+    timestamps: false 
+});
 
-{ tableName: 'roles', timestamps: false });
 
 
 // Relaciones

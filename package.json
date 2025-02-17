@@ -38,6 +38,7 @@
     "@jest/transform": "^29.7.0",
     "cross-env": "^7.0.3",
     "jest": "^29.7.0",
+    "nodemon": "^3.1.9",
     "supertest": "^7.0.0"
   }
 }

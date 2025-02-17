@@ -6,7 +6,16 @@ const { DataTypes } = require('sequelize');
 
 const enfermeraModel = sequelize.define('Enfermeras', {
     enf_id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-    per_id: {  type: DataTypes.INTEGER, allowNull: false  },
+    per_id: {  
+        type: DataTypes.INTEGER, 
+        allowNull: false,
+        references: {
+            model: 'personas', // Nombre de la tabla en la BD
+            key: 'per_id'
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
+    },
     enf_codigo: { type: DataTypes.STRING(50), allowNull: false, unique: true },
 }, 
 { tableName: 'enfermeras', timestamps: false });
@@ -20,12 +29,8 @@ enfermeraModel.associate = (models) => {
     enfermeraModel.belongsTo(models.personaModel, { 
         foreignKey: 'per_id',
         as: 'persona' 
-    });
-    
-    /* enfermeraModel.belongsTo(models.personaModel, { 
-    foreignKey: 'per_id', 
-    as: 'persona' }); */
-
+    });  
+   
 
 //Cada enfermera puede tener varios turnos asignados.
     enfermeraModel.hasMany(models.turnoModel, { 

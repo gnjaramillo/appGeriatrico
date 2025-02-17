@@ -9,7 +9,7 @@ const cuidadoEnfermeriaModel = sequelize.define('CuidadosEnfermeria', {
     cue_fecha_fin: { type: DataTypes.DATEONLY, allowNull: false },
 
     // Campos de cuidados específicos
-    cue_baño: { type: DataTypes.ENUM('CAMA', 'DUCHA'), allowNull: false },
+    cue_bano: { type: DataTypes.ENUM('CAMA', 'DUCHA'), allowNull: false },
     cue_pa_m: { type: DataTypes.ENUM('S', 'N'), allowNull: false },
     cue_pa_t: { type: DataTypes.ENUM('S', 'N'), allowNull: false },
     cue_pa_n: { type: DataTypes.ENUM('S', 'N'), allowNull: false },

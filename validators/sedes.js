@@ -11,16 +11,6 @@ const validatorCrearSede = [
     (req, res, next) => validateResults(req, res, next),
 ];
 
-const validatorCrearSedeSuperAdmin = [
-    check('se_nombre').exists().notEmpty().isLength({ min: 3, max: 255 }).trim().customSanitizer((value) => value.toLowerCase()), 
-    check('se_telefono').exists().notEmpty().isLength({ min: 7, max: 30 }),
-    check('se_direccion').exists().notEmpty().isLength({ min: 5, max: 255 }),
-    check('cupos_totales').exists().notEmpty().isInt({ min: 1 }).withMessage('Debe ser un número entero mayor a 0'),
-    check('cupos_ocupados').exists().notEmpty().isInt({ min: 0 }).withMessage('Debe ser un número entero mayor o igual a 0'),
-    check('ge_id').exists().notEmpty().isInt().withMessage('Debe ser un ID de geriátrico válido'),
-    (req, res, next) => validateResults(req, res, next),
-];
-
 
 
 const validatorDetalleSede = [
@@ -42,4 +32,4 @@ const validatorActualizarSede = [
 ];
 
 
-module.exports = { validatorCrearSede, validatorCrearSedeSuperAdmin, validatorDetalleSede, validatorActualizarSede };
+module.exports = { validatorCrearSede, validatorDetalleSede, validatorActualizarSede };

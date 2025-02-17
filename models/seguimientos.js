@@ -13,19 +13,40 @@ const seguimientoModel = sequelize.define('seguimientos', {
     },
     pac_id: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: false,
+        references: {
+            model: 'pacientes', // Nombre exacto de la tabla en la BD
+            key: 'pac_id'
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
     },
     enf_id: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: false,
+        references: {
+            model: 'enfermeras',
+            key: 'enf_id'
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
     },
     cue_id: {
         type: DataTypes.INTEGER,
-        allowNull: false
+        allowNull: false,
+        references: {
+            model: 'cuidados_enfermeria',
+            key: 'cue_id'
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
     },
     seg_pa: {
-        type: DataTypes.DECIMAL(5,2),
-        allowNull: true
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+            is: /^\d{2,3}\/\d{2,3}$/  // Validación para asegurarse de que sea algo como "120/80"
+        }
     },
     seg_talla: {
         type: DataTypes.DECIMAL(5,2),

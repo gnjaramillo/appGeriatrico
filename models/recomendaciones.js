@@ -57,7 +57,7 @@ const recomendacionModel = sequelize.define('recomendaciones', {
         type: DataTypes.ENUM('S', 'N'), 
         allowNull: false 
     },
-    otras_recomendaciones: { 
+    rec_otras: { 
         type: DataTypes.TEXT, 
         defaultValue: null 
     }

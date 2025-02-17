@@ -111,7 +111,7 @@ const asignarRolesSede = async (req, res) => {
             return res.status(403).json({ message: 'No se ha seleccionado una sede.' });
         }
 
-        const ROLES_PERMITIDOS = [4, 5, 6, 7]; // paciente, enfermeros, acuediente, colaborador
+        const ROLES_PERMITIDOS = [4, 5, 6, 7]; // paciente, enfermeros, acudiente, colaborador
 
         if (!ROLES_PERMITIDOS.includes(rol_id)) {
             return res.status(403).json({ message: 'Rol no permitido para asignar en esta sede.' });

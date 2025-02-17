@@ -26,7 +26,11 @@ const pacienteModel = sequelize.define('pacientes', {
         type: DataTypes.ENUM('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'), 
         allowNull: false 
     },
-    pac_talla_camisa: { type: DataTypes.STRING(10), allowNull: false },
+    pac_talla_camisa: { 
+        type: DataTypes.ENUM('XS', 'S', 'M', 'L', 'XL', 'XXL'), 
+        allowNull: false 
+    },
+    
     pac_talla_pantalon: { type: DataTypes.STRING(10), allowNull: false },
 }, 
 

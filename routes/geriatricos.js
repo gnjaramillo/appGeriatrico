@@ -9,7 +9,7 @@ const {validatorCrearGeriatrico, validatorDetalleGeriatrico, validatorActualizar
 const upload = require('../middleware/multer');
 
 
-
+// crear geriatrico lo hace el super admin
 router.post('/', sessionMiddleware, authMiddleware,  checkRol([1]), upload.single('ge_logo'), validatorCrearGeriatrico, crearGeriatrico);
 router.get('/', sessionMiddleware, authMiddleware,  checkRol([1]), obtenerGeriatricos);
 router.get('/homeGeriatrico', sessionMiddleware, authMiddleware,  checkRol([ 2, 3, 4, 5, 6]), homeMiGeriatrico);

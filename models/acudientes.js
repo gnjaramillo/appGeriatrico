@@ -11,10 +11,24 @@ const acudienteModel = sequelize.define('acudientes', {
       pac_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
+        references:{
+          model: 'pacientes',
+          key: 'pac_id'
+
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
       },
       per_id: {
         type: DataTypes.INTEGER,
         allowNull: false,  // Clave foránea a la tabla personas
+        references:{
+          model: 'personas',
+          key: 'per_id'
+
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
       },
       acu_parentesco: {
         type: DataTypes.STRING,

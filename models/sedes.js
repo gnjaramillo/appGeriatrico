@@ -25,7 +25,17 @@ const sedeModel = sequelize.define('Sedes', {
     se_direccion: { type: DataTypes.STRING, allowNull: false },
     cupos_totales: { type: DataTypes.INTEGER, allowNull: false },
     cupos_ocupados: { type: DataTypes.INTEGER, allowNull: false },
-    ge_id: { type: DataTypes.INTEGER, allowNull: false }
+    ge_id: { 
+        type: DataTypes.INTEGER, 
+        allowNull: false,
+        references: {
+            model: 'geriatricos', // Debe coincidir con el nombre de la tabla en la DB
+            key: 'ge_id'
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
+    }
+    
     
 
 }, { tableName: 'sedes', timestamps: false });

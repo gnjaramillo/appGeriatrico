@@ -8,7 +8,7 @@ const {validatorCrearRol, validatorDetalleRol, validatorActualizarRol, validarRo
 
 
 
-router.post('/',  validatorCrearRol, crearRol);
+router.post('/', sessionMiddleware, authMiddleware, checkRol([1]), validatorCrearRol, crearRol);
 router.get('/', obtenerRoles);
 router.get('/rolesAsignados', sessionMiddleware, authMiddleware,  obtenerRolesAsignados);
 router.post('/rolSeleccionado', sessionMiddleware, authMiddleware, validarRolSeleccionado,  seleccionarRol);
