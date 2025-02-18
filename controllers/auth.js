@@ -121,6 +121,7 @@ const loginPersona = async (req, res) => {
     req.session.rol_id = esSuperAdmin ? 1 : null; 
     req.session.esSuperAdmin = !!esSuperAdmin; 
     req.session.ge_id = esSuperAdmin ? 0 : null;
+    
     // guardar la sesión
     req.session.save((err) => {
       if (err) {

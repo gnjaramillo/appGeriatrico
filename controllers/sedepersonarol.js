@@ -11,13 +11,19 @@ const jwt = require('jsonwebtoken');
 
 // asignar roles administrativos dentro de una sede (lo hace el admin geriatrico)
 // ID de roles válidos para sedes
-const ROLES_ADMINISTRATIVOS_SEDE = [3]; // // por ahora rol id 3: "Administrador Sede" , se pueden añadir mas roles
+const ROLES_ADMINISTRATIVOS_SEDE = [3]; // por ahora rol id 3: "Administrador Sede" , se pueden añadir mas roles
 const ROLES_UNICOS_SEDE = [3]; // Definir explícitamente qué roles son únicos , solo 1 admin por sede?? 
 
 const asignarRolAdminSede = async (req, res) => {
     try {
         const data = matchedData(req); // Obtén datos validados
         const { per_id, se_id, rol_id, sp_fecha_inicio, sp_fecha_fin } = data;
+
+        // Recuperar el geriátrico al que pertenece el administrador desde la sesión
+        const ge_id_sesion = req.session.ge_id;
+        if (!ge_id_sesion) {
+            return res.status(403).json({ message: 'No tienes un geriátrico asignado en la sesión.' });
+        }
 
         // Validar que el rol solicitado sea un rol válido para sedes
         if (!ROLES_ADMINISTRATIVOS_SEDE.includes(rol_id)) {
@@ -30,10 +36,14 @@ const asignarRolAdminSede = async (req, res) => {
             return res.status(404).json({ message: 'Persona no encontrada.' });
         }
 
-        // Verificar si la sede existe
-        const sede = await sedeModel.findOne({ where: { se_id } });
-        if (!sede) {
-            return res.status(404).json({ message: 'Sede no encontrada.' });
+        // Verificar si la sede existe y pertenece al geriátrico de la sesión
+         const sede = await sedeModel.findOne({ where: { se_id, ge_id: ge_id_sesion } });
+         if (!sede) {
+             return res.status(403).json({ message: 'No tienes permiso para asignar roles en esta sede. Esta sede no pertenece al geriatrico a tu cargo' });
+         }
+
+        if (!sede.se_activo) {
+            return res.status(400).json({ message: 'No se pueden asignar roles en una sede inactiva.' });
         }
 
         // **Validar si el rol es único por sede**
@@ -98,7 +108,7 @@ const asignarRolAdminSede = async (req, res) => {
 
 // roles dentro de la sede (asignados por el admin sede)
 // ROLES_NO_PERMITIDOS = [1, 2, 3]; // Super Administrador, Admin Geriátrico, Admin Sede
-
+// ROLES_PERMITIDOS = [4, 5, 6, 7]; // paciente, enfermeros, acudiente, colaborador
 const asignarRolesSede = async (req, res) => {
     const t = await sequelize.transaction(); // Iniciar transacción
 
@@ -107,8 +117,20 @@ const asignarRolesSede = async (req, res) => {
         const { per_id, rol_id, sp_fecha_inicio, sp_fecha_fin } = data;
         const se_id = req.session.se_id;
 
+        // Verificar si la sede está activa
+        const sede = await sedeModel.findOne({
+            where: { se_id },
+            attributes: ['se_id', 'se_activo', 'cupos_totales', 'cupos_ocupados'],
+            transaction: t,
+            lock: t.LOCK.UPDATE,
+        });
+
         if (!se_id) {
             return res.status(403).json({ message: 'No se ha seleccionado una sede.' });
+        }
+
+        if (!sede.se_activo) {
+            return res.status(400).json({ message: 'No se pueden asignar roles en una sede inactiva.' });
         }
 
         const ROLES_PERMITIDOS = [4, 5, 6, 7]; // paciente, enfermeros, acudiente, colaborador
@@ -142,7 +164,7 @@ const asignarRolesSede = async (req, res) => {
         let cuposOcupados = null;
 
         if (rol_id === 4) {
-            // 🔥 Aquí aseguramos que `sede` exista antes de actualizarla
+            // 🔥 Verificar que `sede` exista antes de actualizarla
             const sede = await sedeModel.findOne({
                 where: { se_id },
                 attributes: ['se_id', 'cupos_totales', 'cupos_ocupados'],
@@ -216,6 +238,7 @@ const asignarRolesSede = async (req, res) => {
         });
     }
 };
+
 
 
 // ver  personas con roles dentro de un geriatrico especifico, ruta disponible para administradores de geriatrico y/o sede

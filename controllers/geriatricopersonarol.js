@@ -33,6 +33,11 @@ const asignarRolGeriatrico = async (req, res) => {
             return res.status(404).json({ message: 'Geriátrico no encontrado.' });
         }
 
+        // Verificar si el geriátrico está activo
+        if (!geriatrico.ge_activo) {
+            return res.status(400).json({ message: 'El geriátrico está inactivo. Actualmente, no se pueden asignar roles.' });
+        }
+
         // Verificar si el rol ya está asignado a la persona en este geriátrico
         const rolExistente = await geriatricoPersonaRolModel.findOne({
             where: {

@@ -7,6 +7,28 @@ const validarRolGeriatrico = [
     check('rol_id').isInt({ min: 1 }).exists().notEmpty().withMessage('El ID del rol (rol_id) debe ser un número entero positivo'),
     check('gp_fecha_inicio').isDate().exists().notEmpty().withMessage('La fecha de inicio (sp_fecha_inicio) debe ser una fecha válida')
     .custom((value) => {
+        const now = new Date();
+        const localToday = new Date(now.toLocaleDateString("en-CA", { timeZone: "America/Bogota" })); 
+        const inputDate = new Date(value);
+    
+        // Formatear ambas fechas a 'YYYY-MM-DD'
+        const formattedToday = localToday.toISOString().split('T')[0];
+        const formattedInputDate = inputDate.toISOString().split('T')[0];
+    
+        console.log("Fecha actual en Colombia:", formattedToday);
+        console.log("Fecha ingresada:", formattedInputDate);
+    
+        if (formattedInputDate < formattedToday) {
+            throw new Error('La fecha de inicio no puede ser una fecha pasada');
+        }
+        return true;
+    }),
+    
+    
+    
+    
+    
+    /* .custom((value) => {
         const today = new Date();
         const todayFormatted = today.toISOString().split('T')[0]; // Convertir a YYYY-MM-DD
         const inputFormatted = new Date(value).toISOString().split('T')[0]; // Normalizar input
@@ -15,21 +37,10 @@ const validarRolGeriatrico = [
             throw new Error('La fecha de inicio no puede ser una fecha pasada');
         }
         return true;
-    }),
+    }), */
 
     
-/*     check('gp_fecha_inicio').isDate().exists().notEmpty().withMessage('La fecha de inicio (sp_fecha_inicio) debe ser una fecha válida')
-    .custom((value) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0); // Normalizar la fecha de hoy
-        const inputDate = new Date(value);
 
-        // Comparar si la fecha es anterior a hoy
-        if (inputDate < today) {
-            throw new Error('La fecha de inicio no puede ser una fecha pasada');
-        }
-        return true;
-    }),   */
     check('gp_fecha_fin')
         .optional({ checkFalsy: true })
         .isDate()

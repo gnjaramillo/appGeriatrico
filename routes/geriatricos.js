@@ -28,7 +28,7 @@ const upload = require('../middleware/multer');
 router.post('/', sessionMiddleware, authMiddleware,  checkRol([1]), upload.single('ge_logo'), validatorCrearGeriatrico, crearGeriatrico);
 router.put('/inactivar/:ge_id', sessionMiddleware, authMiddleware,  checkRol([1]), validatorIdGeriatrico , inactivarGeriatrico);
 router.put('/reactivar/:ge_id', sessionMiddleware, authMiddleware,  checkRol([1]), validatorIdGeriatrico, reactivarGeriatrico);
-router.get('/', sessionMiddleware, authMiddleware,  checkRol([1]), obtenerGeriatricos);
+router.get('/',  obtenerGeriatricos);
 router.get('/activos', sessionMiddleware, authMiddleware,  checkRol([1]), obtenerGeriatricosActivos);
 router.get('/inactivos', sessionMiddleware, authMiddleware,  checkRol([1]), obtenerGeriatricosInactivos);
 router.get('/homeGeriatrico', sessionMiddleware, authMiddleware,  checkRol([ 2, 3, 4, 5, 6]), homeMiGeriatrico);
