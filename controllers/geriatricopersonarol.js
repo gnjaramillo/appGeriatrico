@@ -16,6 +16,9 @@ const asignarRolGeriatrico = async (req, res) => {
         const data = matchedData(req);
         const { per_id, ge_id, rol_id, gp_fecha_inicio, gp_fecha_fin } = data;
 
+        console.log("Datos recibidos:", data);
+
+
         // Validar que el rol solicitado sea un rol válido para geriátricos
         if (!ROLES_GERIATRICO.includes(rol_id)) {
             return res.status(400).json({ message: 'Este rol no es válido para asignar en un Geriátrico.' });

@@ -17,7 +17,8 @@ const geriatricoPersonaRolModel = sequelize.define('GeriatricoPersonasRoles', {
       key: 'ge_id'
     },
     onDelete: 'CASCADE',
-    onUpdate: 'CASCADE'
+    onUpdate: 'CASCADE',
+    unique: false  // Asegura que no haya restricción UNIQUE
   },
   per_id: { 
     type: DataTypes.INTEGER, 
@@ -27,7 +28,8 @@ const geriatricoPersonaRolModel = sequelize.define('GeriatricoPersonasRoles', {
       key: 'per_id'
     },
     onDelete: 'CASCADE',
-    onUpdate: 'CASCADE'
+    onUpdate: 'CASCADE',
+    unique: false  // Asegura que no haya restricción UNIQUE
   },
   rol_id: { 
     type: DataTypes.INTEGER, 
@@ -37,7 +39,8 @@ const geriatricoPersonaRolModel = sequelize.define('GeriatricoPersonasRoles', {
       key: 'rol_id'
     },
     onDelete: 'CASCADE',
-    onUpdate: 'CASCADE'
+    onUpdate: 'CASCADE',
+    unique: false  // Asegura que no haya restricción UNIQUE
   },
   gp_fecha_inicio: { 
     type: DataTypes.DATEONLY, 
@@ -70,3 +73,5 @@ geriatricoPersonaRolModel.associate = (models) => {
 
 
 module.exports = geriatricoPersonaRolModel;
+
+
