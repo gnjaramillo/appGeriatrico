@@ -3,23 +3,23 @@ const models = require('./models');
 
 
 // Sincroniza los modelos con la base de datos
-/* sequelize.sync({ force: false })  // `force: false` para no eliminar las tablas existentes
+sequelize.sync({ force: false })  // `force: false` para no eliminar las tablas existentes
   .then(() => {
     console.log('Tablas sincronizadas');
   })
   .catch(err => {
     console.error('Error al sincronizar las tablas:', err);
-  }); */
+  }); 
 
 
 
-sequelize.sync({ force: true })  // ❌ Esto ELIMINARÁ todas las tablas y las recreará
+/* sequelize.sync({ force: true })  // ❌ Esto ELIMINARÁ todas las tablas y las recreará
   .then(() => {
     console.log("📌 Base de datos sincronizada (Tablas eliminadas y recreadas)");
   })
   .catch(err => {
     console.error("❌ Error al sincronizar la base de datos:", err);
-  });
+  }); */
 
 
 

@@ -198,6 +198,7 @@ const obtenerSedesPorGeriatrico = async (req, res) => {
 
 
 
+// ver una sede especifica (admin geriatrico y admin sede)
 const obtenerDetalleSede = async (req, res) => {
   try {
     const { se_id } = req.params;

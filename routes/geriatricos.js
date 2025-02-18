@@ -29,7 +29,7 @@ router.post('/', sessionMiddleware, authMiddleware,  checkRol([1]), upload.singl
 router.put('/inactivar/:ge_id', sessionMiddleware, authMiddleware,  checkRol([1]), validatorIdGeriatrico , inactivarGeriatrico);
 router.put('/reactivar/:ge_id', sessionMiddleware, authMiddleware,  checkRol([1]), validatorIdGeriatrico, reactivarGeriatrico);
 router.get('/',  obtenerGeriatricos);
-router.get('/activos', sessionMiddleware, authMiddleware,  checkRol([1]), obtenerGeriatricosActivos);
+router.get('/activos', sessionMiddleware, authMiddleware,  checkRol([1, 2]), obtenerGeriatricosActivos);
 router.get('/inactivos', sessionMiddleware, authMiddleware,  checkRol([1]), obtenerGeriatricosInactivos);
 router.get('/homeGeriatrico', sessionMiddleware, authMiddleware,  checkRol([ 2, 3, 4, 5, 6]), homeMiGeriatrico);
 router.get('/colores/:ge_id', sessionMiddleware, authMiddleware,  obtenerColoresGeriatrico);
