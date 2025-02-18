@@ -60,7 +60,8 @@ const geriatricoPersonaRolModel = sequelize.define('GeriatricoPersonasRoles', {
 
 {
   tableName: 'geriatrico_persona_rol', 
-  timestamps: false 
+  timestamps: false,
+  indexes: [] // Evita que Sequelize cree índices automáticamente
 });
 
 

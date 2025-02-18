@@ -7,7 +7,7 @@ const { dbConnectMysql } = require('./config/mysql')
 const cookieParser = require('cookie-parser');
 
 // Importa la sincronización
-// require('./sync');  // Ejecuta la sincronización de modelos
+require('./sync');  // Ejecuta la sincronización de modelos
 
 
 const app = express()

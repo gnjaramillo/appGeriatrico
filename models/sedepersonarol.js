@@ -17,7 +17,9 @@ const sedePersonaRolModel = sequelize.define('SedePersonasRoles', {
       key: 'se_id'
     },
     onDelete: 'CASCADE',
-    onUpdate: 'CASCADE'
+    onUpdate: 'CASCADE',
+    unique: false  // Asegura que no haya restricción UNIQUE
+
   },
   per_id: { 
     type: DataTypes.INTEGER, 
@@ -27,7 +29,9 @@ const sedePersonaRolModel = sequelize.define('SedePersonasRoles', {
       key: 'per_id'
     },
     onDelete: 'CASCADE',
-    onUpdate: 'CASCADE'
+    onUpdate: 'CASCADE',
+    unique: false  // Asegura que no haya restricción UNIQUE
+
   },
   rol_id: { 
     type: DataTypes.INTEGER, 
@@ -37,7 +41,9 @@ const sedePersonaRolModel = sequelize.define('SedePersonasRoles', {
       key: 'rol_id'
     },
     onDelete: 'CASCADE',
-    onUpdate: 'CASCADE'
+    onUpdate: 'CASCADE',
+    unique: false  // Asegura que no haya restricción UNIQUE
+
   },
   sp_fecha_inicio: { 
     type: DataTypes.DATEONLY, 
@@ -57,7 +63,8 @@ const sedePersonaRolModel = sequelize.define('SedePersonasRoles', {
 
 {
   tableName: 'sede_personas_roles', 
-  timestamps: false 
+  timestamps: false,
+  indexes: [] // Evita que Sequelize cree índices automáticamente
 });
 
 
