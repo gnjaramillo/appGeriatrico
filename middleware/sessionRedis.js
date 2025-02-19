@@ -11,8 +11,6 @@ const redisClient = createClient({
 redisClient.on('error', (err) => console.error('Error de Redis:', err));
 redisClient.on('connect', () => console.log('Conectado a Redis con éxito'));
 
-
-
 // Conectar el cliente Redis
 redisClient.connect().catch(console.error); //  Redis v4+
 
@@ -30,6 +28,4 @@ module.exports = session({
         maxAge: 1000 * 60 * 60 * 2, // 2 horas
       }
       
-}); 
-
-
+});
