@@ -12,7 +12,6 @@ const jwt = require('jsonwebtoken');
 // asignar roles administrativos dentro de una sede (lo hace el admin geriatrico)
 // ID de roles válidos para sedes
 const ROLES_ADMINISTRATIVOS_SEDE = [3]; // por ahora rol id 3: "Administrador Sede" , se pueden añadir mas roles
-const ROLES_UNICOS_SEDE = [3]; // Definir explícitamente qué roles son únicos , solo 1 admin por sede?? 
 
 const asignarRolAdminSede = async (req, res) => {
     try {
@@ -46,25 +45,7 @@ const asignarRolAdminSede = async (req, res) => {
             return res.status(400).json({ message: 'No se pueden asignar roles en una sede inactiva.' });
         }
 
-        // **Validar si el rol es único por sede**
-        if (ROLES_UNICOS_SEDE.includes(rol_id)){ // 3: Administrador de Sede (en caso de un unico admin por sede)
-            const adminExistente = await sedePersonaRolModel.findOne({
-                where: {
-                    se_id,
-                    rol_id,
-                    [Op.or]: [
-                        { sp_fecha_fin: null },
-                        { sp_fecha_fin: { [Op.gt]: new Date() } } // Admin activo
-                    ]
-                }
-            });
-        
-            if (adminExistente) {
-                return res.status(400).json({ message: 'Esta sede ya tiene un Administrador activo asignado.' });
-            }
-        }
-        
-
+    
         // Verificar si el rol ya está asignado a la persona en esta sede
         const rolExistente = await sedePersonaRolModel.findOne({
             where: {
@@ -78,6 +59,8 @@ const asignarRolAdminSede = async (req, res) => {
             }
         });
 
+
+        
         if (rolExistente) {
             return res.status(400).json({ message: 'La persona ya tiene este rol asignado en esta Sede.' });
         }

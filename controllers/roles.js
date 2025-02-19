@@ -178,11 +178,14 @@ const seleccionarRol = async (req, res) => {
               where: { per_id: id, rol_id, se_id },
               include: [
                   { model: rolModel, as: 'rol', attributes: ['rol_nombre'] },
-                  { model: sedeModel, as: 'sede', attributes: ['se_nombre'] },
-              ],
-          });
-          tipoAsignacion = 'sede';
-      }
+                  { model: sedeModel, as: 'sede', attributes: ['se_nombre', 'ge_id'],
+                    include: [
+                    { model: geriatricoModel, as: 'geriatrico', attributes: ['ge_nombre'] }]
+              },
+          ],
+      });
+      tipoAsignacion = 'sede';
+  }
 
       // Verificar si se seleccionó un geriátrico
       if (ge_id) {
@@ -190,7 +193,7 @@ const seleccionarRol = async (req, res) => {
               where: { per_id: id, rol_id, ge_id },
               include: [
                   { model: rolModel, as: 'rol', attributes: ['rol_nombre'] },
-                  { model: geriatricoModel, as: 'geriatrico', attributes: ['ge_nombre'] },
+                  { model: geriatricoModel, as: 'geriatrico', attributes: ['ge_nombre', 'ge_id'] },
               ],
           });
           tipoAsignacion = 'geriatrico';
@@ -208,6 +211,12 @@ const seleccionarRol = async (req, res) => {
         req.session[tipoAsignacion === 'sede' ? 'se_id' : 'ge_id'] = tipoAsignacion === 'sede' ? se_id : ge_id;
         req.session.nombre = tipoAsignacion === 'sede' ? asignacion.sede.se_nombre : asignacion.geriatrico.ge_nombre;
 
+      // Si se seleccionó una sede, guardar también el ge_id del geriátrico al que pertenece
+      if (tipoAsignacion === 'sede' && asignacion.sede.ge_id) {
+        req.session.ge_id = asignacion.sede.ge_id;
+        req.session.geriatrico_nombre = asignacion.sede.geriatrico ? asignacion.sede.geriatrico.ge_nombre : null;
+    }
+
         // Guardar la sesión
         req.session.save((err) => {
             if (err) {
@@ -221,7 +230,12 @@ const seleccionarRol = async (req, res) => {
             message: 'Rol seleccionado exitosamente',
             rol: asignacion.rol.rol_nombre,
             rol_id: asignacion.rol_id,
-            ...(tipoAsignacion === 'sede' ? { sede: asignacion.sede.se_nombre, se_id: asignacion.se_id } : { geriatrico: asignacion.geriatrico.ge_nombre, ge_id: asignacion.ge_id })
+              ...(tipoAsignacion === 'sede' 
+                ? { sede: asignacion.sede.se_nombre, se_id: asignacion.se_id, ge_id: asignacion.sede.ge_id, geriatrico_nombre: asignacion.sede.geriatrico?.ge_nombre } 
+                : { geriatrico: asignacion.geriatrico.ge_nombre, ge_id: asignacion.ge_id })
+
+            
+
         });
 
   } catch (error) {

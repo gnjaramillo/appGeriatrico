@@ -74,7 +74,7 @@ const obtenerSedes = async (req, res) => {
         {
           model: geriatricoModel,
           as: "geriatrico",
-          attributes: ["ge_nombre", "ge_nit"],
+          attributes: ["ge_nombre", "ge_nit", "ge_activo"],
         },
       ],
     });
@@ -398,7 +398,7 @@ const obtenerHomeSede = async (req, res) => {
 
 
 
-// Se inactiva una sede (super admin)
+// Se inactiva una sede (super admin o admin geriatrico??)
 const inactivarSede = async (req, res) => {
   try {
     const { se_id } = req.params;
@@ -441,7 +441,7 @@ const inactivarSede = async (req, res) => {
 
 
 
-// Se reactiva una sede (super admin)
+// Se reactiva una sede (super admin admin geriatrico??)
 const reactivarSede = async (req, res) => {
   try {
     const { se_id } = req.params;

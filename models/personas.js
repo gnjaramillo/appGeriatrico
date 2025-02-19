@@ -94,6 +94,14 @@ personaModel.associate = (models) => {
         as: 'acuediente' 
     }); 
 
+
+    // Una persona puede estar en varios geriátricos a través de la tabla intermedia geriatrico_persona
+    personaModel.belongsToMany(models.geriatricoModel, {
+        through: models.geriatricoPersonaModel,  
+        foreignKey: 'per_id',
+        as: 'geriatricos'
+    });
+
 };
 
 

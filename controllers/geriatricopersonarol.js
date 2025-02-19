@@ -7,8 +7,10 @@ const jwt = require('jsonwebtoken');
 
 
 
-// ID de roles válidos para geriátricos, los asigna el super admin
+// ID de roles válidos para asignarse en geriátricos, los asigna el super admin
 const ROLES_GERIATRICO = [2]; // por ahora rol id 2: "Administrador Geriátrico" , se pueden añadir mas roles
+const ROLES_UNICOS_GERIATRICO = [2]; // solo puede haber un admin por geriátrico (id 2: Admin Geriátrico)
+
 
 // Controlador para asignar roles de geriátrico
 const asignarRolGeriatrico = async (req, res) => {
@@ -16,7 +18,7 @@ const asignarRolGeriatrico = async (req, res) => {
         const data = matchedData(req);
         const { per_id, ge_id, rol_id, gp_fecha_inicio, gp_fecha_fin } = data;
 
-        console.log("Datos recibidos:", data);
+        // console.log("Datos recibidos:", data);
 
 
         // Validar que el rol solicitado sea un rol válido para geriátricos
@@ -41,6 +43,7 @@ const asignarRolGeriatrico = async (req, res) => {
             return res.status(400).json({ message: 'El geriátrico está inactivo. Actualmente, no se pueden asignar roles.' });
         }
 
+        
         // Verificar si el rol ya está asignado a la persona en este geriátrico
         const rolExistente = await geriatricoPersonaRolModel.findOne({
             where: {
@@ -53,11 +56,29 @@ const asignarRolGeriatrico = async (req, res) => {
                 ]
             }
         });
-
+        
         if (rolExistente) {
             return res.status(400).json({ message: 'La persona ya tiene este rol asignado en este Geriátrico.' });
         }
+        
+        // **Validar si el rol es único por geriátrico**
+        if (ROLES_UNICOS_GERIATRICO.includes(rol_id)) {
+            const adminExistente = await geriatricoPersonaRolModel.findOne({
+                where: {
+                    ge_id,
+                    rol_id,
+                    [Op.or]: [
+                        { gp_fecha_fin: null },
+                        { gp_fecha_fin: { [Op.gt]: new Date() } } // Admin activo
+                    ]
+                }
+            });
 
+            if (adminExistente) {
+                return res.status(400).json({ message: 'Este geriátrico ya tiene un usuario con este rol activo.' });
+            }
+        }
+        
         // Asignar el rol a la persona en el geriátrico
         const nuevaVinculacion = await geriatricoPersonaRolModel.create({
             per_id,

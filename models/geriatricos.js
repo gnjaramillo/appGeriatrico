@@ -62,11 +62,19 @@ geriatricoModel.associate = (models) => {
     geriatricoModel.hasMany(models.sedeModel, { 
         foreignKey: 'ge_id', as: 'sedes' });
 
-// Un geriatrico puede tener muchas personas a través de geriatricoPersonaRol
+    // Un geriatrico puede tener muchas personas a través de geriatricoPersonaRol
     geriatricoModel.belongsToMany(models.personaModel, {
         through: models.geriatricoPersonaRolModel,  // Define la tabla intermedia
         foreignKey: 'ge_id',                  // Clave foránea en la tabla intermedia que hace referencia al geriatrico
         as: 'personas'                        // Alias para acceder a las personas asociadas a un geriatrico
+    });
+
+
+    // Un geriátrico puede tener muchas personas a través de la tabla intermedia geriatrico_persona
+    geriatricoModel.belongsToMany(models.personaModel, {
+        through: models.geriatricoPersonaModel,  
+        foreignKey: 'ge_id',
+        as: 'vinculados_personas'
     });
 
 };
