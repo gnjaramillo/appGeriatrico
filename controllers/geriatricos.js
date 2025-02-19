@@ -51,7 +51,7 @@ const crearGeriatrico = async (req, res) => {
 
 
 
-// obtener todos los geriatricos
+// obtener todos los geriatricos, solo de consulta, ruta sin proteger.. 
 const obtenerGeriatricos = async (req, res) => {
   try {
     // Obtener todos los geriátricos de la base de datos

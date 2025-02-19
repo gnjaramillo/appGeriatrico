@@ -65,7 +65,7 @@ const crearSede = async (req, res) => {
 
 
 
-// todas las sedes visibles 
+// todas las sedes visibles ruta sin proteccion por ahora.. 
 const obtenerSedes = async (req, res) => {
   try {
     // Obtener todas las sedes de la base de datos
@@ -96,44 +96,19 @@ const obtenerSedes = async (req, res) => {
 
 
 
-// Obtener sedes activos con el geriatrico al q pertenecen (super admin)
-const obtenerSedesActivas = async (req, res) => {
+// obtener sedes inactivas del geriatrico q administro (admin geriatrico)
+const obtenerSedesInactivasPorGeriatrico = async (req, res) => {
   try {
-    // Obtener todas las sedes de la base de datos
-    const sedes = await sedeModel.findAll({
-      where: { se_activo: true }, // Filtrar solo los activos
-      include: [
-        {
-          model: geriatricoModel,
-          as: "geriatrico",
-          attributes: ["ge_nombre", "ge_nit", "ge_activo"],
-        },
-      ],
-    });
 
-    // Verificar si existen sedes en la base de datos
-    if (sedes.length === 0) {
-      return res.status(404).json({ message: "No se han encontrado sedes." });
+    // Obtener el ID del geriátrico desde la sesión
+    const ge_id = req.session.ge_id;
+    if (!ge_id) {
+      return res.status(403).json({ message: "No se ha seleccionado un geriátrico." });
     }
 
-    return res.status(200).json({
-      message: "sedes obtenidas exitosamente",
-      sedes,
-    });
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: "Error al obtener los sedes" });
-  }
-};
-
-
-
-// obtener sedes inactivas junto con el geriatrico al q pertenecen (super admin)
-const obtenerSedesInactivas = async (req, res) => {
-  try {
-    // Obtener todas las sedes de la base de datos
+    // Obtener todas las sedes de mi geriatrico
     const sedes = await sedeModel.findAll({
-      where: { se_activo: false }, // Filtrar solo los activos
+      where: {  ge_id, se_activo: false }, // Filtrar solo los activos
       include: [
         {
           model: geriatricoModel,
@@ -161,7 +136,7 @@ const obtenerSedesInactivas = async (req, res) => {
 
 
 // obtener sedes del geriatrico q administro (vista admin geriatrico)
-const obtenerSedesPorGeriatrico = async (req, res) => {
+const obtenerSedesActivasPorGeriatrico = async (req, res) => {
   try {
     // Obtener el ID del geriátrico desde la sesión
     const ge_id = req.session.ge_id;
@@ -171,34 +146,34 @@ const obtenerSedesPorGeriatrico = async (req, res) => {
 
     // Obtener las sedes solo del geriátrico del admin en sesión
     const sedes = await sedeModel.findAll({
-      where: { ge_id }, // Filtrar por geriátrico
+      where: { ge_id , se_activo: true }, // Filtrar por geriátrico
       include: [
         {
           model: geriatricoModel,
           as: "geriatrico",
-          attributes: ["ge_nombre", "ge_nit"],
+          attributes: ["ge_nombre", "ge_nit", "ge_activo"],
         },
       ],
     });
 
     // Verificar si existen sedes en la base de datos
     if (sedes.length === 0) {
-      return res.status(404).json({ message: "No se han encontrado sedes para este geriátrico." });
+      return res.status(404).json({ message: "No se han encontrado sedes activas para este geriátrico." });
     }
 
     return res.status(200).json({
-      message: "Sedes obtenidas exitosamente",
+      message: "Sedes activas obtenidas exitosamente",
       sedes,
     });
   } catch (error) {
     console.error(error);
-    return res.status(500).json({ message: "Error al obtener las sedes" });
+    return res.status(500).json({ message: "Error al obtener las sedes activas del geriátrico" });
   }
 };
 
 
 
-// ver una sede especifica (admin geriatrico y admin sede)
+// ver una sede especifica 
 const obtenerDetalleSede = async (req, res) => {
   try {
     const { se_id } = req.params;
@@ -232,14 +207,32 @@ const obtenerDetalleSede = async (req, res) => {
 
 
 
+// admin geriatrico
 const actualizarSede = async (req, res) => {
   try {
     const { se_id } = req.params;
-    const sede = await sedeModel.findByPk(se_id);
+    const ge_id_sesion = req.session.ge_id; // ID del geriátrico en sesión
 
-    // Verificar si la sede existe
+    if (!ge_id_sesion) {
+      return res.status(403).json({ message: "No se ha seleccionado un geriátrico." });
+    }
+
+    // Buscar la sede por ID con la relación al geriátrico
+    const sede = await sedeModel.findByPk(se_id, {
+      include: {
+        model: geriatricoModel,
+        as: "geriatrico",
+        attributes: ["ge_nombre", "ge_id"],
+      }
+    });
+
     if (!sede) {
       return res.status(404).json({ message: "No se ha encontrado la sede." });
+    }
+
+    // 🔹 Validar que la sede pertenece al geriátrico del admin en sesión
+    if (sede.geriatrico.ge_id !== ge_id_sesion) {
+      return res.status(403).json({ message: "No tienes permiso para modificar esta sede." });
     }
 
     const data = matchedData(req);
@@ -262,14 +255,10 @@ const actualizarSede = async (req, res) => {
     if (cupos_ocupados) updateData.cupos_ocupados = cupos_ocupados;
 
     // Validar si el geriátrico existe antes de actualizar el ge_id
-    if (ge_id) {
-      const geriatrico = await geriatricoModel.findByPk(ge_id);
-      if (!geriatrico) {
-        return res.status(400).json({
-          message: "El geriátrico con el ID proporcionado no existe.",
-        });
-      }
-      updateData.ge_id = ge_id;
+    if (ge_id && ge_id !== ge_id_sesion) {
+      return res.status(403).json({
+        message: "No puedes asignar esta sede a otro geriátrico.",
+      });
     }
 
     // Si hay un archivo (foto), manejar la foto de Cloudinary
@@ -296,10 +285,11 @@ const actualizarSede = async (req, res) => {
     }
 
     // Actualizar los datos de la sede
-    const updated = await sedeModel.update(updateData, {
+    await sedeModel.update(updateData, {
       where: { se_id },
     });
 
+    
    // Obtener la sede actualizada
     const sedeActualizada = await sedeModel.findByPk(se_id);
 
@@ -398,22 +388,32 @@ const obtenerHomeSede = async (req, res) => {
 
 
 
-// Se inactiva una sede (super admin o admin geriatrico??)
+// Se inactiva una sede (admin geriatrico)
 const inactivarSede = async (req, res) => {
   try {
     const { se_id } = req.params;
+    const ge_id_sesion = req.session.ge_id; // ID del geriátrico del admin en sesión
+
+    if (!ge_id_sesion) {
+      return res.status(403).json({ message: "No se ha seleccionado un geriátrico." });
+    }
 
     // Buscar la sede por ID con la relación al geriátrico
     const sede = await sedeModel.findByPk(se_id, {
       include: {
         model: geriatricoModel,
         as: "geriatrico",
-        attributes: ["ge_nombre", "ge_activo"],
+        attributes: ["ge_nombre", "ge_activo", "ge_id"],
       }
     });
 
     if (!sede) {
       return res.status(404).json({ message: "Sede no encontrada" });
+    }
+
+    // 🔹 Validar que la sede pertenece al geriátrico del admin en sesión
+    if (sede.geriatrico.ge_id !== ge_id_sesion) {
+      return res.status(403).json({ message: "No tienes permiso para modificar esta sede." });
     }
 
     // Verificar si la sede ya está inactiva
@@ -422,17 +422,16 @@ const inactivarSede = async (req, res) => {
     }
 
     // Inactivar la sede
-    sede.se_activo = false;
-    await sede.save();
+    await sede.update({ se_activo: false });
 
     return res.status(200).json({
-      message: `Sede vinculada al geriátrico: "${sede.geriatrico.ge_nombre}" ha sido inactivada correctamente`,
+      message: `Sede "${sede.se_nombre}" ha sido inactivada correctamente`,
       sede: {
         se_nombre: sede.se_nombre,
         se_telefono: sede.se_telefono,
-        // geriatrico: sede.geriatrico.ge_nombre, 
       },
     });
+
   } catch (error) {
     console.error("Error al inactivar sede:", error);
     return res.status(500).json({ message: "Error al inactivar la sede" });
@@ -440,23 +439,32 @@ const inactivarSede = async (req, res) => {
 };
 
 
-
-// Se reactiva una sede (super admin admin geriatrico??)
+// Reactivar sede (solo admin geriátrico)
 const reactivarSede = async (req, res) => {
   try {
     const { se_id } = req.params;
+    const ge_id_sesion = req.session.ge_id; // ID del geriátrico del admin en sesión
+
+    if (!ge_id_sesion) {
+      return res.status(403).json({ message: "No se ha seleccionado un geriátrico." });
+    }
 
     // Buscar la sede por ID con la relación al geriátrico
     const sede = await sedeModel.findByPk(se_id, {
       include: {
         model: geriatricoModel,
         as: "geriatrico",
-        attributes: ["ge_nombre", "ge_activo"],
+        attributes: ["ge_nombre", "ge_activo", "ge_id"],
       }
     });
 
     if (!sede) {
       return res.status(404).json({ message: "Sede no encontrada" });
+    }
+
+    // 🔹 Validar que la sede pertenece al geriátrico del admin en sesión
+    if (sede.geriatrico.ge_id !== ge_id_sesion) {
+      return res.status(403).json({ message: "No tienes permiso para modificar esta sede." });
     }
 
     // Verificar si la sede ya está activa
@@ -467,24 +475,20 @@ const reactivarSede = async (req, res) => {
     // Reactivar la sede
     await sede.update({ se_activo: true });
 
-    // Mensaje de advertencia si el geriátrico está inactivo
-    let message = `Sede vinculada al geriátrico: "${sede.geriatrico.ge_nombre}" ha sido activada correctamente`
+    let message = `Sede "${sede.se_nombre}" activada correctamente`;
 
     if (!sede.geriatrico.ge_activo) {
-      message += `
-        - Advertencia: El geriátrico "${sede.geriatrico.ge_nombre}" al que pertenece esta sede está inactivo.
-        - Aun así, la sede ha sido activada individualmente.
-      `;
+      message += ` - Advertencia: El geriátrico "${sede.geriatrico.ge_nombre}" está inactivo.`;
     }
 
     return res.status(200).json({
-      message: message,
+      message,
       sede: {
         se_nombre: sede.se_nombre,
         se_telefono: sede.se_telefono,
-        // geriatrico: sede.geriatrico.ge_nombre, 
       },
     });
+
   } catch (error) {
     console.error(error);
     return res.status(500).json({ message: "Error al reactivar la sede" });
@@ -496,9 +500,8 @@ const reactivarSede = async (req, res) => {
 module.exports = { 
   crearSede, 
   obtenerSedes, 
-  obtenerSedesActivas,
-  obtenerSedesInactivas,
-  obtenerSedesPorGeriatrico, 
+  obtenerSedesInactivasPorGeriatrico,
+  obtenerSedesActivasPorGeriatrico, 
   obtenerDetalleSede,  
   actualizarSede, 
   obtenerHomeSede,
