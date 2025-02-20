@@ -1,13 +1,13 @@
 const { matchedData } = require('express-validator');
 const { encrypt, compare } = require('../utils/handlePassword');
-const { personaModel,geriatricoPersonaModel, geriatricoModel, rolModel, sedeModel, sedePersonaRolModel } = require('../models');
+const { personaModel,geriatricoPersonaModel, geriatricoModel, rolModel, sedeModel, sedePersonaRolModel, geriatricoPersonaRolModel } = require('../models');
 const { tokenSign } = require('../utils/handleJwt'); 
 const { subirImagenACloudinary } = require('../utils/handleCloudinary'); 
 const cloudinary = require('../config/cloudinary'); 
 const { sequelize } = require('../config/mysql');
 
 
-
+// super admin accede a todas las personas registradas
 const obtenerPersonasRegistradas = async (req, res) => {
     try {
       const personas = await personaModel.findAll();
@@ -39,7 +39,77 @@ const obtenerPersonasRegistradas = async (req, res) => {
       console.error(error);
       res.status(500).json({ message: "Error al obtener personas" });
     }
-  };
+};
+
+
+
+const obtenerPersonaRoles = async (req, res) => {
+    try {
+        const { per_id } = req.params;
+
+        const persona = await personaModel.findByPk(per_id, {
+            include: [
+                {
+                    model: geriatricoPersonaRolModel,
+                    as: 'rolesGeriatrico',  // <- Debe coincidir con personaModel.js
+                    include: [
+                        { model: rolModel, as: 'rol' },
+                        { model: geriatricoModel, as: 'geriatrico' }
+                    ]
+                },
+                {
+                    model: sedePersonaRolModel,
+                    as: 'rolesSede',  // <- Debe coincidir con personaModel.js
+                    include: [
+                        { model: rolModel, as: 'rol' },
+                        { model: sedeModel, as: 'sede' }
+                    ]
+                }
+            ]
+        });
+                
+        if (!persona) {
+            return res.status(404).json({ message: "Persona no encontrada" });
+        }
+
+        const personaConRoles = {
+            id: persona.per_id,
+            fechaRegistro: persona.per_fecha,
+            foto: persona.per_foto,
+            correo: persona.per_correo,
+            documento: persona.per_documento,
+            nombre: persona.per_nombre_completo,
+            telefono: persona.per_telefono,
+            genero: persona.per_genero,
+            usuario: persona.per_usuario,
+            rolesGeriatrico: persona.rolesGeriatrico.map(rg => ({
+                id: rg.rol.rol_id,
+                nombre: rg.rol.rol_nombre,
+                geriatrico: {
+                    id: rg.geriatrico.ge_id,
+                    nombre: rg.geriatrico.ge_nombre
+                }
+            })),
+            rolesSede: persona.rolesSede.map(rs => ({
+                id: rs.rol.rol_id,
+                nombre: rs.rol.rol_nombre,
+                sede: {
+                    id: rs.sede.se_id,
+                    nombre: rs.sede.se_nombre
+                }
+            }))
+        };
+
+        return res.status(200).json({
+            message: "Persona obtenida exitosamente",
+            persona: personaConRoles
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error al obtener la persona con roles" });
+    }
+};
+
 
   
 
@@ -263,55 +333,6 @@ const actualizarPerfil = async (req, res) => {
 };
 
 
-/* const buscarPersonaPorDocumento = async (req, res) => {
-    try {
-        const { per_documento } = req.params;
-
-        // Buscar a la persona en la base de datos
-        const persona = await personaModel.findOne({
-            where: { per_documento },
-            include: [
-                {
-                    model: geriatricoPersonaModel, // Relación con geriátricos
-                    as: "vinculosGeriatricos",
-                    include: [
-                        {
-                            model: geriatricoModel, // Información del geriátrico
-                            as: "geriatrico",
-                            attributes: ["ge_id", "ge_nombre"]
-                        }
-                    ]
-                }
-            ]
-        });
-
-        // Verificar si la persona existe
-        if (!persona) {
-            return res.status(404).json({ message: "Persona no encontrada" });
-        }
-
-        // Extraer los geriátricos asociados evitando errores
-        const geriatricos = persona.vinculosGeriatricos?.map((gp) => ({
-            ge_id: gp.geriatrico?.ge_id,
-            ge_nombre: gp.geriatrico?.ge_nombre
-        })) || [];
-
-        return res.status(200).json({
-            message: "Persona encontrada",
-            data: {
-                per_id: persona.per_id,
-                per_nombre: persona.per_nombre_completo,
-                per_documento: persona.per_documento,
-                geriatricos
-            }
-        });
-
-    } catch (error) {
-        console.error("Error al buscar persona por documento:", error);
-        return res.status(500).json({ message: "Error al buscar persona" });
-    }
-}; */
-
 
 const buscarPersonaPorDocumento = async (req, res) => {
     try {
@@ -380,5 +401,5 @@ const buscarPersonaPorDocumento = async (req, res) => {
 
 
 
-module.exports = { obtenerPersonasRegistradas, actualizarPersona, actualizarPerfil, obtenerMiPerfil, buscarPersonaPorDocumento  };
+module.exports = { obtenerPersonasRegistradas,obtenerPersonaRoles, actualizarPersona, actualizarPerfil, obtenerMiPerfil, buscarPersonaPorDocumento  };
 

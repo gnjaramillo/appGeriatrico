@@ -9,6 +9,11 @@ const vincularPersonaAGeriatrico = async (req, res) => {
         const { per_id } = req.body; // Solo necesitamos el ID de la persona
         const ge_id = req.session.ge_id; // Obtener el geriátrico de la sesión
 
+        const persona = await personaModel.findByPk(per_id);
+        if (!persona) {
+            return res.status(404).json({ message: 'Persona no encontrada.' });
+        }
+
         if (!ge_id) {
             return res.status(400).json({ message: "Error: No se pudo determinar el geriátrico." });
         }
@@ -34,7 +39,7 @@ const vincularPersonaAGeriatrico = async (req, res) => {
 };
 
 
-// ver las personas vinculadas en mi geriatrico para asignarles roles (admin geriatrico y admin sede)
+// ver las personas vinculadas activas en mi geriatrico para asignarles roles (admin geriatrico y admin sede)
 const personasVinculadasActivasMiGeriatrico = async (req, res) => {
     try {
         const ge_id = req.session.ge_id; // Obtener el geriátrico desde la sesión

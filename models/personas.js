@@ -52,20 +52,31 @@ personaModel.associate = (models) => {
         as: 'rolesEnSedes'
     });
 
+    // Relación con la tabla intermedia de sedes
+    personaModel.hasMany(models.sedePersonaRolModel, { 
+        foreignKey: 'per_id', 
+        as: 'rolesSede' 
+    });
+
     // Persona puede estar en varias sedes a través de SedePersonaRol
     personaModel.belongsToMany(models.sedeModel, {
         through: models.sedePersonaRolModel,
         foreignKey: 'per_id',
         as: 'sede'
     });
-
+        
     // Persona puede tener varios roles a través de GeriatricoPersonaRol
     personaModel.belongsToMany(models.rolModel, {
         through: models.geriatricoPersonaRolModel,
         foreignKey: 'per_id',
         as: 'rolesEnGeriátricos'
     });
-
+    
+    // Relación con la tabla intermedia de geriátricos
+    personaModel.hasMany(models.geriatricoPersonaRolModel, { 
+        foreignKey: 'per_id', 
+        as: 'rolesGeriatrico'  
+    });
     
     // Persona puede estar en varios geriatricos a través de GeriatricoPersonaRol
     personaModel.belongsToMany(models.geriatricoModel, {
@@ -109,10 +120,7 @@ personaModel.associate = (models) => {
     personaModel.hasMany(models.geriatricoPersonaModel, {
         foreignKey: 'per_id',
         as: 'vinculosGeriatricos'
-    });
-
-
-    
+    });    
 
 };
 
