@@ -96,11 +96,23 @@ personaModel.associate = (models) => {
 
 
     // Una persona puede estar en varios geriátricos a través de la tabla intermedia geriatrico_persona
+    // para consulta de geriátricos de la persona (sin detalles de vinculación).
     personaModel.belongsToMany(models.geriatricoModel, {
         through: models.geriatricoPersonaModel,  
         foreignKey: 'per_id',
         as: 'geriatricos'
     });
+
+
+    // Una persona puede estar en varios geriátricos a través de la tabla intermedia geriatrico_persona
+    // para consultar detalles específicos de la relación, como la fecha de vinculación o si está activa.
+    personaModel.hasMany(models.geriatricoPersonaModel, {
+        foreignKey: 'per_id',
+        as: 'vinculosGeriatricos'
+    });
+
+
+    
 
 };
 

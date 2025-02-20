@@ -1,6 +1,6 @@
 const { matchedData } = require('express-validator');
 const { encrypt, compare } = require('../utils/handlePassword');
-const { personaModel, rolModel, sedeModel, sedePersonaRolModel } = require('../models');
+const { personaModel,geriatricoPersonaModel, geriatricoModel, rolModel, sedeModel, sedePersonaRolModel } = require('../models');
 const { tokenSign } = require('../utils/handleJwt'); 
 const { subirImagenACloudinary } = require('../utils/handleCloudinary'); 
 const cloudinary = require('../config/cloudinary'); 
@@ -263,6 +263,122 @@ const actualizarPerfil = async (req, res) => {
 };
 
 
+/* const buscarPersonaPorDocumento = async (req, res) => {
+    try {
+        const { per_documento } = req.params;
 
-module.exports = { obtenerPersonasRegistradas, actualizarPersona, actualizarPerfil, obtenerMiPerfil  };
+        // Buscar a la persona en la base de datos
+        const persona = await personaModel.findOne({
+            where: { per_documento },
+            include: [
+                {
+                    model: geriatricoPersonaModel, // Relación con geriátricos
+                    as: "vinculosGeriatricos",
+                    include: [
+                        {
+                            model: geriatricoModel, // Información del geriátrico
+                            as: "geriatrico",
+                            attributes: ["ge_id", "ge_nombre"]
+                        }
+                    ]
+                }
+            ]
+        });
+
+        // Verificar si la persona existe
+        if (!persona) {
+            return res.status(404).json({ message: "Persona no encontrada" });
+        }
+
+        // Extraer los geriátricos asociados evitando errores
+        const geriatricos = persona.vinculosGeriatricos?.map((gp) => ({
+            ge_id: gp.geriatrico?.ge_id,
+            ge_nombre: gp.geriatrico?.ge_nombre
+        })) || [];
+
+        return res.status(200).json({
+            message: "Persona encontrada",
+            data: {
+                per_id: persona.per_id,
+                per_nombre: persona.per_nombre_completo,
+                per_documento: persona.per_documento,
+                geriatricos
+            }
+        });
+
+    } catch (error) {
+        console.error("Error al buscar persona por documento:", error);
+        return res.status(500).json({ message: "Error al buscar persona" });
+    }
+}; */
+
+
+const buscarPersonaPorDocumento = async (req, res) => {
+    try {
+        const { per_documento } = req.params;
+        const ge_id = req.session.ge_id; // Obtener el geriátrico desde la sesión del usuario
+
+
+        // Buscar a la persona en la base de datos con sus vinculaciones
+        const persona = await personaModel.findOne({
+            where: { per_documento },
+            include: [
+                {
+                    model: geriatricoPersonaModel,
+                    as: "vinculosGeriatricos",
+                    include: [
+                        {
+                            model: geriatricoModel,
+                            as: "geriatrico",
+                            attributes: ["ge_id", "ge_nombre"]
+                        }
+                    ]
+                }
+            ]
+        });
+
+        // Si la persona no existe, devolver mensaje para registrarla
+        if (!persona) {
+            return res.status(404).json({
+                message: "Persona no encontrada. ¿Desea registrarla?",
+                action: "register"
+            });
+        }
+
+        // Extraer los geriátricos asociados
+        const geriatricos = persona.vinculosGeriatricos?.map((gp) => ({
+            ge_id: gp.geriatrico?.ge_id,
+            ge_nombre: gp.geriatrico?.ge_nombre
+        })) || [];
+
+        // Verificar si ya está vinculada al geriátrico del admin
+        const vinculoExistente = geriatricos.some(g => g.ge_id === ge_id);
+
+        if (vinculoExistente) {
+            return res.status(400).json({
+                message: "La persona ya está vinculada a este geriátrico.",
+                action: "none"
+            });
+        }
+
+        return res.status(200).json({
+            message: "Persona encontrada. ¿Desea vincularla?",
+            action: "link",
+            per_id: persona.per_id, //  per_id para vinculación
+            per_nombre: persona.per_nombre_completo,
+            per_documento: persona.per_documento,
+            geriatricos // Lista de geriátricos a los que ya pertenece
+        });
+
+    } catch (error) {
+        console.error("Error al buscar persona por documento:", error);
+        return res.status(500).json({ message: "Error en el servidor." });
+    }
+};
+
+
+
+
+
+module.exports = { obtenerPersonasRegistradas, actualizarPersona, actualizarPerfil, obtenerMiPerfil, buscarPersonaPorDocumento  };
 

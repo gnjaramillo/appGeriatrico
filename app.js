@@ -35,6 +35,7 @@ app.use(cors({
     origin: [
       'http://localhost:4000',  // Dominio local del frontend
       'http://localhost:5174',  // Dominio local del frontend
+      'http://localhost:5173',
     ],
     credentials: true, // Permitir el envío de cookies/credenciales
     methods: ['GET', 'POST', 'PUT', 'DELETE'],

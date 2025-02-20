@@ -4,56 +4,81 @@ const { geriatricoPersonaModel, personaModel } = require('../models');
 
 
 // admin geriatrico y admin sede deben buscar si la persona ya esta registrada en otro geriatrico
-const buscarVincularPersona = async (req, res) => {
+const vincularPersonaAGeriatrico = async (req, res) => {
     try {
-        const { documento, ge_id } = req.body; // Documento de la persona y geriátrico actual
+        const { per_id } = req.body; // Solo necesitamos el ID de la persona
+        const ge_id = req.session.ge_id; // Obtener el geriátrico de la sesión
 
-        // Buscar la persona por documento
-        const persona = await personaModel.findOne({ where: { per_documento: documento } });
-
-        if (!persona) {
-            return res.status(404).json({
-                message: "Persona no encontrada. ¿Desea registrarla?",
-                action: "register"
-            });
+        if (!ge_id) {
+            return res.status(400).json({ message: "Error: No se pudo determinar el geriátrico." });
         }
 
-        // Verificar si ya está vinculada a este geriátrico
+        // Verificar si la persona ya está vinculada al geriátrico
         const vinculoExistente = await geriatricoPersonaModel.findOne({
-            where: { per_id: persona.per_id, ge_id }
+            where: { per_id, ge_id }
         });
 
         if (vinculoExistente) {
-            return res.status(400).json({
-                message: "La persona ya está vinculada a este geriátrico.",
-                action: "none"
-            });
+            return res.status(400).json({ message: "La persona ya está vinculada a este geriátrico." });
         }
 
-        // Verificar si está en otros geriátricos
-        const otrosGeriatricos = await geriatricoPersonaModel.findOne({
-            where: { per_id: persona.per_id, ge_id: { [Op.ne]: ge_id } }
-        });
+        // Vincular persona al geriátrico
+        await geriatricoPersonaModel.create({ ge_id, per_id });
 
-        if (otrosGeriatricos) {
-            return res.status(200).json({
-                message: "La persona ya está vinculada en otro geriátrico. ¿Desea vincularla al suyo?",
-                action: "link"
-            });
-        }
-
-        // 4️⃣ Vincular la persona al geriátrico si el usuario lo decide
-        await geriatricoPersonaModel.create({ ge_id, per_id: persona.per_id });
-
-        return res.status(201).json({
-            message: "Persona vinculada exitosamente al geriátrico.",
-            action: "success"
-        });
+        return res.status(201).json({ message: "Persona vinculada exitosamente al geriátrico." });
 
     } catch (error) {
-        console.error("Error en la búsqueda o vinculación:", error);
+        console.error("Error al vincular persona:", error);
         return res.status(500).json({ message: "Error en el servidor." });
     }
 };
 
-module.exports = { buscarVincularPersona };
+
+// ver las personas vinculadas en mi geriatrico para asignarles roles (admin geriatrico y admin sede)
+const personasVinculadasActivasMiGeriatrico = async (req, res) => {
+    try {
+        const ge_id = req.session.ge_id; // Obtener el geriátrico desde la sesión
+
+        if (!ge_id) {
+            return res.status(403).json({ message: "No tienes un geriátrico asignado en la sesión." });
+        }
+
+        // Buscar todas las personas ACTIVAS vinculadas al geriátrico actual
+        const personasVinculadas = await geriatricoPersonaModel.findAll({
+            where: { ge_id, gp_activo: true }, // Filtra solo los activos
+            include: [
+                {
+                    model: personaModel,
+                    as: "persona",
+                    attributes: ["per_id", "per_nombre_completo", "per_documento", "per_telefono", "per_correo"]
+                }
+            ]
+        });
+
+        if (personasVinculadas.length === 0) {
+            return res.status(404).json({ message: "No hay personas activas vinculadas a este geriátrico." });
+        }
+
+        return res.status(200).json({
+            message: "Personas activas vinculadas encontradas",
+            data: personasVinculadas.map((vinculo) => ({
+                per_id: vinculo.persona.per_id,
+                per_nombre: vinculo.persona.per_nombre_completo,
+                per_documento: vinculo.persona.per_documento,
+                per_telefono: vinculo.persona.per_telefono,
+                per_correo: vinculo.persona.per_correo,
+                gp_fecha_vinculacion: vinculo.gp_fecha_vinculacion,
+                gp_activo: vinculo.gp_activo
+            }))
+        });
+
+    } catch (error) {
+        console.error("Error al listar personas activas vinculadas:", error);
+        return res.status(500).json({ message: "Error en el servidor." });
+    }
+};
+
+
+
+
+module.exports = { vincularPersonaAGeriatrico, personasVinculadasActivasMiGeriatrico };
