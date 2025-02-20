@@ -20,6 +20,8 @@ const validatorIdSede = [
     },
 ];
 
+
+
 const validatorActualizarSede = [
     check('se_id').exists().isInt().withMessage('El ID de la sede debe ser un número válido'),
     check('se_nombre').optional().notEmpty().isLength({ min: 3, max: 255 }).trim().customSanitizer((value) => value.toLowerCase()), 
@@ -27,7 +29,6 @@ const validatorActualizarSede = [
     check('se_direccion').optional().notEmpty().isLength({ min: 5, max: 255 }),
     check('cupos_totales').optional().notEmpty().isInt({ min: 1 }).withMessage('Debe ser un número entero mayor a 0'),
     check('cupos_ocupados').optional().notEmpty().isInt({ min: 0 }).withMessage('Debe ser un número entero mayor o igual a 0'),
-    check('ge_id').optional().notEmpty().isInt().withMessage('Debe ser un ID de geriátrico válido'),
     (req, res, next) => validateResults(req, res, next),
 ];
 

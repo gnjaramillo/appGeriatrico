@@ -230,8 +230,8 @@ const actualizarSede = async (req, res) => {
       return res.status(404).json({ message: "No se ha encontrado la sede." });
     }
 
-    // 🔹 Validar que la sede pertenece al geriátrico del admin en sesión
-    if (sede.geriatrico.ge_id !== ge_id_sesion) {
+ // 🔹 Validar que la sede pertenece al geriátrico del admin en sesión
+    if (Number(sede.geriatrico.ge_id) !== Number(ge_id_sesion)) {
       return res.status(403).json({ message: "No tienes permiso para modificar esta sede." });
     }
 
@@ -241,8 +241,7 @@ const actualizarSede = async (req, res) => {
       se_telefono,
       se_direccion,
       cupos_totales,
-      cupos_ocupados,
-      ge_id,
+      cupos_ocupados,      
     } = data;
 
     let updateData = {};
@@ -254,12 +253,7 @@ const actualizarSede = async (req, res) => {
     if (cupos_totales) updateData.cupos_totales = cupos_totales;
     if (cupos_ocupados) updateData.cupos_ocupados = cupos_ocupados;
 
-    // Validar si el geriátrico existe antes de actualizar el ge_id
-    if (ge_id && ge_id !== ge_id_sesion) {
-      return res.status(403).json({
-        message: "No puedes asignar esta sede a otro geriátrico.",
-      });
-    }
+    
 
     // Si hay un archivo (foto), manejar la foto de Cloudinary
     if (req.file) {
