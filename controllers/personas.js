@@ -43,75 +43,108 @@ const obtenerPersonasRegistradas = async (req, res) => {
 
 
 
+// super admin mira todos los roles q tiene cada persona sin poder editar, solo consultar
 const obtenerPersonaRoles = async (req, res) => {
     try {
         const { per_id } = req.params;
 
-        const persona = await personaModel.findByPk(per_id, {
-            include: [
-                {
-                    model: geriatricoPersonaRolModel,
-                    as: 'rolesGeriatrico',  // <- Debe coincidir con personaModel.js
-                    include: [
-                        { model: rolModel, as: 'rol' },
-                        { model: geriatricoModel, as: 'geriatrico' }
-                    ]
-                },
-                {
-                    model: sedePersonaRolModel,
-                    as: 'rolesSede',  // <- Debe coincidir con personaModel.js
-                    include: [
-                        { model: rolModel, as: 'rol' },
-                        { model: sedeModel, as: 'sede' }
-                    ]
-                }
-            ]
+        // Buscar persona solo con documento y nombre completo
+        const persona = await personaModel.findOne({
+            where: { per_id },
+            attributes: ['per_documento', 'per_nombre_completo'] // Solo estos dos campos
         });
-                
+
         if (!persona) {
-            return res.status(404).json({ message: "Persona no encontrada" });
+            return res.status(404).json({ message: "Persona no encontrada." });
         }
 
-        const personaConRoles = {
-            id: persona.per_id,
-            fechaRegistro: persona.per_fecha,
-            foto: persona.per_foto,
-            correo: persona.per_correo,
-            documento: persona.per_documento,
-            nombre: persona.per_nombre_completo,
-            telefono: persona.per_telefono,
-            genero: persona.per_genero,
-            usuario: persona.per_usuario,
-            rolesGeriatrico: persona.rolesGeriatrico.map(rg => ({
-                id: rg.rol.rol_id,
-                nombre: rg.rol.rol_nombre,
-                geriatrico: {
-                    id: rg.geriatrico.ge_id,
-                    nombre: rg.geriatrico.ge_nombre
+        // Obtener roles en geriátrico con estado de activación y fechas
+        const rolesGeriatrico = await geriatricoPersonaRolModel.findAll({
+            where: { per_id },
+            include: [
+                {
+                    model: rolModel,
+                    as: 'rol',
+                    attributes: ['rol_id', 'rol_nombre']
+                },
+                {
+                    model: geriatricoModel,
+                    as: 'geriatrico',
+                    attributes: ['ge_id', 'ge_nombre', 'ge_nit']
                 }
-            })),
-            rolesSede: persona.rolesSede.map(rs => ({
-                id: rs.rol.rol_id,
-                nombre: rs.rol.rol_nombre,
-                sede: {
-                    id: rs.sede.se_id,
-                    nombre: rs.sede.se_nombre
+            ],
+            attributes: ['gp_activo', 'gp_fecha_inicio', 'gp_fecha_fin'] // Incluir fechas y estado activo
+        });
+
+        // Obtener roles en sede con estado de activación y fechas
+        const rolesSede = await sedePersonaRolModel.findAll({
+            where: { per_id },
+            include: [
+                {
+                    model: rolModel,
+                    as: 'rol',
+                    attributes: ['rol_id', 'rol_nombre']
+                },
+                {
+                    model: sedeModel,
+                    as: 'sede',
+                    attributes: ['se_id', 'se_nombre'],
+                    include: [
+                        {
+                            model: geriatricoModel,
+                            as: 'geriatrico',
+                            attributes: ['ge_id', 'ge_nombre']
+                        }
+                    ]
                 }
-            }))
-        };
+                
+            ],
+            attributes: ['sp_activo', 'sp_fecha_inicio', 'sp_fecha_fin'] // Incluir fechas y estado activo
+        });
 
         return res.status(200).json({
             message: "Persona obtenida exitosamente",
-            persona: personaConRoles
+            persona: {
+                documento: persona.per_documento,
+                nombre: persona.per_nombre_completo,
+                rolesGeriatrico: rolesGeriatrico.map(rg => ({
+                    rol_id: rg.rol.rol_id,
+                    nombre: rg.rol.rol_nombre,
+                    activo: rg.gp_activo, // Estado del rol en geriátrico
+                    fechaInicio: rg.gp_fecha_inicio, // Nueva fecha de inicio
+                    fechaFin: rg.gp_fecha_fin, // Nueva fecha de fin
+                    geriatrico: {
+                        id: rg.geriatrico.ge_id,
+                        nombre: rg.geriatrico.ge_nombre,
+                        nit: rg.geriatrico.ge_nit,
+                    }
+                })),
+                rolesSede: rolesSede.map(rs => ({
+                    rol_id: rs.rol.rol_id,
+                    nombre: rs.rol.rol_nombre,
+                    activo: rs.sp_activo, // Estado del rol en sede
+                    fechaInicio: rs.sp_fecha_inicio, // Nueva fecha de inicio
+                    fechaFin: rs.sp_fecha_fin, // Nueva fecha de fin
+                    sede: {
+                        se_id: rs.sede.se_id,
+                        nombre: rs.sede.se_nombre,
+                        geriatrico: rs.sede.geriatrico ? { 
+                            id: rs.sede.geriatrico.ge_id, 
+                            nombre: rs.sede.geriatrico.ge_nombre 
+                        } : null
+                    }
+                }))
+            }
         });
+
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Error al obtener la persona con roles" });
+        console.error("Error al obtener persona:", error);
+        return res.status(500).json({ message: "Error en el servidor." });
     }
 };
 
 
-  
+
 
 // administradores puedan actualizar un dato mal registrado
 const actualizarPersona = async (req, res) => {
@@ -194,6 +227,7 @@ const actualizarPersona = async (req, res) => {
         return res.status(500).json({ message: "Error al actualizar persona", error: error.message });
     }
 };
+
 
 
 // ver mi perfil
@@ -334,6 +368,7 @@ const actualizarPerfil = async (req, res) => {
 
 
 
+// buscar persona por documento para ver si ya esta registrada en sistema
 const buscarPersonaPorDocumento = async (req, res) => {
     try {
         const { per_documento } = req.params;
@@ -396,8 +431,6 @@ const buscarPersonaPorDocumento = async (req, res) => {
         return res.status(500).json({ message: "Error en el servidor." });
     }
 };
-
-
 
 
 

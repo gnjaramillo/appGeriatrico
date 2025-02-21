@@ -2,6 +2,8 @@ const { matchedData } = require('express-validator');
 const { rolModel, sedePersonaRolModel, sedeModel, geriatricoPersonaRolModel, geriatricoModel } = require('../models');
 const { limpiarSesion } = require('../utils/sessionUtils');
 
+
+
 const crearRol = async (req, res) => {
   try {
     const data = matchedData(req);
@@ -156,7 +158,6 @@ const obtenerRolesAsignados = async (req, res) => {
       return res.status(500).json({ message: 'Error al obtener roles' });
   }
 };
-
 
 
 
