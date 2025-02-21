@@ -93,7 +93,7 @@ const obtenerPersonaRoles = async (req, res) => {
                         {
                             model: geriatricoModel,
                             as: 'geriatrico',
-                            attributes: ['ge_id', 'ge_nombre']
+                            attributes: ['ge_id', 'ge_nombre', 'ge_nit']
                         }
                     ]
                 }
@@ -130,7 +130,8 @@ const obtenerPersonaRoles = async (req, res) => {
                         nombre: rs.sede.se_nombre,
                         geriatrico: rs.sede.geriatrico ? { 
                             id: rs.sede.geriatrico.ge_id, 
-                            nombre: rs.sede.geriatrico.ge_nombre 
+                            nombre: rs.sede.geriatrico.ge_nombre,
+                            nitGeriatrico: rs.sede.geriatrico.ge_nit,
                         } : null
                     }
                 }))
