@@ -1,7 +1,7 @@
 const { sequelize } = require('../config/mysql'); 
 const { Op } = require('sequelize');
 const { matchedData } = require('express-validator');
-const { personaModel, geriatricoPersonaModel, geriatricoModel,  } = require('../models');
+const { personaModel, geriatricoPersonaModel, geriatricoModel, geriatricoPersonaRolModel  } = require('../models');
 const { tokenSign } = require('../utils/handleJwt'); 
 const jwt = require('jsonwebtoken');
 
@@ -13,7 +13,7 @@ const ROLES_GERIATRICO = [2]; // por ahora rol id 2: "Administrador Geriátrico"
 const ROLES_UNICOS_GERIATRICO = [2]; // solo puede haber un admin por geriátrico (id 2: Admin Geriátrico)
 
 
-// Controlador para asignar roles de geriátrico
+// Controlador para asignar roles de geriátrico (super admin)
 const asignarRolGeriatrico = async (req, res) => {
     try {
         const data = matchedData(req);

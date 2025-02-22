@@ -59,6 +59,14 @@ sedeModel.associate = (models) => {
         as: 'personas'                        // Alias para acceder a las personas asociadas a una sede
     });
 
+
+// Una sede (sedeModel) puede estar asociada a muchas personas con distintos roles.
+    sedeModel.hasMany(models.sedePersonaRolModel, { 
+        foreignKey: 'se_id', 
+        as: 'roles' 
+    });
+
+
 //Cada sede puede tener múltiples turnos asignados a diferentes enfermeras.
     sedeModel.hasMany(models.turnoModel, { 
         foreignKey: 'se_id', 

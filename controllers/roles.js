@@ -106,7 +106,7 @@ const obtenerRolesAsignados = async (req, res) => {
 
       // Obtener asignaciones de roles en sedes
       const rolesSede = await sedePersonaRolModel.findAll({
-          where: { per_id: id },
+          where: { per_id: id, sp_activo: true },
           include: [
               { model: rolModel, as: 'rol', attributes: ['rol_id', 'rol_nombre'] },
               { model: sedeModel, as: 'sede', attributes: ['se_id', 'se_nombre'], 
@@ -117,7 +117,7 @@ const obtenerRolesAsignados = async (req, res) => {
 
       // Obtener asignaciones de roles en geriátricos
       const rolesGeriatrico = await geriatricoPersonaRolModel.findAll({
-          where: { per_id: id },
+          where: { per_id: id, gp_activo: true },
           include: [
               { model: rolModel, as: 'rol', attributes: ['rol_id', 'rol_nombre'] },
               { model: geriatricoModel, as: 'geriatrico', attributes: ['ge_id', 'ge_nombre'],

@@ -60,7 +60,9 @@ const geriatricoModel  = sequelize.define('Geriatricos', {
 // un geriatrico puede tener muchas sedes
 geriatricoModel.associate = (models) => {
     geriatricoModel.hasMany(models.sedeModel, { 
-        foreignKey: 'ge_id', as: 'sedes' });
+        foreignKey: 'ge_id', 
+        as: 'sedes' 
+    });
 
     // Un geriatrico puede tener muchas personas a través de geriatricoPersonaRol
     geriatricoModel.belongsToMany(models.personaModel, {

@@ -1,6 +1,6 @@
 const { Op } = require("sequelize");
 const { sequelize } = require('../config/mysql'); 
-const { geriatricoPersonaModel, personaModel, sedeModel, geriatricoPersonaRolModel, sedePersonaRolModel } = require('../models');
+const { geriatricoPersonaModel, personaModel, rolModel, geriatricoModel, sedeModel, geriatricoPersonaRolModel, sedePersonaRolModel } = require('../models');
 
 
 
@@ -44,6 +44,7 @@ const vincularPersonaAGeriatrico = async (req, res) => {
 const personasVinculadasActivasMiGeriatrico = async (req, res) => {
     try {
         const ge_id = req.session.ge_id; // Obtener el geriátrico desde la sesión
+        const usuarioEnSesion = req.session.per_id; // Usuario autenticado
 
         if (!ge_id) {
             return res.status(403).json({ message: "No tienes un geriátrico asignado en la sesión." });
@@ -51,7 +52,11 @@ const personasVinculadasActivasMiGeriatrico = async (req, res) => {
 
         // Buscar todas las personas ACTIVAS vinculadas al geriátrico actual
         const personasVinculadas = await geriatricoPersonaModel.findAll({
-            where: { ge_id, gp_activo: true }, // Filtra solo los activos
+            where: { ge_id, 
+                gp_activo: true,
+                per_id: { [Op.ne]: usuarioEnSesion } // Excluir usuario en sesión
+
+            }, // Filtra solo los activos
             include: [
                 {
                     model: personaModel,
@@ -87,90 +92,6 @@ const personasVinculadasActivasMiGeriatrico = async (req, res) => {
 
 
 // inactivar vinculacion en geriatrico, inactiva sus roles en el geriatrico y sedes asociadas (admin geriatrico)
-/* const inactivarVinculacionGeriatrico = async (req, res) => {
-    const transaction = await sequelize.transaction(); // 🔥 Inicia transacción
-
-    try {
-        const { per_id } = req.params;
-        const ge_id = req.session.ge_id; // Geriátrico del admin en sesión
-
-        if (!ge_id) {
-            return res.status(400).json({ message: "Error: No se pudo determinar el geriátrico." });
-        }
-
-        // Buscar la vinculación activa en geriátrico_persona
-        const vinculo = await geriatricoPersonaModel.findOne({
-            where: { per_id, ge_id, gp_activo: true },
-            transaction
-        });
-
-        if (!vinculo) {
-            return res.status(404).json({ message: "La persona no tiene una vinculación activa en este geriátrico." });
-        }
-
-        // Inactivar la vinculación en geriátrico_persona
-        await vinculo.update(
-            { gp_activo: false, gp_fecha_fin: new Date() },
-            { transaction }
-        );
-
-        // Obtener y actualizar roles en geriátrico_persona_rol
-        const rolesGeriatrico = await geriatricoPersonaRolModel.findAll({
-            where: { per_id, ge_id, gp_activo: true },
-            transaction
-        });
-
-        await geriatricoPersonaRolModel.update(
-            { gp_activo: false, gp_fecha_fin: new Date() },
-            { where: { per_id, ge_id, gp_activo: true }, transaction }
-        );
-
-        // Obtener sedes en las que tiene roles vinculados al geriátrico
-        const rolesSede = await sedePersonaRolModel.findAll({
-            where: { per_id },
-            include: [{
-                model: sedeModel,
-                as: 'sede',
-                attributes: [se_nombre],
-                where: { ge_id }
-            }],
-            transaction
-        });
-
-        const idsSedes = rolesSede.map(r => r.se_id);
-
-        // Inactivar roles en sede_persona_rol
-        await sedePersonaRolModel.update(
-            { sp_activo: false, sp_fecha_fin: new Date() },
-            { where: { per_id, se_id: idsSedes, sp_activo: true }, transaction }
-        );
-
-        // 🔥 Si todo se ejecutó bien, confirmamos la transacción
-        await transaction.commit();
-
-        return res.status(200).json({
-            message: "Vinculación y roles inactivados correctamente.",
-            rolesInactivados: {
-                geriatrico: rolesGeriatrico.map(rg => ({
-                    id: rg.rol_id,
-                    nombre: rg.rol_nombre
-                })),
-                sedes: rolesSede.map(rs => ({
-                    id: rs.rol_id,
-                    nombre: rs.rol_nombre,
-                    sede: { id: rs.se_id }
-                }))
-            }
-        });
-
-    } catch (error) {
-        // 🔥 Si ocurre un error, revertimos todo
-        await transaction.rollback();
-        console.error("Error al inactivar vinculación:", error);
-        return res.status(500).json({ message: "Error en el servidor." });
-    }
-}; */
-
 const inactivarVinculacionGeriatrico = async (req, res) => {
     try {
         const { per_id } = req.params;
