@@ -12,11 +12,7 @@ const config = {
         host: process.env.MYSQL_HOST,
         timezone: '-05:00', // Ajusta Sequelize a la hora de Colombia
         dialect: 'mysql',
-        /* logging: (msg) => {
-            if (msg.startsWith("UPDATE") || msg.startsWith("INSERT")) {
-                console.log(msg); // Solo muestra INSERTs y UPDATEs
-            }
-        } */
+        
         logging: false
     },
     test: {
@@ -48,14 +44,16 @@ if (NODE_ENV === 'production') {
     sequelize = new Sequelize(config.production.database, config.production.username, config.production.password, {
         host: config.production.host,
         port: config.production.port,
-        dialect: config.production.dialect
+        dialect: config.production.dialect,
+        logging: false
     });
 } else {
     const envConfig = config[NODE_ENV] || config.development;
     sequelize = new Sequelize(envConfig.database, envConfig.username, envConfig.password, {
         host: envConfig.host,
         port: envConfig.port, // Añadimos el puerto aquí
-        dialect: envConfig.dialect
+        dialect: envConfig.dialect,
+        logging: false
     });
 }
 

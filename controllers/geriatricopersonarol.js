@@ -1,7 +1,7 @@
 const { sequelize } = require('../config/mysql'); 
 const { Op } = require('sequelize');
 const { matchedData } = require('express-validator');
-const { personaModel, geriatricoPersonaModel, geriatricoModel, geriatricoPersonaRolModel  } = require('../models');
+const { personaModel,rolModel, sedeModel, sedePersonaRolModel, geriatricoPersonaModel, geriatricoModel, geriatricoPersonaRolModel  } = require('../models');
 const { tokenSign } = require('../utils/handleJwt'); 
 const jwt = require('jsonwebtoken');
 
@@ -30,44 +30,37 @@ const asignarRolGeriatrico = async (req, res) => {
             return res.status(404).json({ message: 'Persona no encontrada.' });
         }
 
-        // Verificar si el geriátrico existe
+        // Verificar si el geriátrico existe y está activo
         const geriatrico = await geriatricoModel.findOne({ where: { ge_id } });
         if (!geriatrico) {
             return res.status(404).json({ message: 'Geriátrico no encontrado.' });
         }
 
-        // Verificar si el geriátrico está activo
         if (!geriatrico.ge_activo) {
             return res.status(400).json({ message: 'El geriátrico está inactivo. Actualmente, no se pueden asignar roles.' });
         }
 
-        // Verificar si el rol ya está asignado a la persona en este geriátrico
+        // Verificar si el rol ya está asignado a la persona en este geriátrico y está activo
         const rolExistente = await geriatricoPersonaRolModel.findOne({
             where: {
                 per_id,
                 ge_id,
                 rol_id,
-                [Op.or]: [
-                    { gp_fecha_fin: null },
-                    { gp_fecha_fin: { [Op.gt]: new Date() } }
-                ]
+                gp_activo: true, // 🔹 Aseguramos que el rol esté activo
             }
         });
 
         if (rolExistente) {
-            return res.status(400).json({ message: 'La persona ya tiene este rol asignado en este Geriátrico.' });
+            return res.status(400).json({ message: 'La persona ya tiene este rol activo en este Geriátrico.' });
         }
 
-        // Validar si el rol es único por geriátrico, ej: geriatrico solo puede tener un admin por ahora
+        // Validar si el rol es único por geriátrico (ej: solo un Admin Geriátrico activo)
         if (ROLES_UNICOS_GERIATRICO.includes(rol_id)) {
             const adminExistente = await geriatricoPersonaRolModel.findOne({
                 where: {
                     ge_id,
                     rol_id,
-                    [Op.or]: [
-                        { gp_fecha_fin: null },
-                        { gp_fecha_fin: { [Op.gt]: new Date() } }
-                    ]
+                    gp_activo: true, // 🔹 Solo verificamos si hay un admin activo
                 }
             });
 
@@ -76,7 +69,7 @@ const asignarRolGeriatrico = async (req, res) => {
             }
         }
 
-        // Iniciar transacción para garantizar que ambas inserciones se realicen juntas
+        // Iniciar transacción para garantizar consistencia en la BD
         const transaction = await sequelize.transaction();
 
         try {
@@ -86,10 +79,11 @@ const asignarRolGeriatrico = async (req, res) => {
                 ge_id,
                 rol_id,
                 gp_fecha_inicio,
-                gp_fecha_fin: gp_fecha_fin || null
+                gp_fecha_fin: gp_fecha_fin || null,
+                gp_activo: true // 🔹 Se asigna como activo
             }, { transaction });
 
-            // Verificar si ya está vinculada la persona al geriátrico
+            // Verificar si la persona ya está vinculada al geriátrico
             const vinculacionExistente = await geriatricoPersonaModel.findOne({
                 where: { per_id, ge_id }
             });
@@ -124,6 +118,73 @@ const asignarRolGeriatrico = async (req, res) => {
 };
 
 
-module.exports = { asignarRolGeriatrico };
+
+
+// Controlador para inactivar un rol geriátrico (super admin)
+const inactivarRolGeriatrico = async (req, res) => {
+    try {
+        const { per_id, ge_id, rol_id } = req.body;
+
+        // Validar que el rol solicitado sea un rol válido para geriátricos
+        if (!ROLES_GERIATRICO.includes(rol_id)) {
+            return res.status(400).json({ message: 'Este rol no es válido para inactivar en un Geriátrico.' });
+        }
+
+        // Buscar si la persona tiene ese rol activo en el geriátrico
+        const rolAsignado = await geriatricoPersonaRolModel.findOne({
+            where: {
+                per_id,
+                ge_id,
+                rol_id,
+                gp_activo: true
+            }
+        });
+
+        if (!rolAsignado) {
+            return res.status(404).json({ message: 'La persona no tiene este rol activo en este geriátrico.' });
+        }
+
+        // Obtener el nombre del rol
+        const rol = await rolModel.findOne({
+            where: { rol_id },
+            attributes: ['rol_nombre'],
+        });
+
+        // Obtener el nombre del geriátrico
+        const geriatrico = await geriatricoModel.findOne({
+            where: { ge_id },
+            attributes: ['ge_nombre'],
+        });
+
+
+        // Obtener la fecha actual
+        const fechaActual = new Date();
+
+        // Inactivar el rol actualizando gp_activo a false y gp_fecha_fin con la fecha actual
+        await rolAsignado.update({
+            gp_activo: false,
+            gp_fecha_fin: fechaActual
+        });
+
+        return res.status(200).json({
+            message: 'Rol inactivado correctamente.',
+            data: rolAsignado,
+            rolNombre: rol ? rol.rol_nombre : 'Desconocido',
+            geriatrico: {
+                ge_id,
+                ge_nombre: geriatrico ? geriatrico.ge_nombre : 'Desconocido'
+            }
+        });
+
+    } catch (error) {
+        console.error("Error al inactivar rol en el geriátrico:", error);
+        return res.status(500).json({ message: "Error en el servidor.", error: error.message });
+    }
+};
+
+
+
+
+module.exports = { asignarRolGeriatrico, inactivarRolGeriatrico };
 
 

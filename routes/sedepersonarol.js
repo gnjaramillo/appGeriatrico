@@ -4,9 +4,8 @@ const authMiddleware = require('../middleware/sessionJwt')
 const sessionMiddleware = require('../middleware/sessionRedis')
 const checkRol = require('../middleware/rol');
 
-const { asignarRolAdminSede,  asignarRolesSede } = require('../controllers/sedepersonarol');
-const { obtenerPersonasPorSede, obtenerPersonasPorGeriatrico } = require('../controllers/sedepersonarol');
-const { validarAdminSede, validarAsignarRol } = require('../validators/sedepersonarol');
+const { asignarRolAdminSede, inactivarRolAdminSede, asignarRolesSede, inactivarRolSede } = require('../controllers/sedepersonarol');
+const { validarAdminSede, validarAsignarRol, validarInactivarRol } = require('../validators/sedepersonarol');
 
 
 
@@ -14,13 +13,10 @@ const { validarAdminSede, validarAsignarRol } = require('../validators/sedeperso
 // http://localhost:3000/api/sedepersonarol
 
 
-// rol q asigna el administrador geriatrico
 router.post('/asignarRolesAdminSede', sessionMiddleware, authMiddleware,  checkRol([2]), validarAdminSede, asignarRolAdminSede);
 router.post('/asignarRolSede', sessionMiddleware, authMiddleware, checkRol([3]), validarAsignarRol,  asignarRolesSede);
-router.get('/personasRolesSedes',sessionMiddleware, authMiddleware, checkRol([2,3]), obtenerPersonasPorSede);
-router.get('/personasRolesGeriatrico',sessionMiddleware, authMiddleware, checkRol([2,3]), obtenerPersonasPorGeriatrico);
-
-
+router.put('/inactivarRolAdminSede', sessionMiddleware, authMiddleware,  checkRol([2]), validarInactivarRol, inactivarRolAdminSede);
+router.put('/inactivarRolSede', sessionMiddleware, authMiddleware,  checkRol([3]), validarInactivarRol, inactivarRolSede);
 
 
 

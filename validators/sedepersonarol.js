@@ -20,8 +20,8 @@ const validarAdminSede = [
         const formattedToday = localToday.toISOString().split('T')[0];
         const formattedInputDate = inputDate.toISOString().split('T')[0];
     
-        console.log("Fecha actual en Colombia:", formattedToday);
-        console.log("Fecha ingresada:", formattedInputDate);
+        // console.log("Fecha actual en Colombia:", formattedToday);
+        // console.log("Fecha ingresada:", formattedInputDate);
     
         if (formattedInputDate < formattedToday) {
             throw new Error('La fecha de inicio no puede ser una fecha pasada');
@@ -56,8 +56,8 @@ const validarAsignarRol = [
         const formattedToday = localToday.toISOString().split('T')[0];
         const formattedInputDate = inputDate.toISOString().split('T')[0];
     
-        console.log("Fecha actual en Colombia:", formattedToday);
-        console.log("Fecha ingresada:", formattedInputDate);
+        //console.log("Fecha actual en Colombia:", formattedToday);
+        //console.log("Fecha ingresada:", formattedInputDate);
     
         if (formattedInputDate < formattedToday) {
             throw new Error('La fecha de inicio no puede ser una fecha pasada');
@@ -81,6 +81,15 @@ const validarAsignarRol = [
     
 ];
 
+const validarInactivarRol = [
+    check('per_id').isInt({ min: 1 }).exists().notEmpty().withMessage('El ID de la persona debe ser un número válido'),
+    check('rol_id').isInt({ min: 1 }).exists().notEmpty().withMessage('El ID del rol debe ser un número válido'),
+    check('se_id').isInt({ min: 1 }).exists().notEmpty().withMessage('El ID de la sede (se_id) debe ser un número entero positivo'),
+
+
+    (req, res, next) => validateResults(req, res, next),
+    
+];
 
 
 
@@ -90,4 +99,5 @@ const validarAsignarRol = [
 
 
 
-module.exports = { validarAdminSede, validarAsignarRol };
+
+module.exports = { validarAdminSede, validarAsignarRol, validarInactivarRol };

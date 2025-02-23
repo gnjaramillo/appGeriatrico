@@ -15,32 +15,14 @@ const validarRolGeriatrico = [
         const formattedToday = localToday.toISOString().split('T')[0];
         const formattedInputDate = inputDate.toISOString().split('T')[0];
     
-        console.log("Fecha actual en Colombia:", formattedToday);
-        console.log("Fecha ingresada:", formattedInputDate);
+        // console.log("Fecha actual en Colombia:", formattedToday);
+        // console.log("Fecha ingresada:", formattedInputDate);
     
         if (formattedInputDate < formattedToday) {
             throw new Error('La fecha de inicio no puede ser una fecha pasada');
         }
         return true;
     }),
-    
-    
-    
-    
-    
-    /* .custom((value) => {
-        const today = new Date();
-        const todayFormatted = today.toISOString().split('T')[0]; // Convertir a YYYY-MM-DD
-        const inputFormatted = new Date(value).toISOString().split('T')[0]; // Normalizar input
-
-        if (inputFormatted < todayFormatted) {
-            throw new Error('La fecha de inicio no puede ser una fecha pasada');
-        }
-        return true;
-    }), */
-
-    
-
     check('gp_fecha_fin')
         .optional({ checkFalsy: true })
         .isDate()
@@ -54,4 +36,12 @@ const validarRolGeriatrico = [
     (req, res, next) => validateResults(req, res, next),
 ];
 
-module.exports = { validarRolGeriatrico };
+
+const validarInactivarRolGeriatrico = [
+    check('per_id').isInt({ min: 1 }).exists().notEmpty().withMessage('El ID de la persona (per_id) debe ser un número entero positivo'),
+    check('ge_id').isInt({ min: 1 }).exists().notEmpty().withMessage('El ID geriátrico (ge_id) debe ser un número entero positivo'),
+    check('rol_id').isInt({ min: 1 }).exists().notEmpty().withMessage('El ID del rol (rol_id) debe ser un número entero positivo'),
+    (req, res, next) => validateResults(req, res, next),
+];
+
+module.exports = { validarRolGeriatrico , validarInactivarRolGeriatrico};

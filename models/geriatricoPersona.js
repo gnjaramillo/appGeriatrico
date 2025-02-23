@@ -32,12 +32,7 @@ const geriatricoPersonaModel = sequelize.define('GeriatricoPersona', {
         allowNull: false,
         defaultValue: DataTypes.NOW
     },
-    gp_fecha_fin: { 
-        type: DataTypes.DATE,
-        allowNull: true,
-        defaultValue: null
-    },
-
+   
     gp_activo: {
         type: DataTypes.BOOLEAN,
         defaultValue: true

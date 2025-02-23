@@ -5,13 +5,12 @@ const sessionMiddleware = require('../middleware/sessionRedis')
 const checkRol = require('../middleware/rol');
 const upload = require('../middleware/multer');
 
-const { obtenerPersonasRegistradas,obtenerPersonaRoles, obtenerPersonaRolesMiGeriatricoSede, actualizarPersona, actualizarPerfil, obtenerMiPerfil, buscarPersonaPorDocumento } = require('../controllers/personas');
+const { obtenerPersonasRegistradas,obtenerPersonaRoles, actualizarPersona, actualizarPerfil, obtenerMiPerfil, buscarPersonaPorDocumento } = require('../controllers/personas');
 const { validarUpdatePersona, validarUpdatePerfil } = require('../validators/personas');
 
 
 router.get('/', obtenerPersonasRegistradas);
 router.get('/roles/:per_id', sessionMiddleware, authMiddleware, checkRol([1]),  obtenerPersonaRoles);
-router.get('/rolesGeriatrico/:per_id', sessionMiddleware, authMiddleware, checkRol([2,3]),  obtenerPersonaRolesMiGeriatricoSede);
 router.get('/perfil', sessionMiddleware, authMiddleware, obtenerMiPerfil);
 router.get('/buscar/:per_documento', sessionMiddleware, authMiddleware, buscarPersonaPorDocumento);
 router.put('/updateperfil', sessionMiddleware, authMiddleware, upload.single('per_foto'), validarUpdatePerfil, actualizarPerfil);

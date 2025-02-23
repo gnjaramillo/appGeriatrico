@@ -43,7 +43,8 @@ const obtenerPersonasRegistradas = async (req, res) => {
 
 
 
-// super admin mira todos los roles q tiene cada persona sin poder editar, solo consultar
+/* super admin mira todos los roles q tiene cada persona, de esta lista 
+solo puede inactivar roles a su cargo como roles geriatrico */
 const obtenerPersonaRoles = async (req, res) => {
     try {
         const { per_id } = req.params;
@@ -57,6 +58,7 @@ const obtenerPersonaRoles = async (req, res) => {
         if (!persona) {
             return res.status(404).json({ message: "Persona no encontrada." });
         }
+        
 
         // Obtener roles en geriátrico con estado de activación y fechas
         const rolesGeriatrico = await geriatricoPersonaRolModel.findAll({
@@ -73,7 +75,9 @@ const obtenerPersonaRoles = async (req, res) => {
                     attributes: ['ge_id', 'ge_nombre', 'ge_nit']
                 }
             ],
-            attributes: ['gp_activo', 'gp_fecha_inicio', 'gp_fecha_fin'] // Incluir fechas y estado activo
+            attributes: ['gp_activo', 'gp_fecha_inicio', 'gp_fecha_fin'], // Incluir fechas y estado activo
+            order: [['gp_activo', 'DESC']]  // Ordenar por activo (TRUE primero)
+        
         });
 
         // Obtener roles en sede con estado de activación y fechas
@@ -99,7 +103,8 @@ const obtenerPersonaRoles = async (req, res) => {
                 }
                 
             ],
-            attributes: ['sp_activo', 'sp_fecha_inicio', 'sp_fecha_fin'] // Incluir fechas y estado activo
+            attributes: ['sp_activo', 'sp_fecha_inicio', 'sp_fecha_fin'], // Incluir fechas y estado activo
+            order: [['sp_activo', 'DESC']]  // Ordenar por activo (TRUE primero)
         });
 
         return res.status(200).json({
@@ -135,127 +140,6 @@ const obtenerPersonaRoles = async (req, res) => {
                         } : null
                     }
                 }))
-            }
-        });
-
-    } catch (error) {
-        console.error("Error al obtener persona:", error);
-        return res.status(500).json({ message: "Error en el servidor." });
-    }
-};
-
-
-
-// roles (activos e inactivos) q tiene cada persona, visibles para admin sede y admin geriatrico para poderlos inactivar
-const obtenerPersonaRolesMiGeriatricoSede = async (req, res) => {
-    try {
-        const { per_id } = req.params;
-        const ge_id = req.session.ge_id; // Obtener el geriátrico desde la sesión
-
-        if (!ge_id) {
-            return res.status(403).json({ message: "No tienes un geriátrico asignado en la sesión." });
-        }
-
-        // Buscar persona solo con documento y nombre completo
-        const persona = await personaModel.findOne({
-            where: { per_id },
-            attributes: ['per_documento', 'per_nombre_completo']
-        });
-
-        if (!persona) {
-            return res.status(404).json({ message: "Persona no encontrada." });
-        }
-
-        // Obtener roles en geriátrico
-        const rolesGeriatrico = await geriatricoPersonaRolModel.findAll({
-            where: { per_id, ge_id }, // Filtra por geriátrico en sesión
-            include: [
-                {
-                    model: rolModel,
-                    as: 'rol',
-                    attributes: ['rol_id', 'rol_nombre']
-                },
-                {
-                    model: geriatricoModel,
-                    as: 'geriatrico',
-                    attributes: ['ge_id', 'ge_nombre', 'ge_nit']
-                }
-            ],
-            attributes: ['gp_activo', 'gp_fecha_inicio', 'gp_fecha_fin']
-        });
-
-        // Obtener roles en sede dentro del geriátrico en sesión
-        const rolesSede = await sedePersonaRolModel.findAll({
-            where: { per_id },
-            include: [
-                {
-                    model: sedeModel,
-                    as: 'sede',
-                    attributes: ['se_id', 'se_nombre'],
-                    required: true,
-                    include: [
-                        {
-                            model: geriatricoModel,
-                            as: 'geriatrico',
-                            attributes: ['ge_id', 'ge_nombre', 'ge_nit'],
-                            where: { ge_id } // Filtra solo sedes dentro del geriátrico en sesión
-                        }
-                    ]
-                },
-                {
-                    model: rolModel,
-                    as: 'rol',
-                    attributes: ['rol_id', 'rol_nombre']
-                }
-            ],
-            attributes: ['sp_activo', 'sp_fecha_inicio', 'sp_fecha_fin']
-        });
-
-
-        return res.status(200).json({
-            message: "Persona obtenida exitosamente",
-            persona: {
-                documento: persona.per_documento,
-                nombre: persona.per_nombre_completo,
-                rolesGeriatrico: rolesGeriatrico.map(rg => ({
-                    rol_id: rg.rol?.rol_id || null,
-                    nombre: rg.rol?.rol_nombre || "Sin rol",
-                    activo: rg.gp_activo,
-                    fechaInicio: rg.gp_fecha_inicio,
-                    fechaFin: rg.gp_fecha_fin,
-                    geriatrico: rg.geriatrico ? {
-                        id: rg.geriatrico.ge_id,
-                        nombre: rg.geriatrico.ge_nombre,
-                        nit: rg.geriatrico.ge_nit
-                    } : null
-                })),
-                rolesSede: rolesSede.map(rs => {
-                    if (!rs.sede) {
-                        return {
-                            rol_id: rs.rol?.rol_id || null,
-                            nombre: rs.rol?.rol_nombre || "Sin rol",
-                            activo: rs.sp_activo,
-                            fechaInicio: rs.sp_fecha_inicio,
-                            fechaFin: rs.sp_fecha_fin,
-                            sede: null
-                        };
-                    }
-                    return {
-                        rol_id: rs.rol?.rol_id || null,
-                        nombre: rs.rol?.rol_nombre || "Sin rol",
-                        activo: rs.sp_activo,
-                        fechaInicio: rs.sp_fecha_inicio,
-                        fechaFin: rs.sp_fecha_fin,
-                        sede: {
-                            id: rs.sede.se_id,
-                            nombre: rs.sede.se_nombre,
-                            geriatrico: rs.sede.geriatrico ? {
-                                id: rs.sede.geriatrico.ge_id,
-                                nombre: rs.sede.geriatrico.ge_nombre
-                            } : null
-                        }
-                    };
-                })
             }
         });
 
@@ -556,5 +440,5 @@ const buscarPersonaPorDocumento = async (req, res) => {
 
 
 
-module.exports = { obtenerPersonasRegistradas,obtenerPersonaRoles, obtenerPersonaRolesMiGeriatricoSede, actualizarPersona, actualizarPerfil, obtenerMiPerfil, buscarPersonaPorDocumento  };
+module.exports = { obtenerPersonasRegistradas,obtenerPersonaRoles, actualizarPersona, actualizarPerfil, obtenerMiPerfil, buscarPersonaPorDocumento  };
 

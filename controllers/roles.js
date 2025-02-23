@@ -96,7 +96,7 @@ const actualizarRol = async (req, res) => {
 
 
 
-// lista de sus roles visibles a cada usuario
+// lista de sus roles visibles a cada usuario para poder seleccionar
 const obtenerRolesAsignados = async (req, res) => {
   try {
 
@@ -164,86 +164,75 @@ const obtenerRolesAsignados = async (req, res) => {
 // seleccionar uno de los roles asignados (aplica para todos, menos super usuario)
 const seleccionarRol = async (req, res) => {
   try {
-      const { rol_id, se_id, ge_id } = req.body; // rol en sede o geriatrico
-      const { id } = req.user; // desde el token jwt
+      const { rol_id, se_id, ge_id } = req.body; // Datos del rol en sede o geriátrico
+      const { id } = req.user; // ID de usuario desde el token JWT
 
-      let asignacion = null;
-      let tipoAsignacion = null;
+      if (!rol_id || (!se_id && !ge_id)) {
+          return res.status(400).json({ message: 'Datos incompletos: se requiere rol_id y (se_id o ge_id)' });
+      }
 
       // Limpiar sesión antes de asignar nuevos valores
       limpiarSesion(req);
 
-      // Verificar si se seleccionó una sede
-      if (se_id) {
-          asignacion = await sedePersonaRolModel.findOne({
-              where: { per_id: id, rol_id, se_id },
-              include: [
-                  { model: rolModel, as: 'rol', attributes: ['rol_nombre'] },
-                  { model: sedeModel, as: 'sede', attributes: ['se_nombre', 'ge_id'],
-                    include: [
-                    { model: geriatricoModel, as: 'geriatrico', attributes: ['ge_nombre'] }]
-              },
-          ],
-      });
-      tipoAsignacion = 'sede';
-  }
+      // Determinar qué modelo y condiciones usar
+      const modelo = se_id ? sedePersonaRolModel : geriatricoPersonaRolModel;
+      const condicion = se_id ? { per_id: id, rol_id, se_id } : { per_id: id, rol_id, ge_id };
+      const include = [
+          { model: rolModel, as: 'rol', attributes: ['rol_nombre'] },
+          se_id
+              ? { model: sedeModel, as: 'sede', attributes: ['se_nombre', 'ge_id'] }
+              : { model: geriatricoModel, as: 'geriatrico', attributes: ['ge_nombre', 'ge_id'] }
+      ];
 
-      // Verificar si se seleccionó un geriátrico
-      if (ge_id) {
-          asignacion = await geriatricoPersonaRolModel.findOne({
-              where: { per_id: id, rol_id, ge_id },
-              include: [
-                  { model: rolModel, as: 'rol', attributes: ['rol_nombre'] },
-                  { model: geriatricoModel, as: 'geriatrico', attributes: ['ge_nombre', 'ge_id'] },
-              ],
-          });
-          tipoAsignacion = 'geriatrico';
-      }
+      // Buscar la asignación del rol
+      const asignacion = await modelo.findOne({ where: condicion, include });
 
-      // Si no se encuentra asignación válida, retornar un error
+      // Si no se encuentra, devolver error
       if (!asignacion || !asignacion.rol || (!asignacion.sede && !asignacion.geriatrico)) {
           return res.status(404).json({ message: 'Rol, sede o geriátrico no encontrados' });
       }
-     
-        // Guardar los datos en la sesión
-        req.session.per_id = id; // Guardar per_id en sesión
-        req.session.rol_id = rol_id;
-        req.session.rol_nombre = asignacion.rol.rol_nombre;
-        req.session[tipoAsignacion === 'sede' ? 'se_id' : 'ge_id'] = tipoAsignacion === 'sede' ? se_id : ge_id;
-        req.session.nombre = tipoAsignacion === 'sede' ? asignacion.sede.se_nombre : asignacion.geriatrico.ge_nombre;
 
-      // Si se seleccionó una sede, guardar también el ge_id del geriátrico al que pertenece
-      if (tipoAsignacion === 'sede' && asignacion.sede.ge_id) {
-        req.session.ge_id = asignacion.sede.ge_id;
-        req.session.geriatrico_nombre = asignacion.sede.geriatrico ? asignacion.sede.geriatrico.ge_nombre : null;
-    }
+      const tipoAsignacion = se_id ? 'sede' : 'geriátrico';
 
-        // Guardar la sesión
-        req.session.save((err) => {
-            if (err) {
-                console.error('Error al guardar la sesión:', err);
-            } else {
-                console.log('Sesión guardada correctamente:', req.session);
-            }
-        });
+      // Guardar en la sesión
+      req.session.per_id = id;
+      req.session.rol_id = rol_id;
+      req.session.rol_nombre = asignacion.rol.rol_nombre;
+      req.session[tipoAsignacion === 'sede' ? 'se_id' : 'ge_id'] = se_id || ge_id;
+      req.session.nombre = se_id ? asignacion.sede.se_nombre : asignacion.geriatrico.ge_nombre;
 
-        return res.status(200).json({
-            message: 'Rol seleccionado exitosamente',
-            rol: asignacion.rol.rol_nombre,
-            rol_id: asignacion.rol_id,
-              ...(tipoAsignacion === 'sede' 
-                ? { sede: asignacion.sede.se_nombre, se_id: asignacion.se_id, ge_id: asignacion.sede.ge_id, geriatrico_nombre: asignacion.sede.geriatrico?.ge_nombre } 
-                : { geriatrico: asignacion.geriatrico.ge_nombre, ge_id: asignacion.ge_id })
+      // Si es sede, guardar también el geriátrico asociado
+      if (se_id && asignacion.sede.ge_id) {
+          req.session.ge_id = asignacion.sede.ge_id;
+      }
 
-            
+       // Guardar la sesión
+       req.session.save((err) => {
+        if (err) {
+            console.error('Error al guardar la sesión:', err);
+        } else {
+            console.log('Sesión guardada correctamente:', req.session);
+        }
+    });
 
-        });
+      // Respuesta exitosa
+      return res.status(200).json({
+          message: 'Rol seleccionado exitosamente',
+          per_id: id,
+          rol: asignacion.rol.rol_nombre,
+          rol_id,
+          ...(se_id
+              ? { sede: asignacion.sede.se_nombre, se_id, ge_id: asignacion.sede.ge_id }
+              : { geriátrico: asignacion.geriatrico.ge_nombre, ge_id })
+      });
 
   } catch (error) {
       console.error('Error al seleccionar rol, sede o geriátrico:', error);
       return res.status(500).json({ message: 'Error al seleccionar rol, sede o geriátrico' });
   }
 };
+
+
 
 
 
