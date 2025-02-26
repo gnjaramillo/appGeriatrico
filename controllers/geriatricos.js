@@ -1,5 +1,6 @@
 const { matchedData } = require('express-validator');
-const { sedeModel, geriatricoModel, geriatricoPersonaRolModel, personaModel } = require('../models');
+const { sequelize } = require('../config/mysql'); 
+const { sedeModel, geriatricoModel, geriatricoPersonaModel,sedePersonaRolModel, geriatricoPersonaRolModel, personaModel } = require('../models');
 const { subirImagenACloudinary } = require('../utils/handleCloudinary'); 
 const cloudinary = require('../config/cloudinary'); 
 
@@ -329,37 +330,6 @@ const homeMiGeriatrico = async (req, res) => {
 };
 
 
-
-// Función para obtener colores del geriátrico por ID
-const obtenerColoresGeriatrico = async (req, res) => {
-    try {
-        const { ge_id } = req.params;
-
-        // Buscar el geriátrico por ID
-        const geriatrico = await geriatricoModel.findOne({
-            where: { ge_id },
-            attributes: ['ge_color_principal', 'ge_color_secundario', 'ge_color_terciario']
-        });
-
-        if (!geriatrico) {
-            return res.status(404).json({ message: "Geriátrico no encontrado" });
-        }
-
-        return res.status(200).json({
-            message: "Colores obtenidos correctamente",
-            colores: {
-                principal: geriatrico.ge_color_principal,
-                secundario: geriatrico.ge_color_secundario,
-                terciario: geriatrico.ge_color_terciario
-            }
-        });
-
-    } catch (error) {
-        console.error("Error al obtener colores del geriátrico:", error);
-        return res.status(500).json({ message: "Error al obtener colores del geriátrico" });
-    }
-};
-
     
 
 // se inactiva un geriatrico y todas sus sedes vinculadas (super admin)
@@ -373,30 +343,69 @@ const inactivarGeriatrico = async (req, res) => {
       return res.status(404).json({ message: "Geriátrico no encontrado" });
     }
 
-    // Verificar si el geriátrico ya está inactivo
+    // Verificar si ya está inactivo
     if (!geriatrico.ge_activo) {
       return res.status(400).json({ message: "El geriátrico ya está inactivo" });
     }
 
-    // Inactivar el geriátrico
-    geriatrico.ge_activo = false;
-    await geriatrico.save();
+    // Iniciar una transacción para asegurar consistencia
+    const transaction = await sequelize.transaction();
+    try {
+      // Inactivar el geriátrico
+      await geriatrico.update({ ge_activo: false }, { transaction });
 
-    // Inactivar todas sus sedes asociadas
-    await sedeModel.update({ se_activo: false }, { where: { ge_id } });
+      // Inactivar todas sus sedes
+      await sedeModel.update({ se_activo: false }, { where: { ge_id }, transaction });
 
-    return res.status(200).json({
-      message: "Geriátrico y sus sedes inactivados correctamente",
-      geriatrico: {
-        ge_nombre: geriatrico.ge_nombre,
-        ge_nit: geriatrico.ge_nit
+      // Inactivar todas las vinculaciones en geriatrico_persona
+      await geriatricoPersonaModel.update(
+        { gp_activo: false },
+        { where: { ge_id }, transaction }
+      );
+
+      // Inactivar todos los roles en geriatrico_persona_rol
+      await geriatricoPersonaRolModel.update(
+        { gp_activo: false, gp_fecha_fin: new Date() },
+        { where: { ge_id, gp_activo: true }, transaction }
+      );
+
+      // Obtener todas las sedes del geriátrico
+      const sedes = await sedeModel.findAll({
+        where: { ge_id },
+        attributes: ['se_id'],
+        transaction
+      });
+      const sedeIds = sedes.map(s => s.se_id);
+
+      // Inactivar todos los roles en sede_persona_rol
+      if (sedeIds.length > 0) {
+        await sedePersonaRolModel.update(
+          { sp_activo: false, sp_fecha_fin: new Date() },
+          { where: { se_id: sedeIds }, transaction }
+        );
       }
-    });
+
+      // Confirmar la transacción
+      await transaction.commit();
+
+      return res.status(200).json({
+        message: "Geriátrico, sus sedes y todas las vinculaciones han sido inactivadas correctamente",
+        geriatrico: {
+          ge_nombre: geriatrico.ge_nombre,
+          ge_nit: geriatrico.ge_nit
+        }
+      });
+    } catch (error) {
+      await transaction.rollback();
+      console.error("Error dentro de la transacción:", error);
+      return res.status(500).json({ message: "Error al inactivar el geriátrico" });
+    }
   } catch (error) {
-    console.error("Error al inactivar geriátrico:", error);
-    return res.status(500).json({ message: "Error al inactivar el geriátrico" });
+    console.error("Error general al inactivar geriátrico:", error);
+    return res.status(500).json({ message: "Error en el servidor" });
   }
 };
+
 
 
 
@@ -448,7 +457,6 @@ module.exports = {
   obtenerDetalleGeriatrico, 
   actualizarGeriatrico, 
   homeMiGeriatrico, 
-  obtenerColoresGeriatrico, 
   inactivarGeriatrico, 
   reactivarGeriatrico
 };

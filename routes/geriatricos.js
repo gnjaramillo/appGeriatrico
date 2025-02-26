@@ -12,7 +12,6 @@ const {
     obtenerDetalleGeriatrico, 
     actualizarGeriatrico, 
     homeMiGeriatrico, 
-    obtenerColoresGeriatrico, 
     inactivarGeriatrico, 
     reactivarGeriatrico } = require('../controllers/geriatricos');
 
@@ -32,7 +31,6 @@ router.get('/',  obtenerGeriatricos);
 router.get('/activos', sessionMiddleware, authMiddleware,  checkRol([1]), obtenerGeriatricosActivos);
 router.get('/inactivos', sessionMiddleware, authMiddleware,  checkRol([1]), obtenerGeriatricosInactivos);
 router.get('/homeGeriatrico', sessionMiddleware, authMiddleware,  checkRol([ 2, 3, 4, 5, 6]), homeMiGeriatrico);
-router.get('/colores/:ge_id', sessionMiddleware, authMiddleware,  obtenerColoresGeriatrico);
 router.get('/:ge_id',sessionMiddleware, authMiddleware,  checkRol([1]), validatorIdGeriatrico, obtenerDetalleGeriatrico);
 router.put('/:ge_id', sessionMiddleware, authMiddleware,  checkRol([1]), upload.single('ge_logo'), validatorActualizarGeriatrico,  actualizarGeriatrico);
 

@@ -37,7 +37,7 @@ const asignarRolGeriatrico = async (req, res) => {
         }
 
         if (!geriatrico.ge_activo) {
-            return res.status(400).json({ message: 'El geriátrico está inactivo. Actualmente, no se pueden asignar roles.' });
+            return res.status(400).json({ message: 'No se pueden asignar roles en un geriátrico inactivo.' });
         }
 
         // Verificar si el rol ya está asignado a la persona en este geriátrico y está activo

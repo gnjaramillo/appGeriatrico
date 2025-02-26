@@ -5,7 +5,7 @@ const { geriatricoPersonaModel, personaModel, rolModel, geriatricoModel, sedeMod
 
 
 /* admin geriatrico y admin sede deben primero buscar si la persona ya esta 
-registrada en otro geriatrico, luego hacerle la primera vinculacion */
+registrada en otro geriatrico, luego hacerle la VINCULACION INICIAL */
 const vincularPersonaAGeriatrico = async (req, res) => {
     try {
         const { per_id } = req.body; // Solo necesitamos el ID de la persona
@@ -43,54 +43,6 @@ const vincularPersonaAGeriatrico = async (req, res) => {
 
 
 //ver personas vinculadas activas e inactivas en mi geriatrico para asignarles roles (admin geriatrico y admin sede)
-/* const personasVinculadasMiGeriatrico = async (req, res) => {
-    try {
-        const ge_id = req.session.ge_id; 
-        // const usuarioEnSesion = req.session.per_id; // Usuario autenticado
-
-        if (!ge_id) {
-            return res.status(403).json({ message: "No tienes un geriátrico asignado en la sesión." });
-        }
-
-        // Buscar todas las personas ACTIVAS vinculadas al geriátrico actual
-        const personasVinculadas = await geriatricoPersonaModel.findAll({
-            where: { ge_id                
-                // per_id: { [Op.ne]: usuarioEnSesion } // Excluir usuario en sesión
-                },
-            include: [
-                {
-                    model: personaModel,
-                    as: "persona",
-                    attributes: ["per_id", "per_nombre_completo", "per_documento", "per_telefono", "per_correo"]
-                }
-            ],
-            order: [['gp_activo', 'DESC']] // Ordenar primero los activos
-        });
-
-        if (personasVinculadas.length === 0) {
-            return res.status(404).json({ message: "No hay personas vinculadas a este geriátrico." });
-        }
-
-        return res.status(200).json({
-            message: "Personas vinculadas encontradas",
-            data: personasVinculadas.map((vinculo) => ({
-                per_id: vinculo.persona.per_id,
-                per_nombre: vinculo.persona.per_nombre_completo,
-                per_documento: vinculo.persona.per_documento,
-                per_telefono: vinculo.persona.per_telefono,
-                per_correo: vinculo.persona.per_correo,
-                gp_fecha_vinculacion: vinculo.gp_fecha_vinculacion,
-                gp_activo: vinculo.gp_activo
-            }))
-        });
-
-    } catch (error) {
-        console.error("Error al listar personas vinculadas:", error);
-        return res.status(500).json({ message: "Error en el servidor." });
-    }
-};
- */
-
 const personasVinculadasMiGeriatrico = async (req, res) => {
     try {
         const ge_id = req.session.ge_id; 
@@ -132,7 +84,7 @@ const personasVinculadasMiGeriatrico = async (req, res) => {
                     attributes: ['rol_id', 'rol_nombre']
                 }
             ],
-            attributes: ['per_id', 'gp_activo', 'gp_fecha_inicio', 'gp_fecha_fin'],
+            attributes: ['per_id', 'gp_activo', 'gp_fecha_inicio', 'gp_fecha_fin', 'ge_id'],
             order: [['gp_activo', 'DESC']] // Ordenar primero los activos
 
         });
@@ -183,6 +135,7 @@ const personasVinculadasMiGeriatrico = async (req, res) => {
                         rol_id: r.rol?.rol_id || null,
                         nombre: r.rol?.rol_nombre || "Sin rol",
                         activo: r.gp_activo,
+                        ge_id: r.ge_id,
                         fechaInicio: r.gp_fecha_inicio,
                         fechaFin: r.gp_fecha_fin
                     })),
@@ -298,7 +251,7 @@ const obtenerPersonaRolesMiGeriatricoSede = async (req, res) => {
                     fechaInicio: rg.gp_fecha_inicio,
                     fechaFin: rg.gp_fecha_fin,
                     geriatrico: rg.geriatrico ? {
-                        id: rg.geriatrico.ge_id,
+                        ge_id: rg.geriatrico.ge_id,
                         nombre: rg.geriatrico.ge_nombre,
                         nit: rg.geriatrico.ge_nit
                     } : null
@@ -463,6 +416,7 @@ const inactivarVinculacionGeriatrico = async (req, res) => {
         return res.status(500).json({ message: "Error en el servidor." });
     }
 };
+
 
 
 

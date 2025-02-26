@@ -1,4 +1,5 @@
 const { matchedData } = require("express-validator");
+const { sequelize } = require('../config/mysql'); 
 const { sedeModel, geriatricoModel, sedePersonaRolModel, personaModel } = require("../models");
 const { subirImagenACloudinary } = require('../utils/handleCloudinary'); 
 const cloudinary = require('../config/cloudinary'); 
@@ -234,15 +235,14 @@ const actualizarSede = async (req, res) => {
     if (Number(sede.geriatrico.ge_id) !== Number(ge_id_sesion)) {
       return res.status(403).json({ message: "No tienes permiso para modificar esta sede." });
     }
+    
+    // 🔹 Si el usuario intenta actualizar `cupos_ocupados`, responder con error
+    if ("cupos_ocupados" in req.body) {
+      return res.status(400).json({ message: "No puedes actualizar el campo 'cupos_ocupados'." });
+    }
 
     const data = matchedData(req);
-    const {
-      se_nombre,
-      se_telefono,
-      se_direccion,
-      cupos_totales,
-      cupos_ocupados,      
-    } = data;
+    const { se_nombre, se_telefono, se_direccion, cupos_totales} = data;
 
     let updateData = {};
 
@@ -251,9 +251,11 @@ const actualizarSede = async (req, res) => {
     if (se_telefono) updateData.se_telefono = se_telefono;
     if (se_direccion) updateData.se_direccion = se_direccion;
     if (cupos_totales) updateData.cupos_totales = cupos_totales;
-    if (cupos_ocupados) updateData.cupos_ocupados = cupos_ocupados;
 
-    
+    // Si no hay datos para actualizar, responder con un mensaje
+    if (Object.keys(updateData).length === 0 && !req.file) {
+      return res.status(400).json({ message: "No se han enviado datos para actualizar." });
+    }
 
     // Si hay un archivo (foto), manejar la foto de Cloudinary
     if (req.file) {
@@ -392,12 +394,13 @@ const inactivarSede = async (req, res) => {
       return res.status(403).json({ message: "No se ha seleccionado un geriátrico." });
     }
 
-    // Buscar la sede por ID con la relación al geriátrico
+    // Buscar la sede con su geriátrico
     const sede = await sedeModel.findByPk(se_id, {
+      attributes: ["se_nombre", "se_activo", "se_id"], // Ahora también traemos el nombre de la sede
       include: {
         model: geriatricoModel,
         as: "geriatrico",
-        attributes: ["ge_nombre", "ge_activo", "ge_id"],
+        attributes: ["ge_nombre", "ge_id", "ge_nit"],
       }
     });
 
@@ -405,7 +408,7 @@ const inactivarSede = async (req, res) => {
       return res.status(404).json({ message: "Sede no encontrada" });
     }
 
-    // 🔹 Validar que la sede pertenece al geriátrico del admin en sesión
+    // Verificar si la sede pertenece al geriátrico del admin en sesión
     if (sede.geriatrico.ge_id !== ge_id_sesion) {
       return res.status(403).json({ message: "No tienes permiso para modificar esta sede." });
     }
@@ -415,22 +418,47 @@ const inactivarSede = async (req, res) => {
       return res.status(400).json({ message: "La sede ya está inactiva" });
     }
 
-    // Inactivar la sede
-    await sede.update({ se_activo: false });
+    // Iniciar transacción
+    const transaction = await sequelize.transaction();
 
-    return res.status(200).json({
-      message: `Sede "${sede.se_nombre}" ha sido inactivada correctamente`,
-      sede: {
-        se_nombre: sede.se_nombre,
-        se_telefono: sede.se_telefono,
-      },
-    });
+    try {
+      // Inactivar la sede
+      await sede.update({ se_activo: false }, { transaction });
+
+      // Inactivar todos los roles en sede_personas_roles
+      await sedePersonaRolModel.update(
+        { sp_activo: false, sp_fecha_fin: new Date() },
+        { where: { se_id, sp_activo: true }, transaction }
+      );
+
+      // Confirmar la transacción
+      await transaction.commit();
+
+      return res.status(200).json({
+        message: "Sede y todos sus roles vinculados han sido inactivados correctamente",
+        sede: {
+          se_nombre: sede.se_nombre, 
+          se_activo: sede.se_activo,
+          se_id: sede.se_id,
+          geriatrico: {
+            ge_nombre: sede.geriatrico.ge_nombre,
+            ge_nit: sede.geriatrico.ge_nit
+          }
+        }
+      });
+
+    } catch (error) {
+      await transaction.rollback();
+      console.error("Error dentro de la transacción:", error);
+      return res.status(500).json({ message: "Error al inactivar la sede" });
+    }
 
   } catch (error) {
-    console.error("Error al inactivar sede:", error);
-    return res.status(500).json({ message: "Error al inactivar la sede" });
+    console.error("Error general al inactivar sede:", error);
+    return res.status(500).json({ message: "Error en el servidor" });
   }
 };
+
 
 
 // Reactivar sede (solo admin geriátrico)

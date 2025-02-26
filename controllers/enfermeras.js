@@ -10,26 +10,8 @@ const registrarEnfermera = async (req, res) => {
         const { per_id, enf_codigo } = data;
 
 
-        // Verificar si la persona tiene el rol de Enfermera en CUALQUIER sede para q asi se pueda registra datos adicionales
-        const rolEnfermeraExistente = await sedePersonaRolModel.findOne({
-            where: {
-                per_id,
-                rol_id: 5, // Enfermera
-                [Op.or]: [
-                    { sp_fecha_fin: null },
-                    { sp_fecha_fin: { [Op.gt]: new Date() } }
-                ],
-            },
-        });
-
-        if (!rolEnfermeraExistente) {
-            return res.status(403).json({ 
-                message: "La persona no tiene el rol de enfermera(o) asignado en ninguna sede."
-            });
-        }
-
-        // Verificar si ya está registrada en la tabla enfermera
-        const enfermeraExistente = await enfermeraModel.findOne({
+        // Verificar si la persona ya tiene estos datos adicionales como enfermera
+        const datosEnfermeraExistente = await enfermeraModel.findOne({
             where: { per_id },
             include: [{
                 model: personaModel,  
@@ -38,13 +20,15 @@ const registrarEnfermera = async (req, res) => {
             }]
         });
 
-        if (enfermeraExistente) {
+       
+
+        if (datosEnfermeraExistente) {
             return res.status(400).json({
                 message: 'La persona ya está registrada como enfermera(o) con su respectivo código.',
-                enfermeraExistente: {
-                    nombre: enfermeraExistente.persona.per_nombre_completo,  // Acceder con el alias correcto
-                    documento: enfermeraExistente.persona.per_documento,
-                    enf_codigo: enfermeraExistente.enf_codigo
+                datosEnfermeraExistente: {
+                    nombre: datosEnfermeraExistente.persona.per_nombre_completo,  // Acceder con el alias correcto
+                    documento: datosEnfermeraExistente.persona.per_documento,
+                    enf_codigo: datosEnfermeraExistente.enf_codigo
                 }
             });
         }

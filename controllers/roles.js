@@ -104,24 +104,24 @@ const obtenerRolesAsignados = async (req, res) => {
 
       const { id } = req.user; // Se obtiene desde el token del middleware
 
-      // Obtener asignaciones de roles en sedes
+      // Obtener asignaciones de roles ACTIVOS en sedes
       const rolesSede = await sedePersonaRolModel.findAll({
           where: { per_id: id, sp_activo: true },
           include: [
               { model: rolModel, as: 'rol', attributes: ['rol_id', 'rol_nombre'] },
               { model: sedeModel, as: 'sede', attributes: ['se_id', 'se_nombre'], 
-                where: { se_activo: true }  // Filtrar solo sedes activas 
+                // where: { se_activo: true }  // Filtrar solo sedes activas 
               },
           ],
       });
 
-      // Obtener asignaciones de roles en geriátricos
+      // Obtener asignaciones de roles ACTIVOS en geriátricos
       const rolesGeriatrico = await geriatricoPersonaRolModel.findAll({
           where: { per_id: id, gp_activo: true },
           include: [
               { model: rolModel, as: 'rol', attributes: ['rol_id', 'rol_nombre'] },
               { model: geriatricoModel, as: 'geriatrico', attributes: ['ge_id', 'ge_nombre'],
-                where: { ge_activo: true } // Filtrar solo geriátricos activos
+                // where: { ge_activo: true } // Filtrar solo geriátricos activos
               },
           ],
       });
