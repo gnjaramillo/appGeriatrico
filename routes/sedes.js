@@ -7,8 +7,7 @@ const checkRol = require('../middleware/rol');
 const {
     crearSede, 
     obtenerSedes, 
-    obtenerSedesInactivasPorGeriatrico,
-    obtenerSedesActivasPorGeriatrico, 
+    obtenerSedesMiGeriatrico,
     obtenerDetalleSede,  
     actualizarSede, 
     obtenerHomeSede,
@@ -27,10 +26,9 @@ router.post('/', sessionMiddleware, authMiddleware,  checkRol([2]), upload.singl
 router.put('/inactivar/:se_id', sessionMiddleware, authMiddleware,  checkRol([2]),  validatorIdSede, inactivarSede);
 router.put('/reactivar/:se_id', sessionMiddleware, authMiddleware,  checkRol([2]),  validatorIdSede, reactivarSede);
 router.get('/', obtenerSedes);
-router.get('/inactivas', sessionMiddleware, authMiddleware,  checkRol([2]), obtenerSedesInactivasPorGeriatrico);
+router.get('/sedesGeriatrico', sessionMiddleware, authMiddleware,  checkRol([2]), obtenerSedesMiGeriatrico);
 router.get('/homeSede', sessionMiddleware, authMiddleware,  checkRol([ 2, 3, 4, 5, 6]), obtenerHomeSede);
-router.get('/sedesGeriatrico', sessionMiddleware, authMiddleware,  checkRol([2]), obtenerSedesActivasPorGeriatrico);
-router.get('/:se_id', sessionMiddleware, authMiddleware,  checkRol([2, 3]), validatorIdSede, obtenerDetalleSede);
+router.get('/:se_id', sessionMiddleware, authMiddleware,  checkRol([2]), validatorIdSede, obtenerDetalleSede);
 router.put('/:se_id',sessionMiddleware, authMiddleware,  checkRol([2]), upload.single('se_foto'), validatorActualizarSede, actualizarSede);
 
 
