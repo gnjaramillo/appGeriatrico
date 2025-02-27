@@ -174,7 +174,6 @@ const vincularPersonaAGeriatrico = async (req, res) => {
     }
 }; */ 
 
-
 const personasVinculadasMiGeriatrico = async (req, res) => {
     try {
         const ge_id = req.session.ge_id;

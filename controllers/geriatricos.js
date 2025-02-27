@@ -85,63 +85,6 @@ const obtenerGeriatricos = async (req, res) => {
 
 
 
-// Obtener los geriátricos activos junto con sus sedes (super admin)
-const obtenerGeriatricosActivos = async (req, res) => {
-  try {
-    const geriatricos = await geriatricoModel.findAll({
-      where: { ge_activo: true }, // Filtrar solo los activos
-      include: [
-        {
-          model: sedeModel, // Incluir las sedes
-          as: "sedes",
-        },
-      ],
-    });
-
-    if (geriatricos.length === 0) {
-      return res.status(404).json({ message: "No hay geriátricos activos." });
-    }
-
-    return res.status(200).json({
-      message: "Geriátricos activos obtenidos exitosamente",
-      geriatricos,
-    });
-  } catch (error) {
-    console.error("Error al obtener geriátricos activos:", error);
-    return res.status(500).json({ message: "Error al obtener los geriátricos activos" });
-  }
-};
-
-
-
-// Obtener los geriátricos inactivos junto con sus sedes (super admin)
-const obtenerGeriatricosInactivos = async (req, res) => {
-  try {
-      
-      const geriatricosInactivos = await geriatricoModel.findAll({
-          where: { ge_activo: false }, // Filtrar solo inactivos
-          attributes: ['ge_id', 'ge_nombre'],
-          include: [
-              {
-                  model: sedeModel, 
-                  as: 'sedes', // Alias definido en la relación
-                  attributes: ['se_id', 'se_nombre', 'se_activo'] 
-              }
-          ]
-      });
-
-      if (geriatricosInactivos.length === 0) {
-          return res.status(404).json({ message: 'No hay geriátricos inactivos' });
-      }
-
-      return res.status(200).json({ geriatricosInactivos });
-
-  } catch (error) {
-      console.error('Error al obtener geriátricos inactivos:', error);
-      return res.status(500).json({ message: 'Error al obtener geriátricos inactivos' });
-  }
-};
-
 
 // obtener geriatrico con sus sedes
 const obtenerDetalleGeriatrico = async (req, res) => {
@@ -457,8 +400,6 @@ const reactivarGeriatrico = async (req, res) => {
 module.exports = { 
   crearGeriatrico, 
   obtenerGeriatricos,
-  obtenerGeriatricosActivos, 
-  obtenerGeriatricosInactivos,
   obtenerDetalleGeriatrico, 
   actualizarGeriatrico, 
   homeMiGeriatrico, 
