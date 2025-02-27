@@ -61,8 +61,11 @@ const obtenerGeriatricos = async (req, res) => {
         {
           model: sedeModel, // Modelo de sedes
           as: "sedes", // Alias definido en la asociación
+          order: [['se_activo', 'DESC']] // Ordenar primero los activos
         },
       ],
+      order: [['ge_activo', 'DESC']] // Ordenar primero los activos
+
     });
 
     // Verificar si existen geriátricos en la base de datos
@@ -140,7 +143,7 @@ const obtenerGeriatricosInactivos = async (req, res) => {
 };
 
 
-
+// obtener geriatrico con sus sedes
 const obtenerDetalleGeriatrico = async (req, res) => {
     try {        
 
@@ -153,7 +156,9 @@ const obtenerDetalleGeriatrico = async (req, res) => {
             {
               model: sedeModel, 
               as: "sedes", 
-              attributes: ["se_id", "se_nombre", "se_direccion"], 
+              // attributes: ["se_id", "se_nombre", "se_direccion"], 
+              order: [['se_activo', 'DESC']] // Ordenar primero los activos
+
             },
           ],
         });

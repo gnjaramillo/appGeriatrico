@@ -114,30 +114,30 @@ const obtenerPersonaRoles = async (req, res) => {
                 nombre: persona.per_nombre_completo,
                 rolesGeriatrico: rolesGeriatrico.map(rg => ({
                     rol_id: rg.rol.rol_id,
-                    nombre: rg.rol.rol_nombre,
-                    activo: rg.gp_activo, // Estado del rol en geriátrico
-                    fechaInicio: rg.gp_fecha_inicio, // Nueva fecha de inicio
-                    fechaFin: rg.gp_fecha_fin, // Nueva fecha de fin
+                    rol_nombre: rg.rol.rol_nombre,
+                    rol_activo: rg.gp_activo, // Estado del rol en geriátrico
+                    fechaInicio: rg.gp_fecha_inicio, 
+                    fechaFin: rg.gp_fecha_fin, 
                     geriatrico: {
-                        id: rg.geriatrico.ge_id,
-                        nombre: rg.geriatrico.ge_nombre,
-                        nit: rg.geriatrico.ge_nit,
-                    }
+                        ge_id: rg.geriatrico.ge_id,
+                        ge_nombre: rg.geriatrico.ge_nombre,
+                        ge_nit: rg.geriatrico.ge_nit,
+                    }                   
                 })),
                 rolesSede: rolesSede.map(rs => ({
                     rol_id: rs.rol.rol_id,
-                    nombre: rs.rol.rol_nombre,
-                    activo: rs.sp_activo, // Estado del rol en sede
-                    fechaInicio: rs.sp_fecha_inicio, // Nueva fecha de inicio
-                    fechaFin: rs.sp_fecha_fin, // Nueva fecha de fin
+                    rol_nombre: rs.rol.rol_nombre,
+                    rol_activo: rs.sp_activo, // Estado del rol en sede
+                    fechaInicio: rs.sp_fecha_inicio, 
+                    fechaFin: rs.sp_fecha_fin, 
                     sede: {
                         se_id: rs.sede.se_id,
-                        nombre: rs.sede.se_nombre,
-                        geriatrico: rs.sede.geriatrico ? { 
-                            id: rs.sede.geriatrico.ge_id, 
-                            nombre: rs.sede.geriatrico.ge_nombre,
-                            nitGeriatrico: rs.sede.geriatrico.ge_nit,
-                        } : null
+                        se_nombre: rs.sede.se_nombre,
+                        geriatrico:   { 
+                            ge_id: rs.sede.geriatrico.ge_id, 
+                            ge_nombre: rs.sede.geriatrico.ge_nombre,
+                            ge_nit: rs.sede.geriatrico.ge_nit,
+                        }
                     }
                 }))
             }
