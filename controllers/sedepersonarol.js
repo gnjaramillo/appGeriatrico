@@ -277,7 +277,7 @@ const asignarRolesSede = async (req, res) => {
             if (pacienteEnOtraSede) {
                 return res.status(400).json({
                     message: "El paciente ya está registrado en otra sede de este geriátrico.",
-                    action: "Debe trasladarse el paciente a la nueva sede si es necesario.",
+                    action: "Se debe gestionar salida del paciente  en su sede actual",
                     sedeActual: {
                         se_id: pacienteEnOtraSede.se_id,
                         se_nombre: pacienteEnOtraSede.sede.se_nombre
@@ -288,7 +288,7 @@ const asignarRolesSede = async (req, res) => {
 
         t = await sequelize.transaction();
 
-        // const cuposTotales = sede.cupos_totales;
+        const cuposTotales = sede.cupos_totales;
         let cuposOcupados = sede.cupos_ocupados;
 
         // ✅ Si es paciente (rol_id === 4), verificar y actualizar cupos
@@ -326,6 +326,8 @@ const asignarRolesSede = async (req, res) => {
         if (rol_id === 6) mensajeAdicional = "Has asignado el rol de Acudiente. Registra los datos adicionales del acudiente.";
 
 
+
+
         return res.status(200).json({
             message: "Rol asignado correctamente.",
             nuevaVinculacion,
@@ -339,7 +341,9 @@ const asignarRolesSede = async (req, res) => {
             },
         });
     } catch (error) {
-        await t.rollback();
+        if (t && !t.finished) {
+            await t.rollback();
+        }
         console.error("Error al asignar rol:", error);
         return res.status(500).json({
             message: "Error al asignar rol.",
@@ -349,7 +353,8 @@ const asignarRolesSede = async (req, res) => {
 };
 
 
-// solo los inactiva el admin sede
+
+// roles enfermera, paciente, acudiente.. roles que solo puede inactivar el admin sede
 const inactivarRolSede = async (req, res) => {
     const { per_id, se_id, rol_id } = req.body;
     const ge_id = req.session.ge_id;

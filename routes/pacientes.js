@@ -4,12 +4,13 @@ const authMiddleware = require('../middleware/sessionJwt')
 const sessionMiddleware = require('../middleware/sessionRedis')
 const checkRol = require('../middleware/rol');
 const { pacienteValidator } = require('../validators/pacientes');
-const { registrarPaciente, obtenerPacientesPorSede, obtenerDetallePacienteSede } = require('../controllers/pacientes');
+const { registrarPaciente, obtenerRolesPacientesActivosSede, obtenerRolesPacientesSede, obtenerDetallePacienteSede } = require('../controllers/pacientes');
 
 
-// Ruta para registrar enfermera
 
-router.get('/sede', sessionMiddleware, authMiddleware, checkRol([3,5]), obtenerPacientesPorSede);
+
+router.get('/activosSede', sessionMiddleware, authMiddleware, checkRol([3,5]), obtenerRolesPacientesActivosSede);
+router.get('/sede', sessionMiddleware, authMiddleware, checkRol([3]), obtenerRolesPacientesSede);
 router.get("/sede/:per_id", sessionMiddleware, authMiddleware, checkRol([3,5]), obtenerDetallePacienteSede);
 router.post('/registrar', sessionMiddleware, authMiddleware, checkRol([3]), pacienteValidator, registrarPaciente);
 
