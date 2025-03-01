@@ -1,5 +1,5 @@
 const { matchedData } = require('express-validator');
-const { rolModel, sedePersonaRolModel, sedeModel, geriatricoPersonaRolModel, geriatricoModel } = require('../models');
+const { rolModel, personaModel, sedePersonaRolModel, sedeModel, geriatricoPersonaRolModel, geriatricoModel, geriatricoPersonaModel } = require('../models');
 const { limpiarSesion } = require('../utils/sessionUtils');
 
 
@@ -41,6 +41,197 @@ const obtenerRoles = async (req, res) => {
       return res.status(500).json({ message: "Error al obtener roles." });
     }
 };
+
+
+
+
+/* const obtenerHistorialRoles = async (req, res) => {
+  try {
+    const { ge_id } = req.params;
+
+    // Obtener roles en geriátrico (activos e inactivos)
+    const rolesGeriatrico = await geriatricoPersonaRolModel.findAll({
+      where: { ge_id },
+      include: [
+        { model: personaModel, 
+          as: "persona",
+          attributes: ["per_nombre_completo", "per_documento"] },
+        { model: rolModel, 
+          as: 'rol',
+          attributes: ["rol_nombre"] }
+      ],
+      order: [["gp_activo", "DESC"]] // Ordena por estado: activos primero
+    });
+
+    // Obtener todas las sedes asociadas al geriátrico
+    const sedes = await sedeModel.findAll({
+      where: { ge_id },
+      attributes: ["se_id", "se_nombre"]
+    });
+    const sedeIds = sedes.map(s => s.se_id);
+
+    let rolesSedes = [];
+    if (sedeIds.length > 0) {
+      // Obtener roles en sedes (activos e inactivos)
+      rolesSedes = await sedePersonaRolModel.findAll({
+        where: { se_id: sedeIds },
+        include: [
+          { model: personaModel, 
+            as: "persona",
+            attributes: ["per_nombre_completo", "per_documento"] 
+          },
+          { model: rolModel,
+            as: 'rol',
+            attributes: ["rol_nombre"] 
+          },
+          { model: sedeModel, 
+            as: 'sede',
+            attributes: ["se_nombre"] 
+          }
+        ],
+        order: [["sp_activo", "DESC"]] // Ordena por estado: activos primero
+      });
+    }
+
+    return res.status(200).json({
+      rolesGeriatrico,
+      rolesSedes
+    });
+  } catch (error) {
+    console.error("Error al obtener historial de roles:", error);
+    return res.status(500).json({ message: "Error en el servidor" });
+  }
+}; */
+
+
+const obtenerHistorialRoles = async (req, res) => {
+    try {
+      const { ge_id } = req.params;
+
+        if (!ge_id) {
+            return res.status(403).json({ message: "No tienes un geriátrico asignado en la sesión." });
+        }
+
+        // Obtener TODAS las personas vinculadas al geriátrico en sesión
+        const personasVinculadas = await geriatricoPersonaModel.findAll({
+            where: { ge_id
+                // per_id: { [Op.ne]: usuarioEnSesion } // Excluir usuario en sesión
+             },
+            include: [
+                {
+                    model: personaModel,
+                    as: "persona",
+                    attributes: ["per_id", "per_nombre_completo", "per_documento", "per_telefono", "per_correo"]
+                }
+            ],
+            attributes: ["gp_fecha_vinculacion", "gp_activo"], 
+            order: [['gp_activo', 'DESC']] // Ordenar primero los activos
+        });
+
+        if (personasVinculadas.length === 0) {
+            return res.status(404).json({ message: "No hay personas vinculadas a este geriátrico." });
+        }
+
+        // Extraer IDs de personas para buscar sus roles
+        const personasIds = personasVinculadas.map(p => p.persona.per_id);
+
+        // Obtener roles en geriátrico de todas las personas vinculadas
+        const rolesGeriatrico = await geriatricoPersonaRolModel.findAll({
+            where: { per_id: personasIds, ge_id },// Filtra por geriátrico en sesión
+            include: [
+                {
+                    model: rolModel,
+                    as: 'rol',
+                    attributes: ['rol_id', 'rol_nombre']
+                }
+            ],
+            attributes: ['per_id', 'gp_activo', 'gp_fecha_inicio', 'gp_fecha_fin', 'ge_id'],
+            order: [['gp_activo', 'DESC']] // Ordenar primero los activos
+
+        });
+
+        // 🔹 Obtener todas las sedes del geriátrico en sesión
+        const sedes = await sedeModel.findAll({
+            where: { ge_id }, 
+            attributes: ['se_id', 'se_nombre']
+        });
+
+        const sedeIds = sedes.map(sede => sede.se_id); // Obtener solo los IDs de las sedes
+
+
+
+
+        // Obtener roles en sedes dentro del geriátrico en sesión
+        const rolesSede = await sedePersonaRolModel.findAll({
+            where: { per_id: personasIds, se_id: sedeIds  },
+            include: [
+                {
+                    model: sedeModel,
+                    as: 'sede',
+                    attributes: ['se_id', 'se_nombre', 'ge_id'],
+                },
+                {
+                    model: rolModel,
+                    as: 'rol',
+                    attributes: ['rol_id', 'rol_nombre']
+                }
+            ],
+            attributes: ['per_id', 'sp_activo', 'sp_fecha_inicio', 'sp_fecha_fin'],
+            order: [['sp_activo', 'DESC']] // Ordenar primero los activos
+
+        });
+
+        // Mapear datos en un solo objeto por persona
+        const personasConRoles = personasVinculadas.map(vinculo => {
+            const per_id = vinculo.persona.per_id;
+            return {
+                per_id,
+                per_nombre: vinculo.persona.per_nombre_completo,
+                per_documento: vinculo.persona.per_documento,
+                per_telefono: vinculo.persona.per_telefono,
+                per_correo: vinculo.persona.per_correo,
+                gp_fecha_vinculacion: vinculo.gp_fecha_vinculacion,
+                gp_activo: vinculo.gp_activo, // persona activa o inactiva en geriatrico
+                rolesGeriatrico: rolesGeriatrico
+                    .filter(r => r.per_id === per_id)
+                    .map(r => ({
+                        rol_id: r.rol?.rol_id || null,
+                        rol_nombre: r.rol?.rol_nombre || "Sin rol",
+                        rol_activo: r.gp_activo, // Estado del rol en geriátrico
+                        fechaInicio: r.gp_fecha_inicio,
+                        fechaFin: r.gp_fecha_fin,
+                        ge_id: r.ge_id
+                    })),
+                rolesSede: rolesSede
+                    .filter(r => r.per_id === per_id)
+                    .map(r => ({
+                        rol_id: r.rol?.rol_id || null,
+                        rol_nombre: r.rol?.rol_nombre || "Sin rol",
+                        rol_activo: r.sp_activo, // Estado del rol en sede
+                        fechaInicio: r.sp_fecha_inicio,
+                        fechaFin: r.sp_fecha_fin,                        
+                        se_id: r.sede.se_id,
+                        se_nombre: r.sede.se_nombre,
+                        ge_id: r.sede.ge_id,
+                        
+                        
+                    }))
+            };
+        });
+
+        return res.status(200).json({
+            message: "Personas vinculadas con roles encontradas",
+            data: personasConRoles
+        });
+
+    } catch (error) {
+        console.error("Error al obtener personas con roles:", error);
+        return res.status(500).json({ message: "Error en el servidor." });
+    }
+};
+
+
+
 
 
 
@@ -242,4 +433,4 @@ const seleccionarRol = async (req, res) => {
 
 
 
-module.exports = { crearRol, obtenerRoles, obtenerDetalleRol, actualizarRol, obtenerRolesAsignados, seleccionarRol };
+module.exports = { crearRol, obtenerRoles, obtenerHistorialRoles, obtenerDetalleRol, actualizarRol, obtenerRolesAsignados, seleccionarRol };
