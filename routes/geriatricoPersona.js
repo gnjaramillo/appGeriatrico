@@ -5,12 +5,12 @@ const sessionMiddleware = require('../middleware/sessionRedis');
 const checkRol = require('../middleware/rol');
 
 const { 
-    vincularPersonaAGeriatrico, 
+    
     personasVinculadasMiGeriatrico, 
     obtenerPersonaRolesMiGeriatricoSede,
     inactivarVinculacionGeriatrico,
     reactivarVinculacionGeriatrico 
-} = require('../controllers/geriatricoPersona');
+} = require('../controllers/geriatricopersona');
 
     const { validarPersonaGeriatrico } = require('../validators/geriatricoPersona'); 
 
@@ -24,8 +24,6 @@ const {
 router.get('/rolesGeriatrico/:per_id', sessionMiddleware, authMiddleware, checkRol([2,3]),  obtenerPersonaRolesMiGeriatricoSede);
 router.get('/vinculadas', sessionMiddleware, authMiddleware, checkRol([2,3]), personasVinculadasMiGeriatrico);
 
-// vinculacion inicial al geriatrico
-router.post('/vincular', sessionMiddleware, authMiddleware, checkRol([2,3]), validarPersonaGeriatrico, vincularPersonaAGeriatrico);
 
 // desvincular persona al geriatrico, inactiva todos sus roles en geriatrico y sedes asociadas
 router.put('/desvincular/:per_id', sessionMiddleware, authMiddleware, checkRol([2]), validarPersonaGeriatrico, inactivarVinculacionGeriatrico );

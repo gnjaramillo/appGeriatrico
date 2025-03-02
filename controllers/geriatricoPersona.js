@@ -6,7 +6,9 @@ const { geriatricoPersonaModel, personaModel, rolModel, geriatricoModel, sedeMod
 
 /* admin geriatrico y admin sede deben primero buscar si la persona ya esta 
 registrada en otro geriatrico, luego hacerle la VINCULACION INICIAL */
-const vincularPersonaAGeriatrico = async (req, res) => {
+/* const vincularPersonaAGeriatrico = async (req, res) => {
+
+    
     try {
         const { per_id } = req.body;
         const ge_id = req.session.ge_id;
@@ -42,7 +44,7 @@ const vincularPersonaAGeriatrico = async (req, res) => {
         console.error("Error al vincular persona:", error);
         return res.status(500).json({ message: "Error en el servidor." });
     }
-};
+}; */
 
 
 
@@ -536,4 +538,4 @@ const reactivarVinculacionGeriatrico = async (req, res) => {
 
 
 
-module.exports = { vincularPersonaAGeriatrico, personasVinculadasMiGeriatrico, obtenerPersonaRolesMiGeriatricoSede, inactivarVinculacionGeriatrico, reactivarVinculacionGeriatrico  };
+module.exports = { personasVinculadasMiGeriatrico, obtenerPersonaRolesMiGeriatricoSede, inactivarVinculacionGeriatrico, reactivarVinculacionGeriatrico  };

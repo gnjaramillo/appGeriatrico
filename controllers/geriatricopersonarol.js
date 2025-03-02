@@ -15,6 +15,10 @@ const ROLES_UNICOS_GERIATRICO = [2]; // solo puede haber un admin por geriátric
 
 // Controlador para asignar roles de geriátrico (super admin)
 const asignarRolGeriatrico = async (req, res) => {
+
+    let transaction;
+
+
     try {
         const data = matchedData(req);
         const { per_id, ge_id, rol_id, gp_fecha_inicio, gp_fecha_fin } = data;
@@ -31,7 +35,10 @@ const asignarRolGeriatrico = async (req, res) => {
         }
 
         // Verificar si el geriátrico existe y está activo
-        const geriatrico = await geriatricoModel.findOne({ where: { ge_id } });
+        const geriatrico = await geriatricoModel.findOne({ 
+            where: { ge_id }, 
+            attributes: ['ge_id', 'ge_nombre', 'ge_activo'],
+        });
         if (!geriatrico) {
             return res.status(404).json({ message: 'Geriátrico no encontrado.' });
         }
@@ -39,6 +46,12 @@ const asignarRolGeriatrico = async (req, res) => {
         if (!geriatrico.ge_activo) {
             return res.status(400).json({ message: 'No se pueden asignar roles en un geriátrico inactivo.' });
         }
+
+        const rol = await rolModel.findOne({
+            where: { rol_id },
+            attributes: ['rol_nombre'],
+        });
+
 
         // Verificar si el rol ya está asignado a la persona en este geriátrico y está activo
         const rolExistente = await geriatricoPersonaRolModel.findOne({
@@ -70,8 +83,9 @@ const asignarRolGeriatrico = async (req, res) => {
         }
 
         // Iniciar transacción para garantizar consistencia en la BD
-        const transaction = await sequelize.transaction();
+        transaction = await sequelize.transaction();
 
+        
         try {
             // Asignar el rol a la persona en el geriátrico
             const nuevaVinculacionRol = await geriatricoPersonaRolModel.create({
@@ -83,26 +97,41 @@ const asignarRolGeriatrico = async (req, res) => {
                 gp_activo: true // 🔹 Se asigna como activo
             }, { transaction });
 
-            // Verificar si la persona ya está vinculada al geriátrico
-            const vinculacionExistente = await geriatricoPersonaModel.findOne({
-                where: { per_id, ge_id }
-            });
 
-            if (!vinculacionExistente) {
-                // Si no está vinculada, la creamos
-                await geriatricoPersonaModel.create({
-                    per_id,
-                    ge_id
-                }, { transaction });
+             // 🔹 Verificar si la persona ya está vinculada al geriátrico
+        let vinculoGeriatrico = await geriatricoPersonaModel.findOne({
+            where: { per_id, ge_id }
+        });
+
+        if (vinculoGeriatrico) {
+            if (!vinculoGeriatrico.gp_activo) {
+                // Reactivar si estaba inactiva
+                await vinculoGeriatrico.update({ gp_activo: true });
             }
+        } else {
+            // Si no está vinculada, crear la vinculación
+            vinculoGeriatrico = await geriatricoPersonaModel.create({ 
+                ge_id, 
+                per_id, 
+                gp_activo: true 
+            }, { transaction });
+        }
 
+            
             // Confirmar la transacción
             await transaction.commit();
 
             return res.status(201).json({
-                message: 'Rol asignado correctamente y vinculación creada.',
-                data: nuevaVinculacionRol
+                message: 'Rol asignado correctamente.',
+                data: nuevaVinculacionRol,
+                rolNombre: rol.rol_nombre,
+                geriatrico: {
+                    ge_id: geriatrico.ge_id,
+                    ge_nombre: geriatrico.ge_nombre
+                }
+    
             });
+
         } catch (error) {
             await transaction.rollback();
             throw error;
