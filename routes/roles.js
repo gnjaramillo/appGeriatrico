@@ -8,7 +8,7 @@ const {validatorCrearRol, validatorDetalleRol, validatorActualizarRol, validarRo
 
 
 
-router.get('/', sessionMiddleware, authMiddleware, checkRol([1]), obtenerRoles);
+router.get('/', sessionMiddleware, authMiddleware, checkRol([1, 2, 3]), obtenerRoles);
 router.get('/historialGeriatrico/:ge_id', sessionMiddleware, authMiddleware, checkRol([1]), obtenerHistorialRoles);
 router.get('/rolesAsignados', sessionMiddleware, authMiddleware,  obtenerRolesAsignados);
 router.get('/:rol_id', validatorDetalleRol, obtenerDetalleRol);
