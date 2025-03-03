@@ -8,7 +8,7 @@ const { validatorAcudiente } = require('../validators/acudientes');
 const { registrarAcudiente } = require('../controllers/acudientes');
 
 
-// Ruta para registrar enfermera
+
 router.post('/registrar', sessionMiddleware, authMiddleware, checkRol([3]), upload.single('acu_foto'), validatorAcudiente, registrarAcudiente);
 
 module.exports = router;

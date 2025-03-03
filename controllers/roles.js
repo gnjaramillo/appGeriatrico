@@ -150,7 +150,7 @@ const obtenerHistorialRoles = async (req, res) => {
 
         });
 
-        // 🔹 Obtener todas las sedes del geriátrico en sesión
+        // 🔹 Obtener todas las sedes del geriátrico 
         const sedes = await sedeModel.findAll({
             where: { ge_id }, 
             attributes: ['se_id', 'se_nombre']

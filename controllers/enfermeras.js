@@ -52,7 +52,65 @@ const registrarEnfermera = async (req, res) => {
 };
 
 
-module.exports = { registrarEnfermera };
+
+// ver TODAS las enfermeras de mi sede  (admin sede)
+const obtenerRolesEnfermerasSede = async (req, res) => {
+    try {
+      const se_id = req.session.se_id;
+  
+      if (!se_id) {
+        return res.status(403).json({ message: "No tienes una sede asignada en la sesión." });
+      }
+  
+      const enfermeras = await sedePersonaRolModel.findAll({
+        where: { se_id, rol_id: 5 }, // Filtrar solo enfermeras en la sede del admin
+        attributes: ["sp_fecha_inicio", "sp_fecha_fin", "sp_activo"],
+        include: [
+          {
+            model: personaModel,
+            as: "persona",
+            attributes: ["per_id", "per_nombre_completo", "per_documento"],
+            include: [
+              {
+                model: enfermeraModel, // Incluir datos adicionales de enfermera
+                as: "enfermera",
+                attributes: ["enf_codigo"],
+              }
+            ]
+          },
+        ],
+        order: [['sp_activo', 'DESC']] // Ordenar primero los activos
+      });
+  
+      if (enfermeras.length === 0) {
+        return res.status(404).json({ message: "No hay enfermeras vinculadas a esta sede." });
+      }
+  
+      const respuestaEnfermeras = enfermeras.map((e) => ({
+        per_id: e.persona.per_id,
+        nombre: e.persona.per_nombre_completo,
+        documento: e.persona.per_documento,
+        fechaInicio: e.sp_fecha_inicio,
+        fechaFin: e.sp_fecha_fin,
+        enfermeraActiva: e.sp_activo,
+        enf_codigo: e.persona.enfermera?.enf_codigo || null, // Puede ser null si aun no tiene registro en enfermeraModel
+      }));
+  
+      return res.status(200).json({
+        message: "Enfermeras obtenidas exitosamente",
+        enfermeras: respuestaEnfermeras,
+      });
+    } catch (error) {
+      console.error("Error al obtener enfermeras por sede:", error);
+      return res.status(500).json({ message: "Error al obtener enfermeras." });
+    }
+};
+
+
+
+  
+
+module.exports = { registrarEnfermera, obtenerRolesEnfermerasSede };
 
 
 

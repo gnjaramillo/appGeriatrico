@@ -4,10 +4,12 @@ const authMiddleware = require('../middleware/sessionJwt')
 const sessionMiddleware = require('../middleware/sessionRedis')
 const checkRol = require('../middleware/rol');
 const { validatorEnfermera } = require('../validators/enfermeras');
-const { registrarEnfermera } = require('../controllers/enfermeras');
+const { registrarEnfermera, obtenerRolesEnfermerasSede } = require('../controllers/enfermeras');
 
 
-// Ruta para registrar enfermera
+
+router.get('/sede', sessionMiddleware, authMiddleware, checkRol([3]), obtenerRolesEnfermerasSede);
+
 router.post('/registrar', sessionMiddleware, authMiddleware, checkRol([3]), validatorEnfermera, registrarEnfermera);
 
 module.exports = router;

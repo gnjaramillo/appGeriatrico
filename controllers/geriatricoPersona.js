@@ -4,48 +4,6 @@ const { geriatricoPersonaModel, personaModel, rolModel, geriatricoModel, sedeMod
 
 
 
-/* admin geriatrico y admin sede deben primero buscar si la persona ya esta 
-registrada en otro geriatrico, luego hacerle la VINCULACION INICIAL */
-/* const vincularPersonaAGeriatrico = async (req, res) => {
-
-    
-    try {
-        const { per_id } = req.body;
-        const ge_id = req.session.ge_id;
-
-        if (!ge_id) {
-            return res.status(400).json({ message: "Error: No se pudo determinar el geriátrico." });
-        }
-
-        const persona = await personaModel.findByPk(per_id);
-        if (!persona) {
-            return res.status(404).json({ message: 'Persona no encontrada.' });
-        }
-
-        // Verificar si ya existe cualquier registro (activo o inactivo)
-        const vinculoExistente = await geriatricoPersonaModel.findOne({ where: { per_id, ge_id } });
-
-        if (vinculoExistente) {
-            if (vinculoExistente.gp_activo) {
-                return res.status(400).json({ message: "La persona ya está vinculada a este geriátrico." });
-            } else {
-                // Reactivar en lugar de crear un nuevo registro
-                await vinculoExistente.update({ gp_activo: true });
-                return res.status(200).json({ message: "Vinculación reactivada exitosamente." });
-            }
-        }
-
-        // Si no hay ningún registro previo, crear uno nuevo
-        await geriatricoPersonaModel.create({ ge_id, per_id, gp_activo: true });
-
-        return res.status(201).json({ message: "Persona vinculada exitosamente al geriátrico." });
-
-    } catch (error) {
-        console.error("Error al vincular persona:", error);
-        return res.status(500).json({ message: "Error en el servidor." });
-    }
-}; */
-
 
 
 //ver personas vinculadas activas e inactivas en mi geriatrico para asignarles roles (admin geriatrico y admin sede)
@@ -340,6 +298,10 @@ const obtenerPersonaRolesMiGeriatricoSede = async (req, res) => {
         return res.status(500).json({ message: "Error en el servidor." });
     }
 };
+
+
+
+
 
 
 

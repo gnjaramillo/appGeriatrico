@@ -171,34 +171,6 @@ if (acudienteExistente) {
 
 
 
-// Obtener Acudiente(s) de un Paciente
-/* const obtenerAcudientesDePaciente = async (req, res) => {
-    try {
-        const { pac_id } = req.params;
 
-        const acudientes = await acudienteModel.findAll({
-            where: { pac_id },
-            include: [
-                {
-                    model: personaModel,
-                    as: 'persona',
-                    attributes: ['per_nombre_completo', 'per_documento']
-                }
-            ]
-        });
-
-        return res.json({
-            message: 'Acudientes obtenidos correctamente.',
-            acudientes,
-        });
-
-    } catch (error) {
-        console.error('Error al obtener acudientes de paciente:', error);
-        return res.status(500).json({
-            message: 'Error al obtener acudientes de paciente.',
-            error: error.message,
-        });
-    }
-}; */
 
 module.exports = { registrarAcudiente };

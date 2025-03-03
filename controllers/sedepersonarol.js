@@ -472,18 +472,34 @@ const asignarRolesSede = async (req, res) => {
 
 // roles enfermera, paciente, acudiente.. roles que solo puede inactivar el admin sede
 const inactivarRolSede = async (req, res) => {
+    
     const { per_id, se_id, rol_id } = req.body;
     const ge_id = req.session.ge_id;
+    const se_id_sesion = req.session.se_id; // sede del admin sede
+
 
     if (!ge_id) {
         return res.status(403).json({ message: 'No tienes un geriátrico asignado en la sesión.' });
     }
+
+
+    if (!se_id_sesion) {
+        return res.status(403).json({ message: 'No tienes una sede asignada en la sesión.' });
+    }
+
 
     if (!ROLES_PERMITIDOS_SEDE.includes(rol_id)) {
         return res.status(400).json({ message: 'No tienes permiso para inactivar este rol en una sede.' });
     }
 
     try {
+
+        // Verificar que la sede que intenta modificar es la misma que tiene asignada
+        if (se_id !== se_id_sesion) {
+            return res.status(403).json({ message: 'No puedes inactivar roles en sedes que no están a tu cargo.' });
+        }
+
+
         // Verificar que la sede pertenece al geriátrico del usuario en sesión
         const sede = await sedeModel.findOne({
             where: { se_id, ge_id },

@@ -32,7 +32,8 @@ const config = {
         port: process.env.MYSQL_PORT_RAILWAY, 
         dialect: 'mysql',
         timezone: '-05:00', 
-        logging: false 
+        logging: false,
+         
     }
 };
 
