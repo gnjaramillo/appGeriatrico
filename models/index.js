@@ -9,7 +9,7 @@ const models = {
     rolModel: require('./roles'),
     sedePersonaRolModel: require('./sedepersonarol'),
     geriatricoPersonaRolModel: require('./geriatricopersonarol'),
-    geriatricoPersonaModel: require('./geriatricopersona'),
+    geriatricoPersonaModel: require('./geriatricoPersona'),
     pacienteModel: require('./pacientes'),
     enfermeraModel: require('./enfermeras'),
     turnoModel: require('./turnos'),

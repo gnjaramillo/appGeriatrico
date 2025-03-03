@@ -10,7 +10,7 @@ const {
     obtenerPersonaRolesMiGeriatricoSede,
     inactivarVinculacionGeriatrico,
     reactivarVinculacionGeriatrico 
-} = require('../controllers/geriatricopersona');
+} = require('../controllers/geriatricoPersona');
 
     const { validarPersonaGeriatrico } = require('../validators/geriatricoPersona'); 
 
