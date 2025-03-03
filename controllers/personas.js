@@ -378,28 +378,13 @@ const actualizarPerfil = async (req, res) => {
 const buscarPersonaPorDocumento = async (req, res) => {
     try {
         const { per_documento } = req.params;
-        const ge_id = req.session.ge_id; // Obtener el geriátrico desde la sesión del usuario
 
-
-        // Buscar a la persona en la base de datos con sus vinculaciones
+        // Buscar a la persona en la base de datos
         const persona = await personaModel.findOne({
             where: { per_documento },
-            include: [
-                {
-                    model: geriatricoPersonaModel,
-                    as: "vinculosGeriatricos",
-                    include: [
-                        {
-                            model: geriatricoModel,
-                            as: "geriatrico",
-                            attributes: ["ge_id", "ge_nombre"]
-                        }
-                    ]
-                }
-            ]
+            attributes: ["per_id", "per_nombre_completo", "per_documento"]
         });
 
-        // Si la persona no existe, devolver mensaje para registrarla
         if (!persona) {
             return res.status(404).json({
                 message: "Persona no encontrada. ¿Desea registrarla?",
@@ -407,29 +392,12 @@ const buscarPersonaPorDocumento = async (req, res) => {
             });
         }
 
-        // Extraer los geriátricos asociados
-        const geriatricos = persona.vinculosGeriatricos?.map((gp) => ({
-            ge_id: gp.geriatrico?.ge_id,
-            ge_nombre: gp.geriatrico?.ge_nombre
-        })) || [];
-
-        // Verificar si ya está vinculada al geriátrico del admin
-        const vinculoExistente = geriatricos.some(g => g.ge_id === ge_id);
-
-        if (vinculoExistente) {
-            return res.status(400).json({
-                message: "La persona ya está vinculada a este geriátrico.",
-                action: "none"
-            });
-        }
-
         return res.status(200).json({
-            message: "Persona encontrada. ¿Desea vincularla?",
-            action: "link",
-            per_id: persona.per_id, //  per_id para vinculación
+            message: "Persona encontrada. ¿Desea asignarle un rol?",
+            action: "assign_role",
+            per_id: persona.per_id,
             per_nombre: persona.per_nombre_completo,
-            per_documento: persona.per_documento,
-            geriatricos // Lista de geriátricos a los que ya pertenece
+            per_documento: persona.per_documento
         });
 
     } catch (error) {
@@ -437,6 +405,7 @@ const buscarPersonaPorDocumento = async (req, res) => {
         return res.status(500).json({ message: "Error en el servidor." });
     }
 };
+
 
 
 

@@ -21,7 +21,7 @@ const registrarAcudiente = async (req, res) => {
           message: "La persona no tiene el rol de acudiente activo en esta sede.",
         });
       }
-         
+
 
     // console.log("Roles del acudiente:", rolAcudienteActivo);
 
