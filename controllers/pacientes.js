@@ -1,6 +1,6 @@
 const { Op } = require("sequelize");
 const { matchedData } = require("express-validator");
-const { pacienteModel, sedeModel, personaModel, acudienteModel, sedePersonaRolModel,
+const { pacienteModel, rolModel, sedeModel, personaModel, acudienteModel, geriatricoPersonaModel, sedePersonaRolModel,
 } = require("../models");
 
 
@@ -100,13 +100,30 @@ const registrarPaciente = async (req, res) => {
 
 
 // ver TODOS los pacientes de mi sede lista segmentada (admin sede, enfermeros)
-const obtenerRolesPacientesSede = async (req, res) => {
+const obtenerPacientesSede = async (req, res) => {
   try {
     const se_id = req.session.se_id;
 
-    const pacientes = await sedePersonaRolModel.findAll({
-      where: { se_id, rol_id: 4 },
-      attributes: ["sp_fecha_inicio", "sp_fecha_fin", "sp_activo"],
+    if (!se_id) {
+      return res
+        .status(403)
+        .json({ message: "No tienes una sede asignada en la sesión." });
+    }
+
+    // Obtener el geriátrico dueño de la sede en sesión
+    const sede = await sedeModel.findOne({
+      where: { se_id },
+      attributes: ["ge_id"],
+    });
+
+    if (!sede) {
+      return res.status(404).json({ message: "La sede no existe." });
+    }
+
+    const ge_id = sede.ge_id;
+
+    const vinculaciones = await sedePersonaRolModel.findAll({
+      where: { se_id, rol_id: 4 }, // Solo pacientes de la sede
       include: [
         {
           model: personaModel,
@@ -114,39 +131,95 @@ const obtenerRolesPacientesSede = async (req, res) => {
           attributes: ["per_id", "per_nombre_completo", "per_documento"],
           include: [
             {
-              model: pacienteModel, // Incluir datos de paciente
+              model: pacienteModel,
               as: "paciente",
               attributes: ["pac_id"],
+            },
+            {
+              model: geriatricoPersonaModel,
+              as: "vinculosGeriatricos",
+              where: { ge_id },
+              attributes: ["gp_activo"],
+              order: [["gp_activo", "DESC"]], // Activos primero
             },
           ],
         },
       ],
-      order: [["sp_activo", "DESC"]], // Ordenar primero los activos
     });
 
-    if (pacientes.length === 0) {
+    if (vinculaciones.length === 0) {
       return res
         .status(404)
         .json({ message: "No hay pacientes vinculados a esta sede." });
     }
 
-    const respuestaPacientes = pacientes.map((p) => ({
-      pac_id: p.persona.paciente?.pac_id || null, // Puede ser null si no tiene registro en pacientes
-      per_id: p.persona.per_id,
-      nombre: p.persona.per_nombre_completo,
-      documento: p.persona.per_documento,
-      fechaInicio: p.sp_fecha_inicio,
-      fechaFin: p.sp_fecha_fin,
-      pacienteActivo: p.sp_activo,
+    // Mapear datos en un solo objeto por persona sin roles
+    const pacientesVinculadosSede = vinculaciones.map((vinculo) => ({
+      per_id: vinculo.persona.per_id,
+      pac_id: vinculo.persona.paciente?.pac_id || null,
+      per_nombre: vinculo.persona.per_nombre_completo,
+      per_documento: vinculo.persona.per_documento,
+      vinculadoActivo: vinculo.persona.vinculosGeriatricos[0].gp_activo,
     }));
 
     return res.status(200).json({
-      message: "Pacientes obtenidos exitosamente",
-      pacientes: respuestaPacientes, // Ahora es un array de pacientes
+      message: "Pacientes vinculados encontrados",
+      data: Array.from(pacientesVinculadosSede.values()).sort(
+        (a, b) => Number(b.vinculadoActivo) - Number(a.vinculadoActivo)
+      ),
     });
   } catch (error) {
-    console.error("Error al obtener pacientes por sede:", error);
-    return res.status(500).json({ message: "Error al obtener pacientes." });
+    console.error("Error al obtener pacientes vinculados:", error);
+    return res.status(500).json({ message: "Error en el servidor." });
+  }
+};
+
+
+
+const obtenerRolesPacientesSede = async (req, res) => {
+  try {
+    const { per_id } = req.params;
+    const se_id = req.session.se_id;
+
+    if (!se_id) {
+      return res
+        .status(403)
+        .json({ message: "No tienes una sede asignada en la sesión." });
+    }
+
+    // Obtener los roles de paciente en la sede, ordenados por activo primero
+    const rolesPaciente = await sedePersonaRolModel.findAll({
+      where: { per_id, se_id, rol_id: 4 }, // Solo roles de paciente
+      include: [
+        {
+          model: rolModel,
+          as: "rol",
+          attributes: ["rol_id", "rol_nombre"],
+        },
+      ],
+      attributes: ["sp_activo", "sp_fecha_inicio", "sp_fecha_fin"],
+      order: [["sp_activo", "DESC"]], // Activos primero
+    });
+
+    if (rolesPaciente.length === 0) {
+      return res
+        .status(404)
+        .json({ message: "El paciente no tiene roles en esta sede." });
+    }
+
+    return res.status(200).json({
+      message: "Roles del paciente obtenidos exitosamente",
+      roles: rolesPaciente.map((rol) => ({
+        rol_id: rol.rol.rol_id,
+        rol_nombre: rol.rol.rol_nombre,
+        fechaInicio: rol.sp_fecha_inicio,
+        fechaFin: rol.sp_fecha_fin,
+        activo: rol.sp_activo,
+      })),
+    });
+  } catch (error) {
+    console.error("Error al obtener roles del paciente:", error);
+    return res.status(500).json({ message: "Error en el servidor." });
   }
 };
 
@@ -159,9 +232,7 @@ const obtenerDetallePaciente = async (req, res) => {
     const ge_id = req.session.ge_id; // Obtener el geriátrico desde la sesión
 
     if (!ge_id) {
-      return res
-        .status(403)
-        .json({ message: "No tienes un geriátrico asignado en la sesión." });
+      return res.status(403).json({ message: "No tienes un geriátrico asignado en la sesión." });
     }
 
     // 🔹 Obtener todas las sedes del geriátrico en sesión
@@ -397,6 +468,7 @@ const actualizarDetallePaciente = async (req, res) => {
 
 module.exports = {
   registrarPaciente,
+  obtenerPacientesSede,
   obtenerRolesPacientesSede,
   obtenerDetallePaciente,
   obtenerAcudientesDePaciente,

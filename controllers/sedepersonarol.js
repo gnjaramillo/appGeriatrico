@@ -394,7 +394,7 @@ const asignarRolesSede = async (req, res) => {
 
         if (vinculoGeriatrico) {
             if (!vinculoGeriatrico.gp_activo) {
-                await vinculoGeriatrico.update({ gp_activo: true }, { transaction });
+                await vinculoGeriatrico.update({ gp_activo: true }, { transaction: t });
             }
         } else {
             vinculoGeriatrico = await geriatricoPersonaModel.create({ 

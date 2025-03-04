@@ -109,6 +109,19 @@ const obtenerRolesEnfermerasSede = async (req, res) => {
 
 
 // obtener detalle enfermera
+const obtenerDetalleEnfermera = async (req, res) => {
+  try {
+    
+    const {per_id} = req.params;
+    
+
+
+    
+  } catch (error) {
+    console.error("Error al obtener la enfermera por ID", error)
+    return res.status(500).json({message: "Error al obtener datos de la enfermera"})
+  }
+}
 
 
 
