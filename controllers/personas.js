@@ -165,6 +165,7 @@ const actualizarPersona = async (req, res) => {
 
         let updateData = {};
 
+
         // Validar si los datos están en uso antes de actualizar
         if (data.per_correo && data.per_correo !== persona.per_correo) {
             const correoExiste = await personaModel.findOne({ where: { per_correo: data.per_correo } });
@@ -182,13 +183,11 @@ const actualizarPersona = async (req, res) => {
             updateData.per_documento = data.per_documento;
         }
 
-        if (data.per_usuario && data.per_usuario !== persona.per_usuario) {
-            const usuarioExiste = await personaModel.findOne({ where: { per_usuario: data.per_usuario } });
-            if (usuarioExiste) {
-                return res.status(400).json({ message: "El usuario ya está registrado por otra persona." });
-            }
-            updateData.per_usuario = data.per_usuario;
-        }
+      
+        // Eliminar actualización de per_usuario y per_password
+        delete data.per_usuario;
+        delete data.per_password;
+
 
         // Manejar la actualización de la imagen
         if (req.file) {
@@ -213,10 +212,7 @@ const actualizarPersona = async (req, res) => {
             }
         }
 
-        // Encriptar la contraseña si se actualiza
-        if (data.per_password) {
-            updateData.per_password = await encrypt(data.per_password);
-        }
+       
 
         // Agregar otros campos si están definidos
         if (data.per_nombre_completo !== undefined) updateData.per_nombre_completo = data.per_nombre_completo;
@@ -228,7 +224,7 @@ const actualizarPersona = async (req, res) => {
             await persona.update(updateData);
         }
 
-        return res.status(200).json({ message: "Persona actualizada con éxito", persona });
+        return res.status(200).json({ message: "Persona actualizada con éxito", persona  });
     } catch (error) {
         return res.status(500).json({ message: "Error al actualizar persona", error: error.message });
     }

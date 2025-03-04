@@ -21,7 +21,21 @@ const pacienteModel = sequelize.define('pacientes', {
         type: DataTypes.ENUM('Subsidiado', 'Contributivo'), 
         allowNull: false 
     },
-    pac_nombre_eps: { type: DataTypes.STRING, allowNull: false },
+    pac_nombre_eps: { 
+        type: DataTypes.STRING, 
+        allowNull: false,
+        set(value) {
+            // Transformar el nombre a mayúscula inicial para cada palabra
+            const capitalizeWords = (str) => {
+                return str
+                    .toLowerCase()
+                    .split(" ")
+                    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(" ");
+            };
+            this.setDataValue('pac_nombre_eps', capitalizeWords(value));
+        }
+    },
     pac_rh_grupo_sanguineo: { 
         type: DataTypes.ENUM('A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'), 
         allowNull: false 

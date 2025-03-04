@@ -74,7 +74,7 @@ const obtenerRolesEnfermerasSede = async (req, res) => {
               {
                 model: enfermeraModel, // Incluir datos adicionales de enfermera
                 as: "enfermera",
-                attributes: ["enf_codigo"],
+                attributes: ["enf_id"],
               }
             ]
           },
@@ -93,7 +93,7 @@ const obtenerRolesEnfermerasSede = async (req, res) => {
         fechaInicio: e.sp_fecha_inicio,
         fechaFin: e.sp_fecha_fin,
         enfermeraActiva: e.sp_activo,
-        enf_codigo: e.persona.enfermera?.enf_codigo || null, // Puede ser null si aun no tiene registro en enfermeraModel
+        enf_codigo: e.persona.enfermera?.enf_id || null, // Puede ser null si aun no tiene registro en enfermeraModel
       }));
   
       return res.status(200).json({
@@ -105,6 +105,10 @@ const obtenerRolesEnfermerasSede = async (req, res) => {
       return res.status(500).json({ message: "Error al obtener enfermeras." });
     }
 };
+
+
+
+// obtener detalle enfermera
 
 
 
