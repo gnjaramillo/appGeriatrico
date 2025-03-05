@@ -105,9 +105,7 @@ const obtenerPacientesSede = async (req, res) => {
     const se_id = req.session.se_id;
 
     if (!se_id) {
-      return res
-        .status(403)
-        .json({ message: "No tienes una sede asignada en la sesión." });
+      return res.status(403).json({ message: "No tienes una sede asignada en la sesión." });
     }
 
     // Obtener el geriátrico dueño de la sede en sesión
@@ -128,7 +126,11 @@ const obtenerPacientesSede = async (req, res) => {
         {
           model: personaModel,
           as: "persona",
-          attributes: ["per_id", "per_nombre_completo", "per_documento"],
+          attributes: [
+            "per_id",
+            "per_nombre_completo",
+            "per_documento",
+          ],
           include: [
             {
               model: pacienteModel,
@@ -138,7 +140,7 @@ const obtenerPacientesSede = async (req, res) => {
             {
               model: geriatricoPersonaModel,
               as: "vinculosGeriatricos",
-              where: { ge_id },
+              where: { ge_id}, 
               attributes: ["gp_activo"],
               order: [["gp_activo", "DESC"]], // Activos primero
             },
@@ -153,21 +155,33 @@ const obtenerPacientesSede = async (req, res) => {
         .json({ message: "No hay pacientes vinculados a esta sede." });
     }
 
-    // Mapear datos en un solo objeto por persona sin roles
-    const pacientesVinculadosSede = vinculaciones.map((vinculo) => ({
-      per_id: vinculo.persona.per_id,
-      pac_id: vinculo.persona.paciente?.pac_id || null,
-      per_nombre: vinculo.persona.per_nombre_completo,
-      per_documento: vinculo.persona.per_documento,
-      vinculadoActivo: vinculo.persona.vinculosGeriatricos[0].gp_activo,
-    }));
+    // Mapa para agrupar pacientes y evitar duplicados
+    const pacientesAgrupados = new Map();
+
+    vinculaciones.forEach((vinculo) => {
+      const per_id = vinculo.persona.per_id;
+
+      if (!pacientesAgrupados.has(per_id)) {
+        pacientesAgrupados.set(per_id, {
+          per_id,
+          pac_id: vinculo.persona.paciente?.pac_id || null,
+          per_nombre: vinculo.persona.per_nombre_completo,
+          per_documento: vinculo.persona.per_documento,
+          vinculadoActivo: vinculo.persona.vinculosGeriatricos[0].gp_activo,
+        });
+      }
+    });
+
+    
 
     return res.status(200).json({
       message: "Pacientes vinculados encontrados",
-      data: Array.from(pacientesVinculadosSede.values()).sort(
+      data: Array.from(pacientesAgrupados.values()).sort(
         (a, b) => Number(b.vinculadoActivo) - Number(a.vinculadoActivo)
       ),
     });
+    
+
   } catch (error) {
     console.error("Error al obtener pacientes vinculados:", error);
     return res.status(500).json({ message: "Error en el servidor." });
