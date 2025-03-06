@@ -1,4 +1,6 @@
 const { Op } = require("sequelize");
+const { sequelize } = require('../config/mysql'); 
+
 const { matchedData } = require("express-validator");
 const { pacienteModel, rolModel, sedeModel, personaModel, acudienteModel, geriatricoPersonaModel, sedePersonaRolModel,
 } = require("../models");
@@ -6,7 +8,8 @@ const { pacienteModel, rolModel, sedeModel, personaModel, acudienteModel, geriat
 
 
 // registrar paciente en base de datos
-const registrarPaciente = async (req, res) => {
+
+/* const registrarPaciente = async (req, res) => {
   try {
     const data = matchedData(req);
     const {
@@ -21,23 +24,7 @@ const registrarPaciente = async (req, res) => {
       pac_talla_pantalon,
     } = data;
 
-    /*     const se_id = req.session.se_id;
 
-    // Verificar si la persona tiene el rol de paciente ACTIVO EN ESTA SEDE para permitir registrar datos adicionales
-    const rolPacienteActivo = await sedePersonaRolModel.findOne({
-      where: {
-          se_id, // la de sesion...
-          per_id,
-          rol_id: 4, // paciente
-          sp_activo: true
-      },
-  });
-
-  if (!rolPacienteActivo) {
-    return res.status(403).json({ 
-        message: "La persona no tiene el rol de paciente activo en esta sede."
-    });
-} */
 
     // Verificar si la persona ya está registrada como paciente
     const datosPacienteExistente = await pacienteModel.findOne({
@@ -89,6 +76,177 @@ const registrarPaciente = async (req, res) => {
       nuevoPaciente,
     });
   } catch (error) {
+    console.error("Error al registrar paciente:", error);
+    return res.status(500).json({
+      message: "Error al registrar paciente.",
+      error: error.message,
+    });
+  }
+}; */
+
+
+const registrarPaciente = async (req, res) => {
+  let t;
+  try {
+    const data = matchedData(req);
+    const {
+      per_id,
+      pac_edad,
+      pac_peso,
+      pac_talla,
+      pac_regimen_eps,
+      pac_nombre_eps,
+      pac_rh_grupo_sanguineo,
+      pac_talla_camisa,
+      pac_talla_pantalon,
+      rol_id,
+      sp_fecha_inicio,
+      sp_fecha_fin,
+    } = data;
+
+    const se_id = req.session.se_id;
+    const ge_id_sesion = req.session.ge_id;
+    if (rol_id !== 4) {
+      return res.status(400).json({ message: "El rol asignado no es válido para un paciente." });
+    }
+
+
+    if (!se_id) {
+      return res.status(403).json({ message: "No se ha seleccionado una sede." });
+    }
+
+    if (!ge_id_sesion) {
+      return res.status(403).json({ message: "No tienes un geriátrico asignado en la sesión." });
+    }
+
+    const sede = await sedeModel.findOne({
+      where: { se_id, ge_id: ge_id_sesion },
+      attributes: ["se_id", "se_activo", "se_nombre", "cupos_totales", "cupos_ocupados"],
+    });
+
+    if (!sede) {
+      return res.status(403).json({ message: "No tienes permiso para asignar roles en esta sede." });
+    }
+
+    if (!sede.se_activo) {
+      return res.status(400).json({ message: "No se pueden asignar roles en una sede inactiva." });
+    }
+
+    const rolExistenteSede = await sedePersonaRolModel.findOne({
+      where: { per_id, se_id, rol_id, sp_activo: true },
+    });
+
+    if (rolExistenteSede) {
+      return res.status(400).json({ message: "Este rol ya está asignado a la persona en esta sede." });
+    }
+
+
+
+
+    t = await sequelize.transaction();
+
+    let datosPaciente = await pacienteModel.findOne({ where: { per_id } });
+
+    if (rol_id === 4) {
+      const pacienteEnOtraSede = await sedePersonaRolModel.findOne({
+        where: { per_id, rol_id: 4, sp_activo: true },
+        include: {
+          model: sedeModel,
+          as: "sede",
+          attributes: ["se_id", "se_nombre"],
+          where: { ge_id: ge_id_sesion },
+        },
+      });
+
+      if (pacienteEnOtraSede) {
+        return res.status(400).json({
+          message:
+            "El paciente ya está registrado en otra sede de este geriátrico. Debe ser retirado de su sede actual y posteriormente ser registrado en una nueva sede",
+          sedeActual: {
+            se_id: pacienteEnOtraSede.sede.se_id,
+            se_nombre: pacienteEnOtraSede.sede.se_nombre,
+          },
+        });
+      }
+
+      if (sede.cupos_ocupados >= sede.cupos_totales) {
+        return res.status(400).json({ message: "No hay cupos disponibles en esta sede." });
+      }
+
+ if (!datosPaciente) {
+    datosPaciente = await pacienteModel.create(
+      {
+        per_id,
+        pac_edad,
+        pac_peso,
+        pac_talla,
+        pac_regimen_eps,
+        pac_nombre_eps,
+        pac_rh_grupo_sanguineo,
+        pac_talla_camisa,
+        pac_talla_pantalon,
+      },
+      { transaction: t }
+    );
+  } else {
+    // Aquí actualizamos los datos del paciente si ya existe
+    await datosPaciente.update(
+      {
+        pac_edad,
+        pac_peso,
+        pac_talla,
+        pac_regimen_eps,
+        pac_nombre_eps,
+        pac_rh_grupo_sanguineo,
+        pac_talla_camisa,
+        pac_talla_pantalon,
+      },
+      { transaction: t }
+    );
+  }
+}
+    let vinculoGeriatrico = await geriatricoPersonaModel.findOne({
+      where: { per_id, ge_id: ge_id_sesion },
+    });
+
+    if (vinculoGeriatrico) {
+      if (!vinculoGeriatrico.gp_activo) {
+        await vinculoGeriatrico.update({ gp_activo: true }, { transaction: t });
+      }
+    } else {
+      vinculoGeriatrico = await geriatricoPersonaModel.create(
+        { ge_id: ge_id_sesion, per_id, gp_activo: true },
+        { transaction: t }
+      );
+    }
+
+    await sedeModel.update(
+      { cupos_ocupados: sede.cupos_ocupados + 1 },
+      { where: { se_id }, transaction: t }
+    );
+
+    const nuevaVinculacion = await sedePersonaRolModel.create(
+      {
+        per_id,
+        se_id,
+        rol_id,
+        sp_fecha_inicio,
+        sp_fecha_fin: sp_fecha_fin || null,
+      },
+      { transaction: t }
+    );
+
+    await t.commit();
+
+    return res.status(201).json({
+      message: "Paciente registrado con éxito.",
+      nuevaVinculacion,
+      datosPaciente,
+    });
+  } catch (error) {
+    if (t && !t.finished) {
+      await t.rollback();
+    }
     console.error("Error al registrar paciente:", error);
     return res.status(500).json({
       message: "Error al registrar paciente.",

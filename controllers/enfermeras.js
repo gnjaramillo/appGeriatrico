@@ -1,10 +1,12 @@
 const { Op } = require('sequelize');
+const { sequelize } = require('../config/mysql'); 
+
 const { matchedData } = require('express-validator');
-const { enfermeraModel, personaModel, sedePersonaRolModel } = require('../models');
+const { enfermeraModel,sedeModel, personaModel,  geriatricoPersonaModel, sedePersonaRolModel } = require('../models');
 
 
 
-const registrarEnfermera = async (req, res) => {
+/* const registrarEnfermera = async (req, res) => {
     try {
         const data = matchedData(req);
         const { per_id, enf_codigo } = data;
@@ -49,7 +51,129 @@ const registrarEnfermera = async (req, res) => {
             error: error.message 
         });
     }
-};
+}; */
+
+
+
+const registrarEnfermera = async (req, res) => {
+    let t;
+  
+    try {
+        const data = matchedData(req);
+        const { per_id, enf_codigo, rol_id, sp_fecha_inicio, sp_fecha_fin } = data;
+        const se_id = req.session.se_id;
+        const ge_id_sesion = req.session.ge_id;
+
+        if (rol_id !== 5) {
+            return res.status(400).json({ message: "El rol asignado no es válido para un rol enfermera(o)." });
+          }
+      
+  
+        if (!se_id) {
+            return res.status(403).json({ message: "No se ha seleccionado una sede." });
+        }
+  
+        if (!ge_id_sesion) {
+            return res.status(403).json({ message: "No tienes un geriátrico asignado en la sesión." });
+        }
+  
+        // Verificar si la sede pertenece al geriátrico en sesión y está activa
+        const sede = await sedeModel.findOne({
+            where: { se_id, ge_id: ge_id_sesion },
+            attributes: ["se_id", "se_activo", "se_nombre"]
+        });
+  
+        if (!sede) {
+            return res.status(403).json({ message: "No tienes permiso para asignar roles en esta sede." });
+        }
+  
+        if (!sede.se_activo) {
+            return res.status(400).json({ message: "No se pueden asignar roles en una sede inactiva." });
+        }
+  
+        // Verificar si la persona ya tiene el rol asignado en la sede
+        const rolExistenteSede = await sedePersonaRolModel.findOne({
+            where: { per_id, se_id, rol_id, sp_activo: true }
+        });
+  
+        if (rolExistenteSede) {
+            return res.status(400).json({ message: "Este rol ya está asignado a la persona en esta sede." });
+        }
+  
+        t = await sequelize.transaction();
+  
+        let datosEnfermera = await enfermeraModel.findOne({ where: { per_id }});
+  
+        if (!datosEnfermera) {
+            datosEnfermera = await enfermeraModel.create(
+                {
+                    per_id,
+                    enf_codigo
+                },
+                { transaction: t }
+            );
+        } else {
+            // Actualizar los datos de la enfermera si ya existe
+            await datosEnfermera.update(
+                {
+                    per_id,
+                    enf_codigo
+                },
+                { transaction: t }
+            );
+        }
+  
+        // Verificar y manejar la vinculación al geriátrico
+        let vinculoGeriatrico = await geriatricoPersonaModel.findOne({
+            where: { per_id, ge_id: ge_id_sesion }
+        });
+  
+        if (vinculoGeriatrico) {
+            if (!vinculoGeriatrico.gp_activo) {
+                await vinculoGeriatrico.update({ gp_activo: true }, { transaction: t });
+            }
+        } else {
+            vinculoGeriatrico = await geriatricoPersonaModel.create({ 
+                ge_id: ge_id_sesion, 
+                per_id, 
+                gp_activo: true 
+            }, { transaction: t });
+        }
+  
+        // ✅ Asignar rol de enfermera en la sede
+        const nuevaVinculacion = await sedePersonaRolModel.create(
+            {
+                per_id,
+                se_id,
+                rol_id,
+                sp_fecha_inicio,
+                sp_fecha_fin: sp_fecha_fin || null
+            },
+            { transaction: t }
+        );
+  
+        // Confirmar transacción
+        await t.commit();
+  
+        return res.status(201).json({
+            message: "Enfermera registrada y rol asignado con éxito.",
+            nuevaVinculacion,
+            datosEnfermera
+        });
+  
+    } catch (error) {
+        if (t && !t.finished) {
+            await t.rollback();
+        }
+        console.error("Error al registrar enfermera:", error);
+        return res.status(500).json({
+            message: "Error al registrar enfermera.",
+            error: error.message
+        });
+    }
+  };
+  
+
 
 
 
