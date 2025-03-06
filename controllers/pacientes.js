@@ -103,12 +103,15 @@ const registrarPaciente = async (req, res) => {
       sp_fecha_inicio,
       sp_fecha_fin,
     } = data;
-
-    const se_id = req.session.se_id;
-    const ge_id_sesion = req.session.ge_id;
+    
     if (rol_id !== 4) {
       return res.status(400).json({ message: "El rol asignado no es válido para un paciente." });
     }
+    
+    const se_id = req.session.se_id;
+    const ge_id_sesion = req.session.ge_id;
+
+    
 
 
     if (!se_id) {

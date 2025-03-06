@@ -7,32 +7,34 @@ const { subirImagenACloudinary } = require('../utils/handleCloudinary');
 
 
 
-const registrarAcudiente = async (req, res) => {
+/* const registrarAcudiente = async (req, res) => {
   try {
     const data = matchedData(req);
     const { per_id, pac_id, acu_parentesco, rol_id, sp_fecha_inicio, sp_fecha_fin } = data;
-    const se_id = req.session.se_id;
-    const ge_id_sesion = req.session.ge_id;
 
     if (rol_id !== 6) {
       return res.status(400).json({ message: "El rol asignado no es válido para un acudiente." });
     }
 
-        // Verificar si la persona existe en la base de datos antes de continuar
-const personaExistente = await personaModel.findOne({
-  where: { per_id }
-});
+    const se_id = req.session.se_id;
+    const ge_id_sesion = req.session.ge_id;
 
-if (!personaExistente) {
-  return res.status(400).json({ message: "La persona seleccionada no existe en la base de datos." });
-}
-
+    
     if (!se_id) {
       return res.status(403).json({ message: "No se ha seleccionado una sede." });
     }
-
+    
     if (!ge_id_sesion) {
       return res.status(403).json({ message: "No tienes un geriátrico asignado en la sesión." });
+    }
+    
+            // Verificar si la persona existe en la base de datos antes de continuar
+    const personaExistente = await personaModel.findOne({
+      where: { per_id }
+    });
+    
+    if (!personaExistente) {
+      return res.status(400).json({ message: "La persona seleccionada no existe en la base de datos." });
     }
     
 
@@ -60,28 +62,42 @@ if (!personaExistente) {
 
     const pacientePerId = paciente.per_id;
 
-    const pacienteTieneRolActivo = await sedePersonaRolModel.findOne({
-      where: { per_id: pacientePerId, rol_id: 4, sp_activo: true, se_id },
-    });
+  
 
-    if (!pacienteTieneRolActivo) {
-      return res.status(403).json({ message: "El paciente tiene el rol inactivo y no puede vincularse a un acudiente." });
-    }
+// Verificar si el paciente pertenece a la sede
+const pacienteEnSede = await sedePersonaRolModel.findOne({
+  where: { per_id: pacientePerId, rol_id: 4, se_id },
+});
 
-    const acudienteExistente = await acudienteModel.findOne({
-      where: { per_id, pac_id },
-      attributes: ["acu_parentesco", "per_id"],
-    });
+if (!pacienteEnSede) {
+  return res.status(403).json({ message: "El paciente no pertenece a esta sede." });
+}
 
-    if (acudienteExistente) {
-      return res.status(200).json({
-        message: "La persona ya está registrada como acudiente para este paciente.",
-        existe: true,
-        acudienteExistente,
-      });
-    }
+// Verificar si tiene al menos un rol activo en la sede
+const pacienteTieneRolActivo = await sedePersonaRolModel.findOne({
+  where: { per_id: pacientePerId, rol_id: 4, se_id, sp_activo: true },
+});
+
+if (!pacienteTieneRolActivo) {
+  return res.status(403).json({ message: "El paciente tiene el rol inactivo y no puede vincularse a un acudiente." });
+}
+
+
+    
+
+
+
 
     await sequelize.transaction(async (t) => {
+
+
+
+
+
+
+
+
+
       let vinculoGeriatrico = await geriatricoPersonaModel.findOne({
         where: { per_id, ge_id: ge_id_sesion }
       });
@@ -138,6 +154,142 @@ if (!personaExistente) {
 
     return res.status(201).json({
       message: "Acudiente registrado correctamente.",
+    });
+  } catch (error) {
+    console.error("Error al registrar acudiente:", error);
+    return res.status(500).json({
+      message: "Error al registrar acudiente.",
+      error: error.message,
+    });
+  }
+};
+ */
+
+
+const registrarAcudiente = async (req, res) => {
+  try {
+    const data = matchedData(req);
+    const { per_id, pac_id, acu_parentesco, rol_id, sp_fecha_inicio, sp_fecha_fin } = data;
+
+    if (rol_id !== 6) {
+      return res.status(400).json({ message: "El rol asignado no es válido para un acudiente." });
+    }
+
+    const se_id = req.session.se_id;
+    const ge_id_sesion = req.session.ge_id;
+
+    if (!se_id) {
+      return res.status(403).json({ message: "No se ha seleccionado una sede." });
+    }
+
+    if (!ge_id_sesion) {
+      return res.status(403).json({ message: "No tienes un geriátrico asignado en la sesión." });
+    }
+
+    // Verificar si la persona existe
+    const personaExistente = await personaModel.findOne({ where: { per_id } });
+    if (!personaExistente) {
+      return res.status(400).json({ message: "La persona seleccionada no existe en la base de datos." });
+    }
+
+    // Verificar si la sede pertenece al geriátrico
+    const sede = await sedeModel.findOne({
+      where: { se_id, ge_id: ge_id_sesion },
+      attributes: ["se_id", "se_activo", "se_nombre"]
+    });
+
+    if (!sede) {
+      return res.status(403).json({ message: "No tienes permiso para asignar roles en esta sede." });
+    }
+
+    if (!sede.se_activo) {
+      return res.status(400).json({ message: "No se pueden asignar roles en una sede inactiva." });
+    }
+
+    // Verificar si el paciente existe y pertenece a la sede
+    const paciente = await pacienteModel.findOne({ where: { pac_id }, attributes: ["per_id"] });
+    if (!paciente) {
+      return res.status(404).json({ message: "Paciente no encontrado." });
+    }
+
+    const pacientePerId = paciente.per_id;
+
+    const pacienteEnSede = await sedePersonaRolModel.findOne({
+      where: { per_id: pacientePerId, rol_id: 4, se_id, sp_activo: true },
+    });
+
+    if (!pacienteEnSede) {
+      return res.status(403).json({ message: "El paciente no pertenece a esta sede o su rol está inactivo." });
+    }
+
+    await sequelize.transaction(async (t) => {
+
+      let acudienteRegistrado = null; 
+
+      // Verificar si ya existe la relación en `acudientes`
+      let acudienteExistente = await acudienteModel.findOne({
+        where: { per_id, pac_id },
+        attributes: ["acu_id", "acu_activo", "acu_parentesco"],
+        transaction: t
+      });
+
+      if (acudienteExistente) {
+        if (acudienteExistente.acu_activo) {
+          return res.status(200).json({
+            message: "La persona ya está registrada como acudiente para este paciente.",
+            existe: true,
+            acudiente: acudienteExistente,
+          });
+        } else {
+          // Reactivar la relación si estaba inactiva
+          await acudienteExistente.update({ acu_activo: true }, { transaction: t });
+          acudienteRegistrado = acudienteExistente;
+        }
+      } else {
+        // Crear un nuevo acudiente si no existía antes
+        acudienteRegistrado = await acudienteModel.create({
+          per_id,
+          pac_id,
+          acu_parentesco,
+          acu_activo: true
+        }, { transaction: t });
+      }
+
+      // Verificar si tiene vínculo con el geriátrico
+      let vinculoGeriatrico = await geriatricoPersonaModel.findOne({
+        where: { per_id, ge_id: ge_id_sesion },
+        transaction: t
+      });
+
+      if (vinculoGeriatrico) {
+        if (!vinculoGeriatrico.gp_activo) {
+          await vinculoGeriatrico.update({ gp_activo: true }, { transaction: t });
+        }
+      } else {
+        await geriatricoPersonaModel.create({
+          ge_id: ge_id_sesion,
+          per_id,
+          gp_activo: true
+        }, { transaction: t });
+      }
+
+      // Crear un NUEVO registro en sedePersonaRolModel
+      await sedePersonaRolModel.create({
+        per_id,
+        se_id,
+        rol_id,
+        sp_fecha_inicio,
+        sp_fecha_fin:  sp_fecha_fin || null,
+        sp_activo: true
+      }, { transaction: t });
+
+
+      return res.status(201).json({
+        message: "Acudiente registrado correctamente.",
+        acudiente: acudienteRegistrado // o el nombre que hayas usado
+      });
+      
+
     });
   } catch (error) {
     console.error("Error al registrar acudiente:", error);

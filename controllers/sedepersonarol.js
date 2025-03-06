@@ -2,7 +2,7 @@ const { Op } = require('sequelize');
 const { sequelize } = require('../config/mysql'); 
 
 const { matchedData } = require('express-validator');
-const { personaModel, rolModel, sedeModel, geriatricoModel, geriatricoPersonaModel, sedePersonaRolModel, geriatricoPersonaRolModel } = require('../models');
+const { personaModel, rolModel, sedeModel, geriatricoModel, acudienteModel, geriatricoPersonaModel, sedePersonaRolModel, geriatricoPersonaRolModel } = require('../models');
 const { tokenSign } = require('../utils/handleJwt'); 
 const jwt = require('jsonwebtoken');
 
@@ -380,6 +380,16 @@ const inactivarRolSede = async (req, res) => {
                 { transaction: t }
             );
         }
+
+        // Si el rol inactivado es Acudiente, inactivar también en acudienteModel
+        if (rol_id === 6) {
+            await acudienteModel.update(
+                { acu_activo: false },
+                { where: { per_id }, transaction: t }
+            );
+        }    
+        
+        
 
         await t.commit();
 

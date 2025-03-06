@@ -34,9 +34,10 @@ const acudienteModel = sequelize.define('acudientes', {
         type: DataTypes.STRING,
         allowNull: false,  
       },
-      acu_foto: {
-        type: DataTypes.STRING,
-        allowNull: true,  // Foto del acudiente (opcional)
+      acu_activo: {
+        type: DataTypes.BOOLEAN, 
+        allowNull: false, 
+        defaultValue: true 
       },
 },
     {
