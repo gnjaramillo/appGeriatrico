@@ -1,4 +1,4 @@
-const { sequelize } = require('../config/mysql'); 
+const { sequelize } = require("../config/mysql");
 const { DataTypes } = require('sequelize'); 
 
 
@@ -73,7 +73,7 @@ pacienteModel.associate = (models) => {
     });
 
     // un paciente puede tener varios acudientes 
-    pacienteModel.hasMany(models.acudienteModel, {
+    pacienteModel.hasMany(models.pacienteAcudienteModel, {
         foreignKey: 'pac_id',
         as: 'acudientes'
     });

@@ -2,7 +2,7 @@ const { Op } = require("sequelize");
 const { sequelize } = require('../config/mysql'); 
 
 const { matchedData } = require("express-validator");
-const { pacienteModel, rolModel, sedeModel, personaModel, acudienteModel, geriatricoPersonaModel, sedePersonaRolModel,
+const { pacienteModel, rolModel, sedeModel, personaModel, geriatricoModel, pacienteAcudienteModel, geriatricoPersonaModel, sedePersonaRolModel,
 } = require("../models");
 
 
@@ -136,15 +136,12 @@ const registrarPaciente = async (req, res) => {
     }
 
     const rolExistenteSede = await sedePersonaRolModel.findOne({
-      where: { per_id, se_id, rol_id, sp_activo: true },
+      where: { per_id, se_id, rol_id:4, sp_activo: true },
     });
 
     if (rolExistenteSede) {
-      return res.status(400).json({ message: "Este rol ya está asignado a la persona en esta sede." });
+      return res.status(400).json({ message: "El usuario ya tiene un registro como paciente activo en esta sede." });
     }
-
-
-
 
     t = await sequelize.transaction();
 
@@ -152,14 +149,54 @@ const registrarPaciente = async (req, res) => {
 
     if (rol_id === 4) {
       const pacienteEnOtraSede = await sedePersonaRolModel.findOne({
-        where: { per_id, rol_id: 4, sp_activo: true },
+        where: {
+          per_id,
+          rol_id: 4,  // Paciente
+          sp_activo: true,
+          se_id: { [Op.ne]: se_id } // Asegura que la sede es diferente a la actual
+        },
         include: {
+          model: sedeModel,
+          as: "sede",
+          attributes: ["se_id", "se_nombre", "ge_id"], // Agregar ge_id para saber en qué geriátrico está
+          include: {
+            model: geriatricoModel, 
+            as: "geriatrico",
+            attributes: ["ge_id", "ge_nombre"]
+          }
+        }
+      }); 
+      
+      if (pacienteEnOtraSede) {
+        return res.status(400).json({
+          message:
+            "El paciente ya está registrado en otra sede de otro geriátrico. Debe ser retirado de su sede actual antes de registrarlo en una nueva sede.",
+          sedeActual: {
+            se_id: pacienteEnOtraSede.sede.se_id,
+            se_nombre: pacienteEnOtraSede.sede.se_nombre,
+          },
+          geriatricoActual: {
+            ge_id: pacienteEnOtraSede.sede.geriatrico.ge_id,
+            ge_nombre: pacienteEnOtraSede.sede.geriatrico.ge_nombre,
+          }
+        });
+      }
+      
+/*       const pacienteEnOtraSede = await sedePersonaRolModel.findOne({
+        where: {
+          per_id,
+          rol_id: 4,  // Paciente
+          sp_activo: true,
+          se_id: { [Op.ne]: se_id } // Asegura que la sede es diferente a la actual
+        },
+          include: {
           model: sedeModel,
           as: "sede",
           attributes: ["se_id", "se_nombre"],
           where: { ge_id: ge_id_sesion },
         },
       });
+      
 
       if (pacienteEnOtraSede) {
         return res.status(400).json({
@@ -170,8 +207,8 @@ const registrarPaciente = async (req, res) => {
             se_nombre: pacienteEnOtraSede.sede.se_nombre,
           },
         });
-      }
-
+      } */
+ 
       if (sede.cupos_ocupados >= sede.cupos_totales) {
         return res.status(400).json({ message: "No hay cupos disponibles en esta sede." });
       }
@@ -235,6 +272,7 @@ const registrarPaciente = async (req, res) => {
         rol_id,
         sp_fecha_inicio,
         sp_fecha_fin: sp_fecha_fin || null,
+        sp_activo:true,
       },
       { transaction: t }
     );
@@ -283,15 +321,12 @@ const obtenerPacientesSede = async (req, res) => {
 
     const vinculaciones = await sedePersonaRolModel.findAll({
       where: { se_id, rol_id: 4 }, // Solo pacientes de la sede
+      attributes: ["sp_activo", "per_id"], // Incluir per_id para agrupar
       include: [
         {
           model: personaModel,
           as: "persona",
-          attributes: [
-            "per_id",
-            "per_nombre_completo",
-            "per_documento",
-          ],
+          attributes: ["per_id", "per_nombre_completo", "per_documento"],
           include: [
             {
               model: pacienteModel,
@@ -301,9 +336,8 @@ const obtenerPacientesSede = async (req, res) => {
             {
               model: geriatricoPersonaModel,
               as: "vinculosGeriatricos",
-              where: { ge_id}, 
+              where: { ge_id },
               attributes: ["gp_activo"],
-              order: [["gp_activo", "DESC"]], // Activos primero
             },
           ],
         },
@@ -311,16 +345,23 @@ const obtenerPacientesSede = async (req, res) => {
     });
 
     if (vinculaciones.length === 0) {
-      return res
-        .status(404)
-        .json({ message: "No hay pacientes vinculados a esta sede." });
+      return res.status(404).json({ message: "No hay pacientes vinculados a esta sede." });
     }
 
     // Mapa para agrupar pacientes y evitar duplicados
     const pacientesAgrupados = new Map();
 
-    vinculaciones.forEach((vinculo) => {
+    for (const vinculo of vinculaciones) {
       const per_id = vinculo.persona.per_id;
+
+      // Obtener TODOS los roles paciente de la persona en la sede
+      const rolesPaciente = await sedePersonaRolModel.findAll({
+        where: { se_id, per_id, rol_id: 4 },
+        attributes: ["sp_activo"],
+      });
+
+      // Verificar si hay al menos un `sp_activo === true`
+      const tieneAlMenosUnRolActivo = rolesPaciente.some((rol) => rol.sp_activo === true);
 
       if (!pacientesAgrupados.has(per_id)) {
         pacientesAgrupados.set(per_id, {
@@ -328,20 +369,18 @@ const obtenerPacientesSede = async (req, res) => {
           pac_id: vinculo.persona.paciente?.pac_id || null,
           per_nombre: vinculo.persona.per_nombre_completo,
           per_documento: vinculo.persona.per_documento,
-          vinculadoActivo: vinculo.persona.vinculosGeriatricos[0].gp_activo,
+          activoSede: tieneAlMenosUnRolActivo, // True si al menos un rol está activo, false si todos están inactivos
+          activoGeriatrico: vinculo.persona.vinculosGeriatricos[0]?.gp_activo || false, // Manejo seguro de array vacío
         });
       }
-    });
-
-    
+    }
 
     return res.status(200).json({
       message: "Pacientes vinculados encontrados",
       data: Array.from(pacientesAgrupados.values()).sort(
-        (a, b) => Number(b.vinculadoActivo) - Number(a.vinculadoActivo)
+        (a, b) => Number(b.activoSede) - Number(a.activoSede) // Primero los activos en sede
       ),
     });
-    
 
   } catch (error) {
     console.error("Error al obtener pacientes vinculados:", error);
@@ -497,7 +536,7 @@ const obtenerAcudientesDePaciente = async (req, res) => {
   try {
     const { pac_id } = req.params;
 
-    const acudientes = await acudienteModel.findAll({
+    const acudientes = await pacienteAcudienteModel.findAll({
       where: { pac_id },
       attributes: ["acu_id", "pac_id", "per_id", "acu_parentesco", "acu_foto"],
       include: [

@@ -15,7 +15,7 @@ const models = {
     turnoModel: require('./turnos'),
     cuidadoEnfermeriaModel: require('./cuidadosEnfermeria'),
     seguimientoModel: require('./seguimientos'),
-    acudienteModel: require('./acudientes'),
+    pacienteAcudienteModel: require('./acudientes'),
     diagnosticoModel: require('./diagnosticos'),
     recomendacionModel: require('./recomendaciones')
 };
