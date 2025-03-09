@@ -11,6 +11,26 @@ const registrarEnfermera = async (req, res) => {
       const data = matchedData(req);
       const { per_id, enf_codigo } = data;
 
+      const se_id_sesion = req.session.se_id; // Sede del usuario en sesión
+    
+
+      if (!se_id_sesion) {
+        return res.status(403).json({ message: "No tienes una sede asignada en la sesión." });
+      }
+  
+      // 🔍 Validar si la persona pertenece a la sede y tiene el rol activo ID 5 ENFERMERA(O) 
+      const tieneRolEnfermera = await sedePersonaRolModel.findOne({
+        where: { per_id, se_id: se_id_sesion, rol_id: 5, sp_activo: true },
+      });
+  
+      if (!tieneRolEnfermera) {
+        return res.status(403).json({ 
+          message: "La persona no tiene el rol de enfermera(o) activo en esta sede." 
+        });
+      }
+  
+  
+
       // Verificar si la persona ya tiene estos datos adicionales como enfermera
       let datosEnfermera = await enfermeraModel.findOne({ where: { per_id } });
 

@@ -23,6 +23,27 @@ const registrarPaciente = async (req, res) => {
       pac_talla_pantalon,
     } = data;
 
+
+    const se_id_sesion = req.session.se_id; // Sede del usuario en sesión
+    
+
+    if (!se_id_sesion) {
+      return res.status(403).json({ message: "No tienes una sede asignada en la sesión." });
+    }
+
+    // 🔍 Validar si la persona pertenece a la sede y tiene el rol activo ID 4 de PACIENTE 
+    const tieneRolPaciente = await sedePersonaRolModel.findOne({
+      where: { per_id, se_id: se_id_sesion, rol_id: 4, sp_activo: true },
+    });
+
+    if (!tieneRolPaciente) {
+      return res.status(403).json({ 
+        message: "La persona no tiene el rol de paciente activo en esta sede." 
+      });
+    }
+
+
+
     // Verificar si la persona ya está registrada como paciente
     let datosPaciente = await pacienteModel.findOne({ where: { per_id } });
 
@@ -303,7 +324,7 @@ const obtenerAcudientesDePaciente = async (req, res) => {
 
     const acudientes = await pacienteAcudienteModel.findAll({
       where: { pac_id },
-      attributes: ["acu_id", "pac_id", "per_id", "acu_parentesco", "acu_foto"],
+      attributes: ["pa_id", "pac_id", "per_id", "pa_parentesco", "pa_activo"],
       include: [
         {
           model: personaModel,
@@ -330,8 +351,8 @@ const obtenerAcudientesDePaciente = async (req, res) => {
       documento: acudiente.persona.per_documento,
       telefono: acudiente.persona.per_telefono,
       correo: acudiente.persona.per_correo,
-      parentesco: acudiente.acu_parentesco,
-      foto: acudiente.acu_foto || null, // Mantener null si no hay foto
+      parentesco: acudiente.pa_parentesco,
+      acudienteActivo: acudiente.pa_activo,
     }));
 
     return res.status(200).json({

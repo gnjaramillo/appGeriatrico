@@ -211,14 +211,36 @@ const registrarAcudiente = async (req, res) => {
       return res.status(403).json({ message: "El paciente no pertenece a esta sede" });
     }
 
-    const pacienteActivoSede = await sedePersonaRolModel.findOne({
-      where: { per_id: pacientePerId, rol_id: 4, se_id, sp_activo: true },
+
+    const pacienteRoles = await sedePersonaRolModel.findAll({
+      where: { per_id: pacientePerId, rol_id: 4, se_id },
     });
     
+    const tieneRolActivo = pacienteRoles.some(rol => rol.sp_activo);
+    
 
-    if (!pacienteActivoSede) {
-      return res.status(403).json({ message: "El paciente está inactivo actualmente." });
+    if (!pacienteRoles.length) {
+      return res.status(403).json({ message: "El usuario no tiene asignado el rol de paciente en esta sede." });
     }
+    
+    if (!tieneRolActivo) {
+      return res.status(403).json({ message: "El usuario tiene el rol de paciente en esta sede, pero está inactivo." });
+    }
+    
+    
+
+    // 🔍 Validar si la persona pertenece a la sede y tiene el rol activo ID 6 ACUDIENTE
+    const tieneRolAcudiente = await sedePersonaRolModel.findOne({
+      where: { per_id, se_id, rol_id: 6, sp_activo: true },
+    });
+
+    if (!tieneRolAcudiente) {
+      return res.status(403).json({ 
+        message: "La persona no tiene el rol de acudiente activo en esta sede." 
+      });
+    }
+
+
 
     await sequelize.transaction(async (t) => {
       // Verificar si ya existe la relación en `paciente_acudiente`
