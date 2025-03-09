@@ -8,8 +8,7 @@ const { pacienteModel, rolModel, sedeModel, personaModel, geriatricoModel, pacie
 
 
 // registrar paciente en base de datos
-
-/* const registrarPaciente = async (req, res) => {
+const registrarPaciente = async (req, res) => {
   try {
     const data = matchedData(req);
     const {
@@ -23,271 +22,42 @@ const { pacienteModel, rolModel, sedeModel, personaModel, geriatricoModel, pacie
       pac_talla_camisa,
       pac_talla_pantalon,
     } = data;
-
-
 
     // Verificar si la persona ya está registrada como paciente
-    const datosPacienteExistente = await pacienteModel.findOne({
-      where: { per_id },
-      include: [
-        {
-          model: personaModel,
-          as: "persona",
-          attributes: ["per_nombre_completo", "per_documento"],
-        },
-      ],
-    });
-
-    if (datosPacienteExistente) {
-      return res.status(200).json({
-        message: "El paciente ya tiene datos registrados:",
-        existe: true, // ✅  El frontend debe cargar estos datos en lugar de registrar
-
-        datosPacienteExistente: {
-          nombre: datosPacienteExistente.persona.per_nombre_completo,
-          documento: datosPacienteExistente.persona.per_documento,
-          edad: datosPacienteExistente.pac_edad,
-          peso: datosPacienteExistente.pac_peso,
-          talla: datosPacienteExistente.pac_talla,
-          regimen_eps: datosPacienteExistente.pac_regimen_eps,
-          nombre_eps: datosPacienteExistente.pac_nombre_eps,
-          rh_grupo_sanguineo: datosPacienteExistente.pac_rh_grupo_sanguineo,
-          talla_camisa: datosPacienteExistente.pac_talla_camisa,
-          talla_pantalon: datosPacienteExistente.pac_talla_pantalon,
-        },
-      });
-    }
-
-    //Registrar datos del paciente (si ya no existen)
-    const nuevoPaciente = await pacienteModel.create({
-      per_id,
-      pac_edad,
-      pac_peso,
-      pac_talla,
-      pac_regimen_eps,
-      pac_nombre_eps,
-      pac_rh_grupo_sanguineo,
-      pac_talla_camisa,
-      pac_talla_pantalon,
-    });
-
-    return res.status(201).json({
-      message: "Paciente registrado con éxito.",
-      nuevoPaciente,
-    });
-  } catch (error) {
-    console.error("Error al registrar paciente:", error);
-    return res.status(500).json({
-      message: "Error al registrar paciente.",
-      error: error.message,
-    });
-  }
-}; */
-
-
-const registrarPaciente = async (req, res) => {
-  let t;
-  try {
-    const data = matchedData(req);
-    const {
-      per_id,
-      pac_edad,
-      pac_peso,
-      pac_talla,
-      pac_regimen_eps,
-      pac_nombre_eps,
-      pac_rh_grupo_sanguineo,
-      pac_talla_camisa,
-      pac_talla_pantalon,
-      rol_id,
-      sp_fecha_inicio,
-      sp_fecha_fin,
-    } = data;
-    
-    if (rol_id !== 4) {
-      return res.status(400).json({ message: "El rol asignado no es válido para un paciente." });
-    }
-    
-    const se_id = req.session.se_id;
-    const ge_id_sesion = req.session.ge_id;
-
-    
-
-
-    if (!se_id) {
-      return res.status(403).json({ message: "No se ha seleccionado una sede." });
-    }
-
-    if (!ge_id_sesion) {
-      return res.status(403).json({ message: "No tienes un geriátrico asignado en la sesión." });
-    }
-
-    const sede = await sedeModel.findOne({
-      where: { se_id, ge_id: ge_id_sesion },
-      attributes: ["se_id", "se_activo", "se_nombre", "cupos_totales", "cupos_ocupados"],
-    });
-
-    if (!sede) {
-      return res.status(403).json({ message: "No tienes permiso para asignar roles en esta sede." });
-    }
-
-    if (!sede.se_activo) {
-      return res.status(400).json({ message: "No se pueden asignar roles en una sede inactiva." });
-    }
-
-    const rolExistenteSede = await sedePersonaRolModel.findOne({
-      where: { per_id, se_id, rol_id:4, sp_activo: true },
-    });
-
-    if (rolExistenteSede) {
-      return res.status(400).json({ message: "El usuario ya tiene un registro como paciente activo en esta sede." });
-    }
-
-    t = await sequelize.transaction();
-
     let datosPaciente = await pacienteModel.findOne({ where: { per_id } });
 
-    if (rol_id === 4) {
-      const pacienteEnOtraSede = await sedePersonaRolModel.findOne({
-        where: {
-          per_id,
-          rol_id: 4,  // Paciente
-          sp_activo: true,
-          se_id: { [Op.ne]: se_id } // Asegura que la sede es diferente a la actual
-        },
-        include: {
-          model: sedeModel,
-          as: "sede",
-          attributes: ["se_id", "se_nombre", "ge_id"], // Agregar ge_id para saber en qué geriátrico está
-          include: {
-            model: geriatricoModel, 
-            as: "geriatrico",
-            attributes: ["ge_id", "ge_nombre"]
-          }
-        }
-      }); 
-      
-      if (pacienteEnOtraSede) {
-        return res.status(400).json({
-          message:
-            "El paciente ya está registrado en otra sede de otro geriátrico. Debe ser retirado de su sede actual antes de registrarlo en una nueva sede.",
-          sedeActual: {
-            se_id: pacienteEnOtraSede.sede.se_id,
-            se_nombre: pacienteEnOtraSede.sede.se_nombre,
-          },
-          geriatricoActual: {
-            ge_id: pacienteEnOtraSede.sede.geriatrico.ge_id,
-            ge_nombre: pacienteEnOtraSede.sede.geriatrico.ge_nombre,
-          }
-        });
-      }
-      
-/*       const pacienteEnOtraSede = await sedePersonaRolModel.findOne({
-        where: {
-          per_id,
-          rol_id: 4,  // Paciente
-          sp_activo: true,
-          se_id: { [Op.ne]: se_id } // Asegura que la sede es diferente a la actual
-        },
-          include: {
-          model: sedeModel,
-          as: "sede",
-          attributes: ["se_id", "se_nombre"],
-          where: { ge_id: ge_id_sesion },
-        },
+    if (!datosPaciente) {
+      datosPaciente = await pacienteModel.create({
+        per_id,
+        pac_edad,
+        pac_peso,
+        pac_talla,
+        pac_regimen_eps,
+        pac_nombre_eps,
+        pac_rh_grupo_sanguineo,
+        pac_talla_camisa,
+        pac_talla_pantalon,
       });
-      
-
-      if (pacienteEnOtraSede) {
-        return res.status(400).json({
-          message:
-            "El paciente ya está registrado en otra sede de este geriátrico. Debe ser retirado de su sede actual y posteriormente ser registrado en una nueva sede",
-          sedeActual: {
-            se_id: pacienteEnOtraSede.sede.se_id,
-            se_nombre: pacienteEnOtraSede.sede.se_nombre,
-          },
-        });
-      } */
- 
-      if (sede.cupos_ocupados >= sede.cupos_totales) {
-        return res.status(400).json({ message: "No hay cupos disponibles en esta sede." });
-      }
-
- if (!datosPaciente) {
-    datosPaciente = await pacienteModel.create(
-      {
-        per_id,
-        pac_edad,
-        pac_peso,
-        pac_talla,
-        pac_regimen_eps,
-        pac_nombre_eps,
-        pac_rh_grupo_sanguineo,
-        pac_talla_camisa,
-        pac_talla_pantalon,
-      },
-      { transaction: t }
-    );
-  } else {
-    // Aquí actualizamos los datos del paciente si ya existe
-    await datosPaciente.update(
-      {
-        pac_edad,
-        pac_peso,
-        pac_talla,
-        pac_regimen_eps,
-        pac_nombre_eps,
-        pac_rh_grupo_sanguineo,
-        pac_talla_camisa,
-        pac_talla_pantalon,
-      },
-      { transaction: t }
-    );
-  }
-}
-    let vinculoGeriatrico = await geriatricoPersonaModel.findOne({
-      where: { per_id, ge_id: ge_id_sesion },
-    });
-
-    if (vinculoGeriatrico) {
-      if (!vinculoGeriatrico.gp_activo) {
-        await vinculoGeriatrico.update({ gp_activo: true }, { transaction: t });
-      }
     } else {
-      vinculoGeriatrico = await geriatricoPersonaModel.create(
-        { ge_id: ge_id_sesion, per_id, gp_activo: true },
-        { transaction: t }
-      );
+      // Aquí actualizamos los datos del paciente si ya existe
+      await datosPaciente.update({
+        pac_edad,
+        pac_peso,
+        pac_talla,
+        pac_regimen_eps,
+        pac_nombre_eps,
+        pac_rh_grupo_sanguineo,
+        pac_talla_camisa,
+        pac_talla_pantalon,
+      });
     }
-
-    await sedeModel.update(
-      { cupos_ocupados: sede.cupos_ocupados + 1 },
-      { where: { se_id }, transaction: t }
-    );
-
-    const nuevaVinculacion = await sedePersonaRolModel.create(
-      {
-        per_id,
-        se_id,
-        rol_id,
-        sp_fecha_inicio,
-        sp_fecha_fin: sp_fecha_fin || null,
-        sp_activo:true,
-      },
-      { transaction: t }
-    );
-
-    await t.commit();
 
     return res.status(201).json({
       message: "Paciente registrado con éxito.",
-      nuevaVinculacion,
-      datosPaciente,
+      nuevoPaciente: datosPaciente,
     });
+
   } catch (error) {
-    if (t && !t.finished) {
-      await t.rollback();
-    }
     console.error("Error al registrar paciente:", error);
     return res.status(500).json({
       message: "Error al registrar paciente.",
@@ -295,6 +65,8 @@ const registrarPaciente = async (req, res) => {
     });
   }
 };
+
+
 
 
 
@@ -317,7 +89,7 @@ const obtenerPacientesSede = async (req, res) => {
       return res.status(404).json({ message: "La sede no existe." });
     }
 
-    const ge_id = sede.ge_id;
+    // const ge_id = sede.ge_id;
 
     const vinculaciones = await sedePersonaRolModel.findAll({
       where: { se_id, rol_id: 4 }, // Solo pacientes de la sede
@@ -333,13 +105,7 @@ const obtenerPacientesSede = async (req, res) => {
               as: "paciente",
               attributes: ["pac_id"],
             },
-            {
-              model: geriatricoPersonaModel,
-              as: "vinculosGeriatricos",
-              where: { ge_id },
-              attributes: ["gp_activo"],
-            },
-          ],
+        ],
         },
       ],
     });
@@ -370,7 +136,6 @@ const obtenerPacientesSede = async (req, res) => {
           per_nombre: vinculo.persona.per_nombre_completo,
           per_documento: vinculo.persona.per_documento,
           activoSede: tieneAlMenosUnRolActivo, // True si al menos un rol está activo, false si todos están inactivos
-          activoGeriatrico: vinculo.persona.vinculosGeriatricos[0]?.gp_activo || false, // Manejo seguro de array vacío
         });
       }
     }

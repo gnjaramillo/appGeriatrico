@@ -175,42 +175,18 @@ const registrarAcudiente = async (req, res) => {
 const registrarAcudiente = async (req, res) => {
   try {
     const data = matchedData(req);
-    const { pac_id, per_id, pa_parentesco, rol_id, sp_fecha_inicio, sp_fecha_fin } = data;
-
-    if (rol_id !== 6) {
-      return res.status(400).json({ message: "El rol asignado no es válido para un acudiente." });
-    }
-
+    const { pac_id, per_id, pa_parentesco } = data; 
     const se_id = req.session.se_id;
     const ge_id_sesion = req.session.ge_id;
 
     if (!se_id) {
-      return res.status(403).json({ message: "No se ha seleccionado una sede." });
+        return res.status(403).json({ message: "No se ha seleccionado una sede." });
     }
 
     if (!ge_id_sesion) {
-      return res.status(403).json({ message: "No tienes un geriátrico asignado en la sesión." });
+        return res.status(403).json({ message: "No tienes un geriátrico asignado en la sesión." });
     }
-
-    // Verificar si la persona existe
-    const personaExistente = await personaModel.findOne({ where: { per_id } });
-    if (!personaExistente) {
-      return res.status(400).json({ message: "La persona seleccionada no existe en la base de datos." });
-    }
-
-    // Verificar si la sede pertenece al geriátrico
-    const sede = await sedeModel.findOne({
-      where: { se_id, ge_id: ge_id_sesion },
-      attributes: ["se_id", "se_activo", "se_nombre"]
-    });
-
-    if (!sede) {
-      return res.status(403).json({ message: "No tienes permiso para asignar roles en esta sede." });
-    }
-
-    if (!sede.se_activo) {
-      return res.status(400).json({ message: "No se pueden asignar roles en una sede inactiva." });
-    }
+   
 
     // Verificar si el paciente existe y pertenece a la sede
     const paciente = await pacienteModel.findOne({ where: { pac_id }, attributes: ["per_id"] });
@@ -218,7 +194,8 @@ const registrarAcudiente = async (req, res) => {
       return res.status(404).json({ message: "Paciente no encontrado." });
     }
 
-    const pacientePerId = paciente.per_id;
+    const pacientePerId = paciente.per_id;    
+    
     
     const pacienteEnOtraSede = await sedePersonaRolModel.findOne({
       where: {
@@ -229,6 +206,7 @@ const registrarAcudiente = async (req, res) => {
       }
     });    
 
+
     if (pacienteEnOtraSede) {
       return res.status(403).json({ message: "El paciente no pertenece a esta sede" });
     }
@@ -236,13 +214,14 @@ const registrarAcudiente = async (req, res) => {
     const pacienteActivoSede = await sedePersonaRolModel.findOne({
       where: { per_id: pacientePerId, rol_id: 4, se_id, sp_activo: true },
     });
+    
 
     if (!pacienteActivoSede) {
       return res.status(403).json({ message: "El paciente está inactivo actualmente." });
     }
 
     await sequelize.transaction(async (t) => {
-      // Verificar si ya existe la relación en `acudientes`
+      // Verificar si ya existe la relación en `paciente_acudiente`
       let acudienteExistente = await pacienteAcudienteModel.findOne({
         where: { per_id, pac_id },
         attributes: ["pa_id", "pa_activo", "pa_parentesco"],
@@ -257,9 +236,10 @@ const registrarAcudiente = async (req, res) => {
             acudiente: acudienteExistente,
           });
         } else {
+          await acudienteExistente.update({ pa_activo: true, pa_parentesco }, { transaction: t });
           return res.status(200).json({
-            message: "Este acudiente ya está registrado, pero actualmente está inactivo.",
-            inactivo: true,
+            message: "El acudiente estaba inactivo y ha sido reactivado.",
+            reactivado: true,
             acudiente: acudienteExistente,
           });
         }
@@ -272,51 +252,10 @@ const registrarAcudiente = async (req, res) => {
         pa_parentesco,
       }, { transaction: t });
 
-      // Verificar si tiene vínculo con el geriátrico
-      let vinculoGeriatrico = await geriatricoPersonaModel.findOne({
-        where: { per_id, ge_id: ge_id_sesion },
-        transaction: t
-      });
-
-      if (vinculoGeriatrico) {
-        if (!vinculoGeriatrico.gp_activo) {
-          await vinculoGeriatrico.update({ gp_activo: true }, { transaction: t });
-        }
-      } else {
-        await geriatricoPersonaModel.create({
-          ge_id: ge_id_sesion,
-          per_id,
-          gp_activo: true
-        }, { transaction: t });
-      }
-
-      // Verificar si el acudiente ya tiene el rol de acudiente (rol_id 6) en la sede
-      let rolExistente = await sedePersonaRolModel.findOne({
-        where: { per_id, se_id, rol_id: 6 },
-        transaction: t
-      });
-
-      if (rolExistente) {
-        await rolExistente.update(
-          { sp_activo: true, sp_fecha_fin: null },
-          { transaction: t }
-        );
-      } else {
-        await sedePersonaRolModel.create({
-          per_id,
-          se_id,
-          rol_id: 6,
-          sp_fecha_inicio,
-          sp_fecha_fin: sp_fecha_fin || null,
-          sp_activo: true
-        }, { transaction: t });
-      }
-
       return res.status(201).json({
         message: "Acudiente registrado correctamente.",
         acudiente: acudienteRegistrado
       });
-
     });
   } catch (error) {
     console.error("Error al registrar acudiente:", error);
@@ -326,7 +265,6 @@ const registrarAcudiente = async (req, res) => {
     });
   }
 };
-
 
 
 module.exports = { registrarAcudiente };

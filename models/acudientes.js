@@ -31,15 +31,6 @@ const pacienteAcudienteModel = sequelize.define("paciente_acudiente", {
     type: DataTypes.STRING,
     allowNull: false,
   },
-  pa_fecha_inicio: {
-    type: DataTypes.DATE,
-    allowNull: false,
-    defaultValue: DataTypes.NOW, // Equivalente a CURRENT_TIMESTAMP
-  },
-  pa_fecha_fin: {
-    type: DataTypes.DATE,
-    allowNull: true,
-  },
   pa_activo: {
     type: DataTypes.BOOLEAN,
     allowNull: false,
