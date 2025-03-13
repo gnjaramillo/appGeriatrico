@@ -45,65 +45,6 @@ const obtenerRoles = async (req, res) => {
 
 
 
-/* const obtenerHistorialRoles = async (req, res) => {
-  try {
-    const { ge_id } = req.params;
-
-    // Obtener roles en geriátrico (activos e inactivos)
-    const rolesGeriatrico = await geriatricoPersonaRolModel.findAll({
-      where: { ge_id },
-      include: [
-        { model: personaModel, 
-          as: "persona",
-          attributes: ["per_nombre_completo", "per_documento"] },
-        { model: rolModel, 
-          as: 'rol',
-          attributes: ["rol_nombre"] }
-      ],
-      order: [["gp_activo", "DESC"]] // Ordena por estado: activos primero
-    });
-
-    // Obtener todas las sedes asociadas al geriátrico
-    const sedes = await sedeModel.findAll({
-      where: { ge_id },
-      attributes: ["se_id", "se_nombre"]
-    });
-    const sedeIds = sedes.map(s => s.se_id);
-
-    let rolesSedes = [];
-    if (sedeIds.length > 0) {
-      // Obtener roles en sedes (activos e inactivos)
-      rolesSedes = await sedePersonaRolModel.findAll({
-        where: { se_id: sedeIds },
-        include: [
-          { model: personaModel, 
-            as: "persona",
-            attributes: ["per_nombre_completo", "per_documento"] 
-          },
-          { model: rolModel,
-            as: 'rol',
-            attributes: ["rol_nombre"] 
-          },
-          { model: sedeModel, 
-            as: 'sede',
-            attributes: ["se_nombre"] 
-          }
-        ],
-        order: [["sp_activo", "DESC"]] // Ordena por estado: activos primero
-      });
-    }
-
-    return res.status(200).json({
-      rolesGeriatrico,
-      rolesSedes
-    });
-  } catch (error) {
-    console.error("Error al obtener historial de roles:", error);
-    return res.status(500).json({ message: "Error en el servidor" });
-  }
-}; */
-
-
 const obtenerHistorialRoles = async (req, res) => {
     try {
       const { ge_id } = req.params;
@@ -229,8 +170,6 @@ const obtenerHistorialRoles = async (req, res) => {
         return res.status(500).json({ message: "Error en el servidor." });
     }
 };
-
-
 
 
 
@@ -422,6 +361,7 @@ const seleccionarRol = async (req, res) => {
       return res.status(500).json({ message: 'Error al seleccionar rol, sede o geriátrico' });
   }
 };
+
 
 
 

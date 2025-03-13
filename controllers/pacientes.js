@@ -89,8 +89,6 @@ const registrarPaciente = async (req, res) => {
 
 
 
-
-
 // ver TODOS los pacientes de mi sede lista segmentada (admin sede, enfermeros)
 const obtenerPacientesSede = async (req, res) => {
   try {
@@ -317,57 +315,6 @@ const obtenerDetallePaciente = async (req, res) => {
 
 
 
-// Obtener Acudiente(s) de un Paciente
-const obtenerAcudientesDePaciente = async (req, res) => {
-  try {
-    const { pac_id } = req.params;
-
-    const acudientes = await pacienteAcudienteModel.findAll({
-      where: { pac_id },
-      attributes: ["pa_id", "pac_id", "per_id", "pa_parentesco", "pa_activo"],
-      include: [
-        {
-          model: personaModel,
-          as: "persona",
-          attributes: [
-            "per_nombre_completo",
-            "per_documento",
-            "per_correo",
-            "per_telefono",
-          ],
-        },
-      ],
-    });
-
-    if (!acudientes.length) {
-      return res
-        .status(404)
-        .json({ message: "No hay acudientes para este paciente." });
-    }
-
-    const respuestaAcudientes = acudientes.map((acudiente) => ({
-      per_id_acudiente: acudiente.per_id, // Renombrado
-      nombre_completo: acudiente.persona.per_nombre_completo,
-      documento: acudiente.persona.per_documento,
-      telefono: acudiente.persona.per_telefono,
-      correo: acudiente.persona.per_correo,
-      parentesco: acudiente.pa_parentesco,
-      acudienteActivo: acudiente.pa_activo,
-    }));
-
-    return res.status(200).json({
-      acudientes: respuestaAcudientes,
-    });
-  } catch (error) {
-    console.error("Error al obtener los acudientes:", error);
-    return res
-      .status(500)
-      .json({ message: "Error al obtener los acudientes." });
-  }
-};
-
-
-
 // Actualizar detalle de un paciente (admin sede)
 const actualizarDetallePaciente = async (req, res) => {
   try {
@@ -471,6 +418,5 @@ module.exports = {
   obtenerPacientesSede,
   obtenerRolesPacientesSede,
   obtenerDetallePaciente,
-  obtenerAcudientesDePaciente,
   actualizarDetallePaciente,
 };

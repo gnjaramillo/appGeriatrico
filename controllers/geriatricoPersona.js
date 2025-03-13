@@ -262,7 +262,7 @@ const obtenerPersonaRolesMiGeriatricoSede = async (req, res) => {
                     attributes: ['rol_id', 'rol_nombre']
                 }
             ],
-            attributes: ['sp_activo', 'sp_fecha_inicio', 'sp_fecha_fin'],
+            attributes: ['sp_id', 'sp_activo', 'sp_fecha_inicio', 'sp_fecha_fin'],
             order: [['sp_activo', 'DESC']]
         });
 
@@ -274,16 +274,17 @@ const obtenerPersonaRolesMiGeriatricoSede = async (req, res) => {
                 rolesGeriatrico: rolesGeriatrico.map(rg => ({
                     rol_id: rg.rol.rol_id,
                     rol_nombre: rg.rol.rol_nombre,
-                    activo: rg.gp_activo, // Estado del rol en geriátrico
+                    activoRolGer: rg.gp_activo, // Estado del rol en geriátrico
                     fechaInicio: rg.gp_fecha_inicio,
                     fechaFin: rg.gp_fecha_fin,                    
                     ge_id: rg.geriatrico.ge_id,
                     
                 })),
                 rolesSede: rolesSede.map(rs => ({
+                    sp_id: rs.sp_id,
                     rol_id: rs.rol?.rol_id || null,
                     rol_nombre: rs.rol?.rol_nombre || "Sin rol",
-                    activo: rs.sp_activo, // Estado del rol en sede
+                    activoRolSede: rs.sp_activo, // Estado del rol en sede
                     fechaInicio: rs.sp_fecha_inicio,
                     fechaFin: rs.sp_fecha_fin,
                     se_id: rs.sede.se_id,

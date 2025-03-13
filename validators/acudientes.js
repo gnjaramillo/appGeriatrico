@@ -8,4 +8,11 @@ const validatorAcudiente = [
   (req, res, next) => validateResult(req, res, next),
 ];
 
-module.exports = { validatorAcudiente };
+const validatorRelacionAcudiente = [
+  check("pa_id").exists().isInt({ min: 1 }).notEmpty().withMessage("El ID de la relacion acudiente_paciente es obligatorio."),  
+  (req, res, next) => validateResult(req, res, next),
+];
+
+
+
+module.exports = { validatorAcudiente, validatorRelacionAcudiente };

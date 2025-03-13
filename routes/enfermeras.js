@@ -8,7 +8,7 @@ const { registrarEnfermera, obtenerEnfermerasSede, obtenerRolesEnfermerasSede } 
 
 
 
-router.get('/sede', sessionMiddleware, authMiddleware, checkRol([3, 5]), obtenerEnfermerasSede);
+router.get('/sede', sessionMiddleware, authMiddleware, checkRol([3]), obtenerEnfermerasSede);
 
 router.get('/roles/:per_id', sessionMiddleware, authMiddleware, checkRol([3]), obtenerRolesEnfermerasSede);
 

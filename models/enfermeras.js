@@ -45,6 +45,15 @@ enfermeraModel.associate = (models) => {
     as: 'seguimientos' 
 });
 
+//Una enfermera puede realizar varios cuidados enfermeria
+/*     enfermeraModel.hasMany(models.cuidadoEnfermeriaModel, { 
+    foreignKey: 'enf_id', 
+    as: 'cuidados_enfermeria' 
+}); */
+
+
+
+
 };
 
 

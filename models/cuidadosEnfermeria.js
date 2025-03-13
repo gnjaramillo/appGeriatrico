@@ -4,9 +4,19 @@ const { DataTypes } = require('sequelize');
 const cuidadoEnfermeriaModel = sequelize.define('CuidadosEnfermeria', {
     cue_id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
     cue_codigo: { type: DataTypes.STRING, allowNull: false, unique: true },
-    pac_id: { type: DataTypes.INTEGER, allowNull: false },  // Clave foránea de pacientes
+    pac_id: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        references: {
+            model: 'pacientes', // Nombre exacto de la tabla en la BD
+            key: 'pac_id'
+        },
+        onDelete: 'CASCADE',
+        onUpdate: 'CASCADE'
+    },
+
     cue_fecha_inicio: { type: DataTypes.DATEONLY, allowNull: false },
-    cue_fecha_fin: { type: DataTypes.DATEONLY, allowNull: false },
+    cue_fecha_fin: { type: DataTypes.DATEONLY, allowNull: true, defaultValue: null  },
 
     // Campos de cuidados específicos
     cue_bano: { type: DataTypes.ENUM('CAMA', 'DUCHA'), allowNull: false },
@@ -58,11 +68,19 @@ cuidadoEnfermeriaModel.associate = (models) => {
         as: 'paciente' 
     });
 
+
+
+    // Un cuidado de enfermería es realizado por una enfermera
+/*     cuidadoEnfermeriaModel.belongsTo(models.enfermeraModel, { 
+        foreignKey: 'enf_id', 
+        as: 'enfermera' 
+    }); */
+
 //Un registro de CuidadosEnfermeria tiene un Seguimiento:
-    cuidadoEnfermeriaModel.hasOne(models.seguimientoModel, { 
+/*     cuidadoEnfermeriaModel.hasOne(models.seguimientoModel, { 
         foreignKey: 'cue_id',
         as: 'seguimiento'
-    });
+    }); */
 
 
 

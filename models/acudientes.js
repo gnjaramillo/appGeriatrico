@@ -1,45 +1,49 @@
 const { sequelize } = require("../config/mysql");
 const { DataTypes } = require("sequelize");
 
-const pacienteAcudienteModel = sequelize.define("paciente_acudiente", {
-  pa_id: {
-    type: DataTypes.INTEGER,
-    autoIncrement: true,
-    primaryKey: true,
-  },
-  pac_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: "pacientes",
-      key: "pac_id",
+const pacienteAcudienteModel = sequelize.define(
+  "paciente_acudiente",
+  {
+    pa_id: {
+      type: DataTypes.INTEGER,
+      autoIncrement: true,
+      primaryKey: true,
     },
-    onDelete: "CASCADE",
-    onUpdate: "CASCADE",
-  },
-  per_id: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: "personas",
-      key: "per_id",
+    pac_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "pacientes",
+        key: "pac_id",
+      },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     },
-    onDelete: "CASCADE",
-    onUpdate: "CASCADE",
+    per_id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      references: {
+        model: "personas",
+        key: "per_id",
+      },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
+    },
+    pa_parentesco: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    pa_activo: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: true,
+    },
   },
-  pa_parentesco: {
-    type: DataTypes.STRING,
-    allowNull: false,
-  },
-  pa_activo: {
-    type: DataTypes.BOOLEAN,
-    allowNull: false,
-    defaultValue: true,
-  },
-}, {
-  tableName: "paciente_acudiente",
-  timestamps: false,
-});
+  {
+    tableName: "paciente_acudiente",
+    timestamps: false,
+  }
+);
 
 // Relaciones
 pacienteAcudienteModel.associate = (models) => {
@@ -57,9 +61,6 @@ pacienteAcudienteModel.associate = (models) => {
 };
 
 module.exports = pacienteAcudienteModel;
-
-
-
 
 /* 
 const { sequelize } = require("../config/mysql");
@@ -128,5 +129,3 @@ acudienteModel.belongsTo(models.personaModel,
 
 
 module.exports = acudienteModel */
-
-

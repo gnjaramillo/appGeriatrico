@@ -1,4 +1,4 @@
-const session = require('express-session');
+const sessionMiddleware = require('express-session');
 const RedisStore = require('connect-redis').default; // Para Redis v7+
 const { createClient } = require('redis');
 
@@ -30,7 +30,7 @@ redisClient.on('reconnecting', () => console.log('♻️ Intentando reconectar a
 redisClient.connect().catch(console.error); //  Redis v4+
 
 // Configurar express-session con Redis
-module.exports = session({
+module.exports = sessionMiddleware({
     store: new RedisStore({ client: redisClient }),  
     secret: process.env.SESSION_SECRET || 'defaultSecret',  
     resave: false, // no vuelve a guardar sesion si no hay cambios

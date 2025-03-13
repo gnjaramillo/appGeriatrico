@@ -11,7 +11,6 @@ const { registrarPaciente, obtenerPacientesSede, obtenerRolesPacientesSede, obte
 
 router.get('/sede', sessionMiddleware, authMiddleware, checkRol([3, 5]), obtenerPacientesSede);
 router.get('/roles/:per_id', sessionMiddleware, authMiddleware, checkRol([3, 5]), obtenerRolesPacientesSede);
-router.get('/acudientes/:pac_id', sessionMiddleware, authMiddleware, checkRol([3]), obtenerAcudientesDePaciente);
 
 router.get("/sede/:per_id", sessionMiddleware, authMiddleware, checkRol([3,5]), obtenerDetallePaciente);
 router.post('/registrar', sessionMiddleware, authMiddleware, checkRol([3]), pacienteValidator, registrarPaciente);
