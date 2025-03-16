@@ -421,9 +421,6 @@ const reactivarRelacionAcudiente = async (req, res) => {
 
 
 
-
-
-
 // pacientes a cargo del acudiente en una sede en particular (acudiente)
 const pacientesAcudienteActivos = async (req, res) => {
   try {

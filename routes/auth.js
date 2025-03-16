@@ -1,9 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const { registrarPersona, loginPersona} = require('../controllers/auth')
-const {validarRegistroPersona, validarLogin} = require('../validators/auth'); 
 const upload = require('../middleware/multer');
 const sessionMiddleware = require('../middleware/sessionRedis')
+const { registrarPersona, loginPersona} = require('../controllers/auth')
+const {validarRegistroPersona, validarLogin} = require('../validators/auth'); 
 
 
 

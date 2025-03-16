@@ -3,6 +3,18 @@ const validateResults = require('../utils/handleValidator');
 
 
 const validarRegistroPersona = [
+    // Validar fecha (YYYY-MM-DD) y que no sea futura
+   /*  check("per_fecha")
+    .notEmpty()
+    .isISO8601()
+    .withMessage("La fecha debe estar en formato válido (YYYY-MM-DD).")
+    .custom((value) => {
+        if (moment(value).isAfter(moment())) {
+            throw new Error("La fecha no puede ser futura.");
+        }
+        return true;
+    }), */
+
     // check("per_fecha").optional().isDate().withMessage("La fecha debe ser válida."),
     check("per_correo").exists().notEmpty().isEmail().normalizeEmail().withMessage("El correo electrónico no es válido")
     .custom(value => {

@@ -1,19 +1,3 @@
-/* const cloudinary = require('../config/cloudinary'); 
-
-const subirImagenACloudinary = async (file, folder = "default") => {
-    return new Promise((resolve, reject) => {
-        cloudinary.uploader.upload_stream(
-            { folder: folder }, // Carpeta dinámica
-            (error, result) => {
-                if (error) return reject(error);
-                resolve(result); // Devuelve el resultado de la carga (URL, etc.)
-            }
-        ).end(file.buffer); // Aquí usamos el buffer del archivo en MemoryStorage
-    });
-};
-module.exports = { subirImagenACloudinary }; */
-
-
 
 const cloudinary = require('../config/cloudinary');
 

@@ -72,6 +72,13 @@ const validarCuidadosEnfermeria = [
 
 ];
 
+const validarPacId = [
+    param('pac_id').isInt().withMessage('El ID del paciente debe ser un número entero'),
+
+    (req, res, next) => validateResult(req, res, next),
+
+];
 
 
-module.exports = { validarCuidadosEnfermeria };
+
+module.exports = { validarCuidadosEnfermeria, validarPacId };

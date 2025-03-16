@@ -36,19 +36,9 @@ const seguimientoModel = sequelize.define('seguimientos', {
         allowNull: false,
         defaultValue: DataTypes.NOW // Fecha del seguimiento
     },
-/*     cue_id: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        references: {
-            model: 'cuidados_enfermeria',
-            key: 'cue_id'
-        },
-        onDelete: 'CASCADE',
-        onUpdate: 'CASCADE'
-    }, */
     seg_pa: {
         type: DataTypes.STRING,
-        allowNull: false,
+        allowNull: true,
         validate: {
             is: /^\d{2,3}\/\d{2,3}$/  // Validación para asegurarse de que sea algo como "120/80"
         }
@@ -104,10 +94,7 @@ const seguimientoModel = sequelize.define('seguimientos', {
             foreignKey: 'enf_id',
             as: 'enfermera'
         });
-/*         seguimientoModel.belongsTo(models.cuidadoEnfermeriaModel, {
-            foreignKey: 'cue_id',
-            as: 'cuidadosEnfermeria'
-        }); */
+
     };
 
 module.exports = seguimientoModel
