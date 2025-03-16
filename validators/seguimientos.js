@@ -9,18 +9,7 @@ const validarSeguimientos = [
         .isInt({ min: 1 })
         .withMessage("El ID del paciente debe ser un número entero positivo."),
 
-    // Validar fecha (YYYY-MM-DD) y que no sea futura 
- /*    check("seg_fecha")
-        .notEmpty()
-        .withMessage("La fecha es obligatoria.")
-        .isISO8601()
-        .withMessage("La fecha debe estar en formato válido (YYYY-MM-DD).")
-        .custom((value) => {
-            if (moment(value).isAfter(moment())) {
-                throw new Error("La fecha no puede ser futura.");
-            }
-            return true;
-        }), */
+
 
 
     // Validar presión arterial (opcional, pero si está presente debe tener formato correcto)
@@ -87,3 +76,17 @@ const validarPacId = [
 
 
 module.exports = { validarSeguimientos, validarPacId };
+
+
+    // Validar fecha (YYYY-MM-DD) y que no sea futura 
+ /*    check("seg_fecha")
+        .notEmpty()
+        .withMessage("La fecha es obligatoria.")
+        .isISO8601()
+        .withMessage("La fecha debe estar en formato válido (YYYY-MM-DD).")
+        .custom((value) => {
+            if (moment(value).isAfter(moment())) {
+                throw new Error("La fecha no puede ser futura.");
+            }
+            return true;
+        }), */

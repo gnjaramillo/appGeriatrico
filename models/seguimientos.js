@@ -77,7 +77,14 @@ const seguimientoModel = sequelize.define('seguimientos', {
     }
 }, {
     tableName: 'seguimientos',
-    timestamps: false 
+    timestamps: false,
+    hooks: {
+        beforeCreate: (seguimiento) => {
+            const now = new Date();
+            now.setSeconds(0, 0); // Elimina los segundos y milisegundos
+            seguimiento.seg_fecha = now;
+        }
+    }
 });
 
 

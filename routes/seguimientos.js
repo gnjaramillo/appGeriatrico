@@ -12,7 +12,7 @@ const { registrarSeguimientoPaciente } = require('../controllers/seguimientos');
 
 
 // router.get('/paciente/:pac_id', sessionMiddleware, authMiddleware, checkRol([5, 6]), validarPacId, obtenerSeguimientosPaciente);
-router.post('/paciente/:pac_id', sessionMiddleware, authMiddleware, checkRol([5]), upload.single('per_foto'), validarSeguimientos, registrarSeguimientoPaciente);
+router.post('/paciente/:pac_id', sessionMiddleware, authMiddleware, checkRol([5]), upload.single('seg_foto'), validarSeguimientos, registrarSeguimientoPaciente);
 
 
 module.exports = router;
