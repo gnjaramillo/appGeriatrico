@@ -1,6 +1,6 @@
 const { sequelize } = require('../config/mysql'); 
 const { DataTypes } = require('sequelize'); 
-
+const moment = require("moment-timezone");
 
 
 
@@ -34,7 +34,11 @@ const seguimientoModel = sequelize.define('seguimientos', {
     seg_fecha: {
         type: DataTypes.DATE,
         allowNull: false,
-        defaultValue: DataTypes.NOW // Fecha del seguimiento
+        get() {
+            return moment(this.getDataValue("seg_fecha")).tz("America/Bogota").format("YYYY-MM-DD HH:mm:ss");
+        }
+        
+        //defaultValue: DataTypes.NOW // Fecha del seguimiento
     },
     seg_pa: {
         type: DataTypes.STRING,
@@ -80,14 +84,10 @@ const seguimientoModel = sequelize.define('seguimientos', {
     timestamps: false,
     hooks: {
         beforeCreate: (seguimiento) => {
-            const now = new Date();
-            now.setSeconds(0, 0); // Elimina los segundos y milisegundos
-            seguimiento.seg_fecha = now;
-        }
-    }
+            seguimiento.seg_fecha = moment().tz("America/Bogota").format("YYYY-MM-DD HH:mm:ss");
+        },
+    },
 });
-
-
 
     // relaciones
     seguimientoModel.associate = (models) => {
