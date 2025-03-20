@@ -71,6 +71,20 @@ const obtenerSedes = async (req, res) => {
   try {
     // Obtener todas las sedes de la base de datos
     const sedes = await sedeModel.findAll({
+      attributes: [
+        "se_id",
+        "se_foto",
+        "se_nombre",
+        "se_telefono",
+        "se_direccion",
+        "cupos_totales",
+        "cupos_ocupados",
+        "se_activo",
+        [
+          sequelize.literal("cupos_totales - cupos_ocupados"),
+          "cupos_disponibles",
+        ], // Aquí se calcula automáticamente
+      ],
       include: [
         {
           model: geriatricoModel,
@@ -109,6 +123,21 @@ const obtenerSedesMiGeriatrico = async (req, res) => {
 
     // Obtener todas las sedes de mi geriatrico
     const sedes = await sedeModel.findAll({
+      attributes: [
+        "se_id",
+        "se_foto",
+        "se_nombre",
+        "se_telefono",
+        "se_direccion",
+        "cupos_totales",
+        "cupos_ocupados",
+        "se_activo",
+        [
+          sequelize.literal("cupos_totales - cupos_ocupados"),
+          "cupos_disponibles",
+        ], // Aquí se calcula automáticamente
+      ],
+
       where: {  ge_id }, // Filtrar para el geriatrico en sesion
       
     });
@@ -139,6 +168,21 @@ const obtenerDetalleSede = async (req, res) => {
 
     // Buscar una sede por su ID incluyendo el geriatrico relacionado
     const sede = await sedeModel.findOne({
+      attributes: [
+        "se_id",
+        "se_foto",
+        "se_nombre",
+        "se_telefono",
+        "se_direccion",
+        "cupos_totales",
+        "cupos_ocupados",
+        "se_activo",
+        [
+          sequelize.literal("cupos_totales - cupos_ocupados"),
+          "cupos_disponibles",
+        ], // Aquí se calcula automáticamente
+      ],
+
       where: { se_id },
     
     });

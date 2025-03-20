@@ -7,8 +7,7 @@ const  validateResult  = require('../utils/handleValidator');
 
 const validarCuidadosEnfermeria = [
     param('pac_id').isInt().withMessage('El ID del paciente debe ser un número entero'),
-    check("cue_codigo").isString().notEmpty().withMessage("El código es obligatorio."),
-    check('cue_fecha_inicio').isDate().exists().notEmpty().withMessage('La fecha de inicio (sp_fecha_inicio) debe ser una fecha válida')
+    check('cue_fecha_inicio').isDate().exists().notEmpty().withMessage('La fecha de inicio (cue_fecha_inicio) debe ser una fecha válida')
     .custom((value) => {
         const now = new Date();
         const localToday = new Date(now.toLocaleDateString("en-CA", { timeZone: "America/Bogota" })); 
@@ -30,9 +29,9 @@ const validarCuidadosEnfermeria = [
     check('cue_fecha_fin')
         .optional({ checkFalsy: true })
         .isDate()
-        .withMessage('La fecha de fin (sp_fecha_fin) debe ser una fecha válida, si se proporciona')
+        .withMessage('La fecha de fin (cue_fecha_fin) debe ser una fecha válida, si se proporciona')
         .custom((value, { req }) => {
-            if (value && new Date(value) < new Date(req.body.sp_fecha_inicio)) {
+            if (value && new Date(value) < new Date(req.body.cue_fecha_inicio)) {
                 throw new Error('La fecha de fin no puede ser anterior a la fecha de inicio');
             }
             return true;
@@ -63,10 +62,10 @@ const validarCuidadosEnfermeria = [
         .withMessage("El control de talla debe ser 'mañana', 'tarde', 'noche' o 'no aplica'."),
 
     // Validaciones para texto opcional
-    check("cue_sitio_cura").optional().isString().withMessage("El sitio de curación debe ser un texto."),
-    check("cue_liq_administrados_detalle").optional().isString().withMessage("El detalle de líquidos administrados debe ser un texto."),
-    check("cue_liq_eliminados_detalle").optional().isString().withMessage("El detalle de líquidos eliminados debe ser un texto."),
-    check("otros_cuidados").optional().isString().withMessage("Otros cuidados debe ser un texto."),
+    check("cue_sitio_cura").optional({ nullable: true }).isString().withMessage("El sitio de curación debe ser un texto."),
+    check("cue_liq_administrados_detalle").optional({ nullable: true }).isString().withMessage("El detalle de líquidos administrados debe ser un texto."),
+    check("cue_liq_eliminados_detalle").optional({ nullable: true }).isString().withMessage("El detalle de líquidos eliminados debe ser un texto."),
+    check("otros_cuidados").optional({ nullable: true }).isString().withMessage("Otros cuidados debe ser un texto."),
 
     (req, res, next) => validateResult(req, res, next),
 

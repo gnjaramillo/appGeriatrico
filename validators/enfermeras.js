@@ -1,4 +1,4 @@
-const { check } = require('express-validator');
+const { check , param} = require('express-validator');
 const  validateResult  = require('../utils/handleValidator');
 
 const validatorEnfermera = [
@@ -8,6 +8,11 @@ const validatorEnfermera = [
         
     (req, res, next) => validateResult(req, res, next),
 ];
+
+
+
+
+
 
 
 

@@ -190,6 +190,11 @@ const obtenerRolesPacientesSede = async (req, res) => {
       where: { per_id, se_id, rol_id: 4 }, // Solo roles de paciente
       include: [
         {
+          model: personaModel,
+          as: "persona",
+          attributes: ["per_id", "per_nombre_completo", "per_documento"],
+        },
+        {
           model: rolModel,
           as: "rol",
           attributes: ["rol_id", "rol_nombre"],
@@ -208,11 +213,14 @@ const obtenerRolesPacientesSede = async (req, res) => {
     return res.status(200).json({
       message: "Roles del paciente obtenidos exitosamente",
       roles: rolesPaciente.map((rol) => ({
+        // per_id: rol.persona.per_id,
+        // nombre: rol.persona.per_nombre_completo,
+        // documento: rol.persona.per_documento,
         rol_id: rol.rol.rol_id,
-        rol_nombre: rol.rol.rol_nombre,
+        rol: rol.rol.rol_nombre,
         fechaInicio: rol.sp_fecha_inicio,
         fechaFin: rol.sp_fecha_fin,
-        activo: rol.sp_activo,
+        activoSede: rol.sp_activo,
       })),
     });
   } catch (error) {

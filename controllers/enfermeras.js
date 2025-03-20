@@ -1,12 +1,11 @@
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/mysql'); 
-
 const { matchedData } = require('express-validator');
-const { enfermeraModel,sedeModel, personaModel, sedePersonaRolModel } = require('../models');
+const { enfermeraModel,sedeModel,rolModel, turnoModel, personaModel, sedePersonaRolModel } = require('../models');
 
 
 
-
+// registro datos adicionales en tabla enfermera
 const registrarEnfermera = async (req, res) => {
   try {
       const data = matchedData(req);
@@ -63,7 +62,7 @@ const registrarEnfermera = async (req, res) => {
 
 
 
-
+// liSta enfermeras q pertenecen a la sede
 const obtenerEnfermerasSede = async (req, res) => {
   try {
     const se_id = req.session.se_id;
@@ -151,17 +150,18 @@ const obtenerEnfermerasSede = async (req, res) => {
 
 
 
-// ver TODAS las enfermeras de mi sede  (admin sede)
+// ver TODAS las enfermeras de mi sede, con sus roles y fechas  (admin sede)
 const obtenerRolesEnfermerasSede = async (req, res) => {
     try {
+      const { per_id } = req.params;
       const se_id = req.session.se_id;
   
       if (!se_id) {
         return res.status(403).json({ message: "No tienes una sede asignada en la sesión." });
       }
   
-      const enfermeras = await sedePersonaRolModel.findAll({
-        where: { se_id, rol_id: 5 }, // Filtrar solo enfermeras en la sede del admin
+      const rolesEnfermeras = await sedePersonaRolModel.findAll({
+        where: { per_id, se_id, rol_id: 5 }, // Filtrar solo enfermeras en la sede del admin
         attributes: ["sp_fecha_inicio", "sp_fecha_fin", "sp_activo"],
         include: [
           {
@@ -173,24 +173,33 @@ const obtenerRolesEnfermerasSede = async (req, res) => {
                 model: enfermeraModel, // Incluir datos adicionales de enfermera
                 as: "enfermera",
                 attributes: ["enf_id"],
-              }
+              },
+      
             ]
           },
+          {
+            model: rolModel,
+            as: "rol",
+            attributes: ["rol_id", "rol_nombre"],
+          },
+
         ],
         order: [['sp_activo', 'DESC']] // Ordenar primero los activos
       });
   
-      if (enfermeras.length === 0) {
+      if (rolesEnfermeras.length === 0) {
         return res.status(404).json({ message: "No hay enfermeras vinculadas a esta sede." });
       }
   
-      const respuestaEnfermeras = enfermeras.map((e) => ({
-        per_id: e.persona.per_id,
-        nombre: e.persona.per_nombre_completo,
-        documento: e.persona.per_documento,
+      const respuestaEnfermeras = rolesEnfermeras.map((e) => ({
+        // per_id: e.persona.per_id,
+        // nombre: e.persona.per_nombre_completo,
+        // documento: e.persona.per_documento,
+        rol_id: e.rol.rol_id,
+        rol: e.rol.rol_nombre,
         fechaInicio: e.sp_fecha_inicio,
         fechaFin: e.sp_fecha_fin,
-        enfermeraActiva: e.sp_activo,
+        activoSede: e.sp_activo,
         enf_codigo: e.persona.enfermera?.enf_id || null, // Puede ser null si aun no tiene registro en enfermeraModel
       }));
   
@@ -203,6 +212,7 @@ const obtenerRolesEnfermerasSede = async (req, res) => {
       return res.status(500).json({ message: "Error al obtener enfermeras." });
     }
 };
+
 
 
 

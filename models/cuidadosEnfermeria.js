@@ -3,7 +3,6 @@ const { DataTypes } = require('sequelize');
 
 const cuidadoEnfermeriaModel = sequelize.define('CuidadosEnfermeria', {
     cue_id: { type: DataTypes.INTEGER, autoIncrement: true, primaryKey: true },
-    cue_codigo: { type: DataTypes.STRING, allowNull: false, unique: true },
     pac_id: {
         type: DataTypes.INTEGER,
         allowNull: false,
