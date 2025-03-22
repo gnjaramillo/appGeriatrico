@@ -70,5 +70,16 @@ const turnoValidator = [
 
     ];
 
+const turnoIdValidator = [
 
-    module.exports = { turnoValidator };
+    param("tur_id") // Se toma de los parámetros de la URL
+        .isInt().withMessage("El ID de la turno debe ser un número entero.")
+        .toInt(),
+
+
+        (req, res, next) => validateResult(req, res, next),
+
+    ];
+
+
+    module.exports = { turnoValidator, turnoIdValidator };

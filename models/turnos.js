@@ -73,10 +73,23 @@ const turnoModel = sequelize.define(
             return convertTo12HourFormat(this.getDataValue('tur_hora_fin')); 
         }
     },
-    tur_total_horas: { 
+    
+/*     tur_total_horas: { 
         type: DataTypes.INTEGER, 
         allowNull: false,
     },
+ */    
+
+    tur_total_horas: { 
+      type: DataTypes.DECIMAL(5,2), // Asegurar que guarde valores decimales
+      allowNull: false,
+      get() {
+          const value = this.getDataValue('tur_total_horas');
+          return value % 1 === 0 ? parseInt(value) : parseFloat(value); 
+      }
+  },
+  
+
     tur_tipo_turno: {
       type: DataTypes.ENUM("Diurno", "Nocturno"),
       allowNull: false,

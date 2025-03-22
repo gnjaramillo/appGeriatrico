@@ -1,5 +1,5 @@
 const { matchedData } = require('express-validator');
-const { rolModel, personaModel, sedePersonaRolModel, sedeModel, geriatricoPersonaRolModel, geriatricoModel, geriatricoPersonaModel } = require('../models');
+const { rolModel, personaModel, enfermeraModel, sedePersonaRolModel, sedeModel, geriatricoPersonaRolModel, geriatricoModel, geriatricoPersonaModel } = require('../models');
 const { limpiarSesion } = require('../utils/sessionUtils');
 
 
@@ -44,7 +44,7 @@ const obtenerRoles = async (req, res) => {
 
 
 
-
+// ver historial de roles de todas las personas del geriatrico
 const obtenerHistorialRoles = async (req, res) => {
     try {
       const { ge_id } = req.params;
@@ -336,6 +336,16 @@ const seleccionarRol = async (req, res) => {
           req.session.ge_id = asignacion.sede.ge_id;
       }
 
+      // Si el usuario selecciona el rol de enfermera (rol_id = 5), buscar su enf_id
+      if (rol_id === 5) {
+          const enfermera = await enfermeraModel.findOne({ where: { per_id: id } });
+          if (enfermera) {
+              req.session.enf_id = enfermera.enf_id;
+          }
+      }
+
+
+
        // Guardar la sesión
        req.session.save((err) => {
         if (err) {
@@ -353,7 +363,8 @@ const seleccionarRol = async (req, res) => {
           rol_id,
           ...(se_id
               ? { sede: asignacion.sede.se_nombre, se_id, ge_id: asignacion.sede.ge_id }
-              : { geriátrico: asignacion.geriatrico.ge_nombre, ge_id })
+              : { geriátrico: asignacion.geriatrico.ge_nombre, ge_id }),
+              ...(req.session.enf_id ? { enf_id: req.session.enf_id } : {}) // Solo agregar si existe
       });
 
   } catch (error) {

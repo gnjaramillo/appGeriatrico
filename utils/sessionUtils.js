@@ -8,6 +8,9 @@ const limpiarSesion = (req) => {
         delete req.session.rol_nombre;  
         delete req.session.nombre; // nombre de sede o geriatrico de un rol escogido
         delete req.session.geriatrico_nombre; // nombre del geriatrico dueño de la sede de un rol escogido
+        delete req.session.enf_id; 
+
+
 
         req.session.save((err) => {
             if (err) {

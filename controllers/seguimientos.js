@@ -288,7 +288,7 @@ const obtenerSeguimientoPorId = async (req, res) => {
 
 
 
-// solo deja actualizar seguimientos del mismo dia, no se puede actualizar fecha.. 
+// solo deja actualizar seguimientos del mismo dia, no se puede actualizar fecha.. ni un seguimiento de otra enfermera 
 const actualizarSeguimientoPaciente = async (req, res) => {
     const transaction = await sequelize.transaction();
     try {
