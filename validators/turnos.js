@@ -41,25 +41,52 @@ const turnoValidator = [
 
 
 
-/*  check("tur_hora_inicio").matches(/^(0?[1-9]|1[0-2]) (AM|PM)$/).withMessage("Hora de inicio inválida (Formato esperado: HH AM/PM)."),
-    
-    check("tur_hora_fin").matches(/^(0?[1-9]|1[0-2]) (AM|PM)$/).withMessage("Hora de fin inválida (Formato esperado: HH AM/PM)."),
- */      
-
     // horas con minutos.
 
     check("tur_hora_inicio")
     .matches(/^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/)
     .withMessage("Hora de inicio inválida (Formato esperado: HH:MM AM/PM)."),
 
-    check("tur_hora_fin")
+/*     check("tur_hora_fin")
     .matches(/^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/)
     .withMessage("Hora de fin inválida (Formato esperado: HH:MM AM/PM)."),
     
-/*     check("tur_total_horas")
-        .isInt({ min: 1 })
-        .withMessage("Las horas deben ser un número entero mayor a 0.")
-        .toInt(), */
+ */
+
+
+    check("tur_hora_fin").custom((value, { req }) => {
+        const horaInicio = req.body.tur_hora_inicio;
+        const horaFin = value;
+    
+        if (horaInicio && horaFin) {
+            const convertirHora24 = (hora) => {
+                let [time, meridiano] = hora.split(" ");
+                let [hh, mm] = time.split(":").map(Number);
+    
+                if (meridiano === "PM" && hh !== 12) hh += 12;
+                if (meridiano === "AM" && hh === 12) hh = 0;
+    
+                return hh * 60 + mm; // Convertimos todo a minutos
+            };
+    
+            const minutosInicio = convertirHora24(horaInicio);
+            const minutosFin = convertirHora24(horaFin);
+    
+            // Si la hora de fin es menor que la de inicio, es un turno nocturno
+            if (minutosFin < minutosInicio) {
+                const fechaInicio = new Date(req.body.tur_fecha_inicio);
+                const fechaFin = new Date(req.body.tur_fecha_fin);
+    
+                if (fechaInicio.getTime() === fechaFin.getTime()) {
+                    throw new Error(
+                        "Si el turno cruza medianoche, la fecha de fin debe ser el día siguiente."
+                    );
+                }
+            }
+        }
+        return true;
+    }),
+    
 
     check("tur_tipo_turno")
         .isIn(["Diurno", "Nocturno"])
