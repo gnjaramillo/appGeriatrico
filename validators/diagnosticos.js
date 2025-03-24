@@ -4,9 +4,10 @@ const  validateResult  = require('../utils/handleValidator');
 
 
 
-const validarRecomendaciones = [
+const validarDiagnostico = [
     param('pac_id').isInt().exists().notEmpty().withMessage('El ID del paciente debe ser un número entero'),
-    check('rec_fecha').isDate().exists().notEmpty().withMessage('La fecha debe ser una fecha válida')
+
+    check('diag_fecha').isDate().exists().notEmpty().withMessage('La fecha debe ser una fecha válida')
     .custom((value) => {
         const now = new Date();
         const localToday = new Date(now.toLocaleDateString("en-CA", { timeZone: "America/Bogota" })); 
@@ -25,22 +26,13 @@ const validarRecomendaciones = [
         return true;
     }),
 
-
-
-    check([
-        'rec_cubrir_piel_m', 'rec_cubrir_piel_t', 'rec_cubrir_piel_n',
-        'rec_asistir_alimentacion_m', 'rec_asistir_alimentacion_t', 'rec_asistir_alimentacion_n',
-        'rec_prevenir_caidas', 'rec_actividad_ocupacional', 'rec_actividad_fisica'
-    ]).isIn(['S', 'N']).withMessage("El valor debe ser 'S' o 'N'."),
-
-    check('rec_otras')
-        .optional({ nullable: true })
-        .isString()
-        .withMessage('Las otras recomendaciones deben ser un texto.'),
+    check('diag_descripcion')
+        .exists().notEmpty().withMessage('La descripción del diagnóstico es obligatoria')
+        .isString().withMessage('La descripción debe ser un texto'),
 
     (req, res, next) => validateResult(req, res, next),
-
 ];
+
 
 
 
@@ -55,4 +47,4 @@ const validarPacId = [
 
 
 
-module.exports = { validarRecomendaciones, validarPacId };
+module.exports = { validarDiagnostico, validarPacId };

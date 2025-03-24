@@ -18,7 +18,7 @@ const diagnosticoModel = sequelize.define('diagnosticos', {
         onUpdate: 'CASCADE'
     },
     diag_fecha: { 
-        type: DataTypes.DATE, 
+        type: DataTypes.DATEONLY, 
         allowNull: false 
     },
     diag_descripcion: { 

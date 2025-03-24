@@ -4,10 +4,9 @@ const  validateResult  = require('../utils/handleValidator');
 
 
 
-
 const validarCuidadosEnfermeria = [
     param('pac_id').isInt().withMessage('El ID del paciente debe ser un número entero'),
-    check('cue_fecha_inicio').isDate().exists().notEmpty().withMessage('La fecha de inicio (cue_fecha_inicio) debe ser una fecha válida')
+     check('cue_fecha_inicio').isDate().exists().notEmpty().withMessage('La fecha de inicio (cue_fecha_inicio) debe ser una fecha válida')
     .custom((value) => {
         const now = new Date();
         const localToday = new Date(now.toLocaleDateString("en-CA", { timeZone: "America/Bogota" })); 
@@ -17,14 +16,15 @@ const validarCuidadosEnfermeria = [
         const formattedToday = localToday.toISOString().split('T')[0];
         const formattedInputDate = inputDate.toISOString().split('T')[0];
     
-        // console.log("Fecha actual en Colombia:", formattedToday);
-        // console.log("Fecha ingresada:", formattedInputDate);
+        //console.log("Fecha actual en Colombia:", formattedToday);
+        //console.log("Fecha ingresada:", formattedInputDate);
     
         if (formattedInputDate < formattedToday) {
             throw new Error('La fecha de inicio no puede ser una fecha pasada');
         }
         return true;
     }),
+
 
     check('cue_fecha_fin')
         .optional({ checkFalsy: true })

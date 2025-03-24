@@ -90,7 +90,7 @@ const registrarCuidadosEnfermeria = async (req, res) => {
 
 
 
-// ver los cuidados de enfermeria de un paciente (enfermera )
+// ver los cuidados de enfermeria de un paciente (enfermera y acudiente )
 const obtenerCuidadosEnfermeria = async (req, res) => {
     try {
         const { pac_id } = req.params;  // Obtener el ID del paciente
