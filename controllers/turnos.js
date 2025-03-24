@@ -189,7 +189,6 @@ if (turnosSede.length > 0 || turnosOtraSede.length > 0) {
 
 
 
-
 // vista para cada enfermera, para q visualice sus turnos asignados
 const verMisTurnosEnfermeria = async (req, res) => {
   try {
@@ -203,7 +202,7 @@ const verMisTurnosEnfermeria = async (req, res) => {
     const misTurnos = await turnoModel.findAll({
       where: {
         enf_id,
-        tur_fecha_inicio: { [Op.gte]: hoy } // Filtrar desde hoy
+        tur_fecha_fin: { [Op.gte]: hoy } // Filtrar desde hoy
       },
       include: [
         {
@@ -264,7 +263,7 @@ const verMisTurnosEnfermeriaHistorial = async (req, res) => {
     const misTurnosPasados = await turnoModel.findAll({
       where: {
         enf_id,
-        tur_fecha_inicio: { [Op.lt]: hoy } // Filtrar hasta ayer
+        tur_fecha_fin: { [Op.lt]: hoy } // ✅  turnos que finalizaron hasta ayer
       },
       include: [
         {
@@ -311,8 +310,6 @@ const verMisTurnosEnfermeriaHistorial = async (req, res) => {
 
 
 
-
-
 // ver turnos de hoy en adelante de todas las enfermeras(os) en la sede del admin (admin sede)
 const verTurnosSede = async (req, res) => {
   try {
@@ -328,7 +325,7 @@ const verTurnosSede = async (req, res) => {
     const turnos = await turnoModel.findAll({
       where: {
         se_id,
-        tur_fecha_inicio: { [Op.gte]: hoy } // Filtrar desde hoy
+        tur_fecha_fin: { [Op.gte]: hoy } // Filtrar desde hoy
       },
       include: [
         {
@@ -397,7 +394,7 @@ const verTurnosSedeHistorial = async (req, res) => {
     const turnos = await turnoModel.findAll({
       where: {
         se_id,
-        tur_fecha_inicio: { [Op.lt]: hoy } // Filtrar hasta ayer
+        tur_fecha_fin: { [Op.lt]: hoy } // ✅ Tomamos los turnos finalizados hasta ayer
       },
       include: [
         {
@@ -452,32 +449,45 @@ const verTurnosSedeHistorial = async (req, res) => {
 
 
 
-
-// eliminar turno enfermeria (admin sede)
+// eliminar turno enfermeria, no se puede eliminar turnos del historial (admin sede)
 const eliminarTurnoEnfermeria = async (req, res) => {
   try {
     const { tur_id } = req.params;
-    const se_id = req.session.se_id; // Sede del admin
+    const se_id = req.session.se_id; 
+    const ahora = moment(); 
+    const hoy = moment().startOf("day"); // Fecha actual sin horas
+
+    // console.log("🔹 Fecha y hora actuales:", ahora.format("YYYY-MM-DD HH:mm:ss"));
 
     if (!se_id) {
       return res.status(403).json({ message: "No tienes una sede asignada en la sesión." });
     }
 
-    // Buscar el turno y validar que pertenece a la sede del admin
-    const turnoExiste = await turnoModel.findOne({ where: { tur_id } });
-
-    if (!turnoExiste) {
-      return res.status(404).json({ message: "⛔ turno no encontrado." });
-    }
-
-    // Buscar el turno y validar que pertenece a la sede del admin
+    // Buscar el turno
     const turno = await turnoModel.findOne({ where: { tur_id, se_id } });
 
     if (!turno) {
-      return res.status(404).json({ message: "⛔ No se puede eliminar un turno que pertenece a otra sede." });
+      return res.status(404).json({ message: "⛔ Turno no pertenece a tu sede." });
     }
 
-    // Eliminar el turno
+    // Convertir fechas y horas a objetos moment
+    const fechaInicio = moment(turno.tur_fecha_inicio, "YYYY-MM-DD");
+    const horaInicio = moment(turno.tur_hora_inicio, "hh:mm A");
+
+    // console.log("🔹 Fecha de inicio del turno:", fechaInicio.format("YYYY-MM-DD"));
+    // console.log("🔹 Hora de inicio del turno:", horaInicio.format("hh:mm A"));
+
+    // 🔴 No permitir eliminar si el turno ya comenzó (fecha de inicio menor a hoy)
+    if (fechaInicio.isBefore(hoy)) {
+      return res.status(400).json({ message: "⛔ No se pueden eliminar turnos que se encuentran en curso." });
+    }
+
+    // 🔴 No permitir eliminar si la fecha es hoy pero la hora ya pasó
+    if (fechaInicio.isSame(hoy, "day") && ahora.isAfter(horaInicio)) {
+      return res.status(400).json({ message: "⛔ No se pueden eliminar turnos en curso." });
+    }
+
+    // 🟢 Permitir eliminar si la fecha es mayor a hoy o si es hoy pero aún no ha iniciado
     await turno.destroy();
 
     return res.status(200).json({ message: "✅ Turno eliminado correctamente." });
@@ -486,6 +496,8 @@ const eliminarTurnoEnfermeria = async (req, res) => {
     return res.status(500).json({ message: "Error en el servidor." });
   }
 };
+
+
 
 
 
