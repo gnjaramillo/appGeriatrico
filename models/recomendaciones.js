@@ -18,7 +18,7 @@ const recomendacionModel = sequelize.define('recomendaciones', {
         onUpdate: 'CASCADE'
     },
     rec_fecha: { 
-        type: DataTypes.DATE, 
+        type: DataTypes.DATEONLY, 
         allowNull: false 
     },
     rec_cubrir_piel_m: { 

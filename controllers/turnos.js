@@ -1,8 +1,10 @@
 const { Op } = require("sequelize");
-const moment = require("moment");
+const moment = require("moment-timezone");
 const { sequelize } = require("../config/mysql");
-const { convertirHoraA24Horas, calcularHorasTotales } = require('../utils/handleTime'); 
+const { convertirHoraA24Horas, calcularHorasTotales, validarHoraInicioTurno, validarHoraFin } = require('../utils/handleTime'); 
 const { matchedData } = require("express-validator");
+
+
 const {
   enfermeraModel,
   sedeModel,
@@ -35,15 +37,29 @@ const asignarTurnoEnfermeria = async (req, res) => {
       return res.status(403).json({ message: "No tienes una sede asignada en la sesión." });
     }
 
+    // 🟢 Validar la hora de inicio
+    const errorHora = validarHoraInicioTurno(tur_fecha_inicio, tur_hora_inicio);
+    if (errorHora) {
+      return res.status(400).json({ message: errorHora });
+    }
+
+     // 🟢 Validar la hora de fin respecto a la hora de inicio
+     const errorHoraFin = validarHoraFin(tur_hora_inicio, tur_hora_fin, tur_fecha_inicio, tur_fecha_fin);
+     if (errorHoraFin) {
+         return res.status(400).json({ message: errorHoraFin });
+     }
+
+
     console.log("⏳ Validando datos recibidos...", { tur_hora_inicio, tur_hora_fin });
 
+    
     const tur_total_horas = calcularHorasTotales(tur_hora_inicio, tur_hora_fin, tur_fecha_inicio, tur_fecha_fin);
-
+    
     let advertencia = null;
     if (tur_total_horas > 24) {
       advertencia = "⚠️ Advertencia: Este turno supera las 24 horas.";
     }
-
+    
     tur_hora_inicio = convertirHoraA24Horas(tur_hora_inicio);
     tur_hora_fin = convertirHoraA24Horas(tur_hora_fin);
 
@@ -152,20 +168,6 @@ if (turnosSede.length > 0 || turnosOtraSede.length > 0) {
   });
 }
 
-
-
-
- // 🔹 Si hay conflictos en la misma sede o en otra sede, devolverlos en la respuesta
-/* if (conflictosEnMismaSede.length > 0 || conflictosEnOtraSede.length > 0) {
-  return res.status(400).json({
-    message: "⛔ Conflictos encontrados en los turnos asignados.",
-    conflictos: {
-      enEstaSede: conflictosEnMismaSede, // Solo los turnos en conflicto
-      enOtraSede: conflictosEnOtraSede, // Solo los turnos en conflicto
-    }
-  });
-}
- */
 
     // 🔹 Crear el turno si no hay conflictos
     const nuevoTurno = await turnoModel.create({
@@ -319,13 +321,17 @@ const verTurnosSede = async (req, res) => {
       return res.status(403).json({ message: "No tienes una sede asignada en la sesión." });
     }
 
-    const hoy = moment().startOf("day").format("YYYY-MM-DD");
+    const hoy = moment().tz("America/Bogota").format("YYYY-MM-DD"); // Fecha de hoy
+    const ahora = moment().tz("America/Bogota").format("HH:mm"); // Hora actual en formato 24h
 
     // Obtener los turnos de la sede desde hoy en adelante
     const turnos = await turnoModel.findAll({
       where: {
         se_id,
-        tur_fecha_fin: { [Op.gte]: hoy } // Filtrar desde hoy
+        [Op.or]: [
+          { tur_fecha_fin: { [Op.gt]: hoy } }, // Turnos con fecha fin después de hoy
+          { tur_fecha_fin: hoy, tur_hora_fin: { [Op.gt]: ahora } }, // Turnos de hoy cuya hora fin aún no ha pasado
+        ],
       },
       include: [
         {
@@ -379,6 +385,7 @@ const verTurnosSede = async (req, res) => {
 
 
 
+
 // ver histoial (hasta ayer) turnos de todas las enfermeras(os) en la sede del admin (admin sede)
 const verTurnosSedeHistorial = async (req, res) => {
   try {
@@ -389,12 +396,19 @@ const verTurnosSedeHistorial = async (req, res) => {
     }
 
     const hoy = moment().startOf("day").format("YYYY-MM-DD");
+    const ahora = moment().format("HH:mm:ss"); // Obtener la hora actual
 
-    // Obtener los turnos de la sede hasta ayer
+    // Obtener los turnos finalizados hasta ayer o los de hoy con hora fin pasada
     const turnos = await turnoModel.findAll({
       where: {
         se_id,
-        tur_fecha_fin: { [Op.lt]: hoy } // ✅ Tomamos los turnos finalizados hasta ayer
+        [Op.or]: [
+          { tur_fecha_fin: { [Op.lt]: hoy } }, // ✅ Turnos con fecha fin antes de hoy
+          { 
+            tur_fecha_fin: hoy, 
+            tur_hora_fin: { [Op.lt]: ahora } // ✅ Turnos de hoy que ya terminaron
+          }
+        ],
       },
       include: [
         {
@@ -448,16 +462,15 @@ const verTurnosSedeHistorial = async (req, res) => {
 
 
 
-
 // eliminar turno enfermeria, no se puede eliminar turnos del historial (admin sede)
 const eliminarTurnoEnfermeria = async (req, res) => {
   try {
     const { tur_id } = req.params;
     const se_id = req.session.se_id; 
-    const ahora = moment(); 
-    const hoy = moment().startOf("day"); // Fecha actual sin horas
+    const ahora = moment().tz("America/Bogota"); // Fecha y hora actual
+    const hoy = ahora.clone().startOf("day"); // Fecha actual sin horas
 
-    // console.log("🔹 Fecha y hora actuales:", ahora.format("YYYY-MM-DD HH:mm:ss"));
+    console.log("🔹 Fecha y hora actuales:", ahora.format("YYYY-MM-DD HH:mm:ss"));
 
     if (!se_id) {
       return res.status(403).json({ message: "No tienes una sede asignada en la sesión." });
@@ -474,17 +487,17 @@ const eliminarTurnoEnfermeria = async (req, res) => {
     const fechaInicio = moment(turno.tur_fecha_inicio, "YYYY-MM-DD");
     const horaInicio = moment(turno.tur_hora_inicio, "hh:mm A");
 
-    // console.log("🔹 Fecha de inicio del turno:", fechaInicio.format("YYYY-MM-DD"));
-    // console.log("🔹 Hora de inicio del turno:", horaInicio.format("hh:mm A"));
+    console.log("🔹 Fecha de inicio del turno:", fechaInicio.format("YYYY-MM-DD"));
+    console.log("🔹 Hora de inicio del turno:", horaInicio.format("hh:mm A"));
 
-    // 🔴 No permitir eliminar si el turno ya comenzó (fecha de inicio menor a hoy)
+    //  No permitir eliminar si el turno ya comenzó (fecha de inicio menor a hoy)
     if (fechaInicio.isBefore(hoy)) {
       return res.status(400).json({ message: "⛔ No se pueden eliminar turnos que se encuentran en curso." });
     }
 
-    // 🔴 No permitir eliminar si la fecha es hoy pero la hora ya pasó
+    //  No permitir eliminar si la fecha es hoy pero la hora ya pasó
     if (fechaInicio.isSame(hoy, "day") && ahora.isAfter(horaInicio)) {
-      return res.status(400).json({ message: "⛔ No se pueden eliminar turnos en curso." });
+      return res.status(400).json({ message: "⛔ No se pueden eliminar turnos con un horario que ya se encuentra en curso." });
     }
 
     // 🟢 Permitir eliminar si la fecha es mayor a hoy o si es hoy pero aún no ha iniciado
@@ -499,7 +512,235 @@ const eliminarTurnoEnfermeria = async (req, res) => {
 
 
 
+// actualizar turno de enfermeria (admin sede)
+/* const actualizarTurnoEnfermeria = async (req, res) => {
+  try {
+    const se_id = req.session.se_id;
+    const { tur_id } = req.params;
+    const ahora = moment().tz("America/Bogota");
+    const hoy = ahora.clone().startOf("day");
+    const data = matchedData(req);
+
+    console.log("⏳ Fecha y hora actuales:", ahora.format("YYYY-MM-DD HH:mm"));
+
+    if (!se_id) {
+      return res.status(403).json({ message: "⛔ No tienes una sede asignada en la sesión." });
+    }
+
+    const turno = await turnoModel.findOne({ where: { tur_id, se_id } });
+    if (!turno) {
+      return res.status(404).json({ message: "⛔ Turno no pertenece a tu sede." });
+    }
+
+    console.log("📅 Turno antes de convertir:", turno);
+    
+    const fechaInicio = moment(turno.tur_fecha_inicio, "YYYY-MM-DD");
+    const fechaFin = moment(turno.tur_fecha_fin, "YYYY-MM-DD");
+    const horaInicio = moment(turno.tur_hora_inicio, "HH:mm");
+    const horaFin = moment(turno.tur_hora_fin, "HH:mm");
+    const fechaHoraFin = moment(`${turno.tur_fecha_fin} ${turno.tur_hora_fin}`, "YYYY-MM-DD HH:mm");
+
+    console.log("📅 Fecha inicio convertida:", fechaInicio.format("YYYY-MM-DD"));
+    console.log("📅 Fecha fin convertida:", fechaFin.format("YYYY-MM-DD"));
+    console.log("⏰ Hora inicio convertida:", horaInicio.format("HH:mm"));
+    console.log("⏰ Hora fin convertida:", horaFin.format("HH:mm"));
+    console.log("⏰ Fecha y hora fin combinada:", fechaHoraFin.format("YYYY-MM-DD HH:mm"));
+
+    if (ahora.isAfter(fechaHoraFin)) {
+      return res.status(400).json({ message: "⛔ No puedes modificar un turno que ya finalizó." });
+    }
+
+    let updateData = {}; 
+    const turnoYaInicio = fechaInicio.isBefore(hoy) || (fechaInicio.isSame(hoy, "day") && ahora.isAfter(horaInicio));
+    const turnoAunNoInicia = fechaInicio.isSame(hoy, "day") && ahora.isBefore(horaInicio);
+    const turnoEsFuturo = fechaInicio.isAfter(hoy);
+
+    if (turnoYaInicio) {
+      updateData.tur_fecha_inicio = turno.tur_fecha_inicio;
+      updateData.tur_hora_inicio = turno.tur_hora_inicio;
+      if (data.tur_fecha_fin) updateData.tur_fecha_fin = data.tur_fecha_fin;
+      if (data.tur_hora_fin) updateData.tur_hora_fin = convertirHoraA24Horas(data.tur_hora_fin);
+      if (data.tur_tipo_turno) updateData.tur_tipo_turno = data.tur_tipo_turno;
+    } else if (turnoAunNoInicia || turnoEsFuturo) {
+      if (data.tur_fecha_inicio) updateData.tur_fecha_inicio = data.tur_fecha_inicio;
+      if (data.tur_fecha_fin) updateData.tur_fecha_fin = data.tur_fecha_fin;
+      if (data.tur_hora_inicio) updateData.tur_hora_inicio = convertirHoraA24Horas(data.tur_hora_inicio);
+      if (data.tur_hora_fin) updateData.tur_hora_fin = convertirHoraA24Horas(data.tur_hora_fin);
+      if (data.tur_tipo_turno) updateData.tur_tipo_turno = data.tur_tipo_turno;
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: "⛔ No hay cambios para actualizar." });
+    }
+
+    console.log("🔄 Datos a actualizar:", updateData);
+
+    await turnoModel.update(updateData, { where: { tur_id } });
+    const turnoActualizado = await turnoModel.findOne({ where: { tur_id } });
+
+    return res.status(200).json({
+      message: "✅ Turno actualizado con éxito",
+      data: turnoActualizado
+    });
+  } catch (error) {
+    console.error("❌ Error al actualizar turno:", error);
+    return res.status(500).json({ message: "⛔ Error en el servidor." });
+  }
+}; */
 
 
 
-module.exports = {  asignarTurnoEnfermeria, verMisTurnosEnfermeria, verMisTurnosEnfermeriaHistorial, verTurnosSede, verTurnosSedeHistorial, eliminarTurnoEnfermeria };
+
+
+const actualizarTurnoEnfermeria = async (req, res) => {
+  try {
+    const se_id = req.session.se_id;
+    const { tur_id } = req.params;
+    const ahora = moment().tz("America/Bogota");
+    const hoy = ahora.clone().startOf("day");
+    const data = matchedData(req);
+
+    if (!se_id) {
+      return res.status(403).json({ message: "⛔ No tienes una sede asignada en la sesión." });
+    }
+
+    const turno = await turnoModel.findOne({ where: { tur_id, se_id } });
+    if (!turno) {
+      return res.status(404).json({ message: "⛔ Turno no pertenece a tu sede." });
+    }
+
+    const fechaInicio = moment(turno.tur_fecha_inicio, "YYYY-MM-DD");
+    const fechaFin = moment(turno.tur_fecha_fin, "YYYY-MM-DD");
+    const horaInicio = moment(turno.tur_hora_inicio, "HH:mm");
+    const horaFin = moment(turno.tur_hora_fin, "HH:mm");
+    const fechaHoraFin = moment(`${turno.tur_fecha_fin} ${turno.tur_hora_fin}`, "YYYY-MM-DD HH:mm");
+    
+
+    let updateData = {}; 
+
+    if (ahora.isAfter(fechaHoraFin)) {
+      return res.status(400).json({ message: "⛔ No puedes modificar un turno que ya finalizó." });
+    }
+
+    const turnoYaInicio = fechaInicio.isBefore(hoy) || (fechaInicio.isSame(hoy, "day") && ahora.isAfter(horaInicio));
+    const turnoAunNoInicia = fechaInicio.isSame(hoy, "day") && ahora.isBefore(horaInicio);
+    const turnoEsFuturo = fechaInicio.isAfter(hoy);
+
+    if (turnoYaInicio) {
+      updateData.tur_fecha_inicio = turno.tur_fecha_inicio;
+      updateData.tur_hora_inicio = turno.tur_hora_inicio;
+      if (data.tur_fecha_fin) updateData.tur_fecha_fin = data.tur_fecha_fin;
+      if (data.tur_hora_fin) updateData.tur_hora_fin = convertirHoraA24Horas(data.tur_hora_fin);
+      if (data.tur_tipo_turno) updateData.tur_tipo_turno = data.tur_tipo_turno;
+    } else if (turnoAunNoInicia || turnoEsFuturo) {
+      if (data.tur_fecha_inicio) updateData.tur_fecha_inicio = data.tur_fecha_inicio;
+      if (data.tur_fecha_fin) updateData.tur_fecha_fin = data.tur_fecha_fin;
+      if (data.tur_hora_inicio) updateData.tur_hora_inicio = convertirHoraA24Horas(data.tur_hora_inicio);
+      if (data.tur_hora_fin) updateData.tur_hora_fin = convertirHoraA24Horas(data.tur_hora_fin);
+      if (data.tur_tipo_turno) updateData.tur_tipo_turno = data.tur_tipo_turno;
+    }
+
+
+
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ message: "⛔ No hay cambios para actualizar." });
+    }
+
+
+    // 🔹 Validar solapamientos en la misma sede
+    const turnosExistentes = await turnoModel.findAll({
+      where: {
+        enf_id: turno.enf_id,
+        se_id,
+        tur_id: { [Op.ne]: tur_id },
+        tur_fecha_inicio: { [Op.lte]: tur_fecha_fin },
+        tur_fecha_fin: { [Op.gte]: tur_fecha_inicio },
+      },
+    });
+
+    
+    
+
+    let conflictosEnMismaSede = turnosExistentes.filter(t => {
+      const inicioExistente = new Date(`${t.tur_fecha_inicio}T${convertirHoraA24Horas(t.tur_hora_inicio)}`).getTime();
+      const finExistente = new Date(`${t.tur_fecha_fin}T${convertirHoraA24Horas(t.tur_hora_fin)}`).getTime();
+      const fechaInicioTimestamp = new Date(`${tur_fecha_inicio}T${convertirHoraA24Horas(tur_hora_inicio)}`).getTime();
+      const fechaFinTimestamp = new Date(`${tur_fecha_fin}T${convertirHoraA24Horas(tur_hora_fin)}`).getTime();
+      return (
+        (fechaInicioTimestamp >= inicioExistente && fechaInicioTimestamp < finExistente) ||
+        (fechaFinTimestamp > inicioExistente && fechaFinTimestamp <= finExistente) ||
+        (fechaInicioTimestamp <= inicioExistente && fechaFinTimestamp >= finExistente)
+      );
+    });
+
+    const turnosExistentesOtraSede = await turnoModel.findAll({
+      where: {
+        enf_id: turno.enf_id,
+        se_id: { [Op.ne]: se_id },
+        tur_fecha_inicio: { [Op.lte]: tur_fecha_fin },
+        tur_fecha_fin: { [Op.gte]: tur_fecha_inicio },
+      },
+      include: [{ model: sedeModel, as: "sede", attributes: ["se_id", "se_nombre"] }],
+    });
+
+    let conflictosEnOtraSede = turnosExistentesOtraSede.filter(t => {
+      const inicioExistente = new Date(`${t.tur_fecha_inicio}T${convertirHoraA24Horas(t.tur_hora_inicio)}`).getTime();
+      const finExistente = new Date(`${t.tur_fecha_fin}T${convertirHoraA24Horas(t.tur_hora_fin)}`).getTime();
+      const fechaInicioTimestamp = new Date(`${tur_fecha_inicio}T${convertirHoraA24Horas(tur_hora_inicio)}`).getTime();
+      const fechaFinTimestamp = new Date(`${tur_fecha_fin}T${convertirHoraA24Horas(tur_hora_fin)}`).getTime();
+      return (
+        (fechaInicioTimestamp >= inicioExistente && fechaInicioTimestamp < finExistente) ||
+        (fechaFinTimestamp > inicioExistente && fechaFinTimestamp <= finExistente) ||
+        (fechaInicioTimestamp <= inicioExistente && fechaFinTimestamp >= finExistente)
+      );
+    });
+
+    if (conflictosEnMismaSede.length > 0 || conflictosEnOtraSede.length > 0) {
+      return res.status(400).json({
+        message: "⛔ Conflictos encontrados en los turnos asignados.",
+        conflictos: {
+          enEstaSede: conflictosEnMismaSede,
+          enOtraSede: conflictosEnOtraSede.map(t => ({ ...t.dataValues, se_nombre: t.sede?.se_nombre || "Desconocido" })),
+        },
+      });
+    }
+
+    // 🔹 Validar que la hora de fin sea mayor a la hora de inicio
+    const errorHoraFin = validarHoraFin(updateData.tur_hora_inicio || turno.tur_hora_inicio, updateData.tur_hora_fin || turno.tur_hora_fin, updateData.tur_fecha_inicio || turno.tur_fecha_inicio, updateData.tur_fecha_fin || turno.tur_fecha_fin);
+    if (errorHoraFin) {
+      return res.status(400).json({ message: errorHoraFin });
+    }
+
+    // 🔹 Calcular horas totales del turno
+    updateData.tur_horas_totales = calcularHorasTotales(
+      updateData.tur_hora_inicio || turno.tur_hora_inicio,
+      updateData.tur_hora_fin || turno.tur_hora_fin,
+      updateData.tur_fecha_inicio || turno.tur_fecha_inicio,
+      updateData.tur_fecha_fin || turno.tur_fecha_fin
+    );
+
+
+
+
+
+    await turnoModel.update(updateData, { where: { tur_id } });
+    const turnoActualizado = await turnoModel.findOne({ where: { tur_id } });
+
+    return res.status(200).json({
+      message: "✅ Turno actualizado con éxito",
+      data: turnoActualizado
+    });
+  } catch (error) {
+    console.error("❌ Error al actualizar turno:", error);
+    return res.status(500).json({ message: "⛔ Error en el servidor." });
+  }
+};
+
+
+
+
+
+
+
+module.exports = {  asignarTurnoEnfermeria, verMisTurnosEnfermeria, verMisTurnosEnfermeriaHistorial, verTurnosSede, verTurnosSedeHistorial, eliminarTurnoEnfermeria, actualizarTurnoEnfermeria };
