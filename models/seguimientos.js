@@ -34,18 +34,19 @@ const seguimientoModel = sequelize.define('seguimientos', {
     seg_fecha: {
         type: DataTypes.DATE,
         allowNull: false,
+        defaultValue: DataTypes.NOW, // Asigna automáticamente la fecha y hora
         get() {
-            return moment(this.getDataValue("seg_fecha")).tz("America/Bogota").format("YYYY-MM-DD HH:mm:ss");
+            return moment(this.getDataValue("seg_fecha"))
+                .tz("America/Bogota")
+                .format("YYYY-MM-DD HH:mm:ss");
         }
-        
-        //defaultValue: DataTypes.NOW // Fecha del seguimiento
     },
     seg_pa: {
-        type: DataTypes.STRING,
-        allowNull: true,
-        validate: {
-            is: /^\d{2,3}\/\d{2,3}$/  // Validación para asegurarse de que sea algo como "120/80"
-        }
+    type: DataTypes.STRING,
+    allowNull: true,
+    validate: {
+        is: /^\d{2,3}\/\d{2,3}$/  // Validación para asegurarse de que sea algo como "120/80"
+    }
     },
     seg_talla: {
         type: DataTypes.DECIMAL(5,2),

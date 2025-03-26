@@ -152,10 +152,25 @@ const obtenerHistorialSeguimientos = async (req, res) => {
             return res.status(404).json({ message: "No hay seguimientos para este paciente." });
         }
 
+        // Agrupar seguimientos por fecha (sin considerar la hora)
+        const historialAgrupado = seguimientos.reduce((acc, seguimiento) => {
+            const fecha = seguimiento.seg_fecha.split(" ")[0]; // Tomamos solo la parte de la fecha
+
+            if (!acc[fecha]) {
+                acc[fecha] = {
+                    fecha,
+                    seguimientos: [],
+                };
+            }
+
+            acc[fecha].seguimientos.push(seguimiento);
+            return acc;
+        }, {});
+
         return res.status(200).json({
             message: "Historial de seguimientos obtenido con éxito.",
             paciente: paciente.persona, // Solo enviamos los datos de la persona del paciente
-            historial_seguimientos: seguimientos,
+            historial_seguimientos: Object.values(historialAgrupado), // Convertimos el objeto en un array
         });
     } catch (error) {
         console.error("Error al obtener historial de seguimientos:", error);

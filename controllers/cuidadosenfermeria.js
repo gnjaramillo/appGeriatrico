@@ -10,7 +10,7 @@ const { pacienteModel, cuidadoEnfermeriaModel, sedePersonaRolModel } = require('
 
 
 
-// solo se registrar una vez por paciente y se pueden actualizar aqui mismo cuando los datos ya existen (enfermera)
+// registrar cuidados una sola vez por paciente (solo si no existen), de lo contrario solo se actualiza (Admin sede)
 const registrarCuidadosEnfermeria = async (req, res) => {
     try {
         const { pac_id } = req.params; // Obtener pac_id desde la URL
@@ -27,57 +27,38 @@ const registrarCuidadosEnfermeria = async (req, res) => {
         }
 
         const paciente = await pacienteModel.findOne({ where: { pac_id } });
-
         if (!paciente) {
             return res.status(404).json({ message: "Paciente no encontrado." });
         }
 
         const per_id = paciente.per_id;
 
-        // Obtener todos los roles de paciente de la persona en la sede
-        const rolesPaciente = await sedePersonaRolModel.findAll({
-            where: { se_id: se_id_sesion, per_id, rol_id: 4 },
-            attributes: ["sp_activo"],
+        // Verificar si el paciente tiene el rol activo en la sede
+        const tieneRolActivo = await sedePersonaRolModel.findOne({
+            where: { se_id: se_id_sesion, per_id, rol_id: 4, sp_activo: true }
         });
 
-        if (rolesPaciente.length === 0) {
-            return res.status(404).json({
-                message: "La persona no tiene un rol de paciente en esta sede.",
-            });
-        }
-
-        const tieneRolActivo = rolesPaciente.some((rol) => rol.sp_activo === true);
-
         if (!tieneRolActivo) {
-            return res.status(403).json({
-                message: "El usuario tiene el rol de paciente en esta sede, pero está inactivo." ,
-            });
+            return res.status(403).json({ message: "El usuario no tiene un rol de paciente activo en esta sede." });
         }
 
-        // Verificar si ya existen cuidados registrados para el paciente
+        // Verificar si ya existen cuidados registrados
         const cuidadosExistentes = await cuidadoEnfermeriaModel.findOne({ where: { pac_id } });
-
-
         if (cuidadosExistentes) {
-            // Si existen, actualizarlos
-            await cuidadoEnfermeriaModel.update(datosCuidados, { where: { pac_id } });
-
-            return res.status(200).json({
-                message: "Cuidados de enfermería actualizados con éxito.",
-                datos: { pac_id, ...datosCuidados },
-            });
-        } else {
-            // Si no existen, crearlos
-            const nuevoCuidado = await cuidadoEnfermeriaModel.create({
-                pac_id,
-                ...datosCuidados,
-            });
-
-            return res.status(201).json({
-                message: "Cuidados de enfermería registrados con éxito.",
-                datos: nuevoCuidado,
-            });
+            return res.status(400).json({ message: "Ya existen cuidados registrados para este paciente." });
         }
+
+        // Registrar nuevos cuidados
+        const nuevoCuidado = await cuidadoEnfermeriaModel.create({
+            pac_id,
+            ...datosCuidados,
+        });
+
+        return res.status(201).json({
+            message: "Cuidados de enfermería registrados con éxito.",
+            datos: nuevoCuidado,
+        });
+
     } catch (error) {
         console.error("Error al registrar cuidados de enfermería:", error);
         return res.status(500).json({
@@ -86,6 +67,64 @@ const registrarCuidadosEnfermeria = async (req, res) => {
         });
     }
 };
+
+
+
+// Controlador para actualizar cuidados de enfermería
+const actualizarCuidadosEnfermeria = async (req, res) => {
+    try {
+        const { pac_id } = req.params;
+        const data = matchedData(req);
+        const { ...datosCuidados } = data;
+        const se_id_sesion = req.session.se_id; 
+
+        if (!pac_id) {
+            return res.status(400).json({ message: "Se requiere el ID del paciente." });
+        }
+
+        if (!se_id_sesion) {
+            return res.status(403).json({ message: "No tienes una sede asignada en la sesión." });
+        }
+
+        const paciente = await pacienteModel.findOne({ where: { pac_id } });
+        if (!paciente) {
+            return res.status(404).json({ message: "Paciente no encontrado." });
+        }
+
+        const per_id = paciente.per_id;
+
+        // Verificar si el paciente tiene el rol activo en la sede
+        const tieneRolActivo = await sedePersonaRolModel.findOne({
+            where: { se_id: se_id_sesion, per_id, rol_id: 4, sp_activo: true }
+        });
+
+        if (!tieneRolActivo) {
+            return res.status(403).json({ message: "El usuario no tiene un rol de paciente activo en esta sede." });
+        }
+
+        // Verificar si existen cuidados registrados para este paciente
+        const cuidadosExistentes = await cuidadoEnfermeriaModel.findOne({ where: { pac_id } });
+        if (!cuidadosExistentes) {
+            return res.status(404).json({ message: "No existen cuidados registrados para este paciente." });
+        }
+
+        // Actualizar los cuidados
+        await cuidadoEnfermeriaModel.update(datosCuidados, { where: { pac_id } });
+
+        return res.status(200).json({
+            message: "Cuidados de enfermería actualizados con éxito.",
+            datos: { pac_id, ...datosCuidados },
+        });
+
+    } catch (error) {
+        console.error("Error al actualizar cuidados de enfermería:", error);
+        return res.status(500).json({
+            message: "Error interno del servidor.",
+            error: error.message,
+        });
+    }
+};
+
 
 
 
@@ -141,4 +180,4 @@ const obtenerCuidadosEnfermeria = async (req, res) => {
 
 
 
-module.exports = {registrarCuidadosEnfermeria , obtenerCuidadosEnfermeria};
+module.exports = {registrarCuidadosEnfermeria ,actualizarCuidadosEnfermeria, obtenerCuidadosEnfermeria};

@@ -3,33 +3,17 @@ const { check, param } = require('express-validator');
 const  validateResult  = require('../utils/handleValidator');
 
 
-
-
 const validarSeguimientos = [
     param("pac_id")
         .isInt({ min: 1 })
         .withMessage("El ID del paciente debe ser un número entero positivo."),
 
 
-    check("seg_fecha").notEmpty().withMessage("La fecha es obligatoria.")
-    .custom((value) => {
-        const fechaIngresada = moment.tz(value, "DD/MM/YYYY", true, "America/Bogota").startOf("day");
-        const fechaHoy = moment().tz("America/Bogota").startOf("day");
-
-        if (!fechaIngresada.isValid()) {
-            throw new Error("Fecha inválida. Usa el formato DD/MM/YYYY.");
-        }
-        if (!fechaIngresada.isSame(fechaHoy, "day")) {
-            throw new Error("Solo puedes registrar un seguimiento con la fecha de hoy.");
-        }
-        return true;
-    })
-    .customSanitizer((value) => {
-        return value
-            ? moment.tz(value, "DD/MM/YYYY", true, "America/Bogota").format("YYYY-MM-DD HH:mm:ss")
-            : moment().tz("America/Bogota").format("YYYY-MM-DD HH:mm:ss");
-    }),
-
+    check("seg_fecha")
+    .optional()  // Permite que no se envíe (ya que se asigna en el backend)
+    .isISO8601().withMessage("Fecha inválida, usa el formato YYYY-MM-DD HH:mm:ss") 
+    .customSanitizer(() => moment().tz("America/Bogota").format("YYYY-MM-DD HH:mm:ss")), // Asigna la fecha actual si llega vacía
+    
         
 
     // Validar presión arterial (opcional, pero si está presente debe tener formato correcto)
@@ -92,6 +76,7 @@ const validarPacId = [
     (req, res, next) => validateResult(req, res, next),
 
 ];
+
 
 const validarSegId = [
     param('seg_id').isInt().withMessage('El ID del seguimiento debe ser un número entero'),

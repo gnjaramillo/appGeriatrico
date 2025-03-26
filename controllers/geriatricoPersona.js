@@ -7,6 +7,7 @@ const { geriatricoPersonaModel, personaModel, rolModel, geriatricoModel, sedeMod
 
 
 //ver personas vinculadas activas e inactivas en mi geriatrico para asignarles roles (admin geriatrico y admin sede)
+
 /*  const personasVinculadasMiGeriatrico = async (req, res) => {
     try {
         const ge_id = req.session.ge_id; 
@@ -136,6 +137,8 @@ const { geriatricoPersonaModel, personaModel, rolModel, geriatricoModel, sedeMod
 
 
 
+
+//ver personas vinculadas activas e inactivas en mi geriatrico para asignarles roles (admin geriatrico y admin sede)
 const personasVinculadasMiGeriatrico = async (req, res) => {
     try {
         const ge_id = req.session.ge_id;
