@@ -11,7 +11,7 @@ const { pacienteModel, seguimientoModel, sedePersonaRolModel, enfermeraModel, pe
 
 
 
-// solo se registrar una vez por paciente y se pueden actualizar aqui mismo cuando los datos ya existen (enfermera)
+// se puede registrar varios seguimientos por paciente (enfermera)
 const registrarSeguimientoPaciente = async (req, res) => {
     const transaction = await sequelize.transaction(); 
     try {

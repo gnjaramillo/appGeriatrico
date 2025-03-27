@@ -229,6 +229,7 @@ const inactivarRolAdminSede = async (req, res) => {
 
 
 const ROLES_PERMITIDOS_SEDE = [4, 5, 6, 7]; // Paciente, Enfermero, Acudiente, Colaborador
+
 const asignarRolesSede = async (req, res) => {
   let t;
 
