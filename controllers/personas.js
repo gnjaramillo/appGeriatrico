@@ -47,7 +47,7 @@ const obtenerPersonasRegistradas = async (req, res) => {
 
 
 // roles q tiene cada persona, solo puede inactivar roles a su cargo como roles geriatrico (super admin)  INNECESARIO.. PREGUNTARRRRRRRRRRRRRRRRRRRRRRRRRRR.......................
-const obtenerPersonaRoles = async (req, res) => {
+/* const obtenerPersonaRoles = async (req, res) => {
     try {
         const { per_id } = req.params;
 
@@ -187,7 +187,7 @@ const obtenerPersonaRoles = async (req, res) => {
         console.error("Error al obtener persona:", error);
         return res.status(500).json({ message: "Error en el servidor." });
     }
-};
+}; */
 
 
 
@@ -444,7 +444,7 @@ const buscarPersonaPorDocumento = async (req, res) => {
 
 
 
-module.exports = { obtenerPersonasRegistradas,obtenerPersonaRoles, actualizarPersona, actualizarPerfil, obtenerMiPerfil, buscarPersonaPorDocumento  };
+module.exports = { obtenerPersonasRegistradas, actualizarPersona, actualizarPerfil, obtenerMiPerfil, buscarPersonaPorDocumento  };
 
 
 
