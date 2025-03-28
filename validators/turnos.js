@@ -61,6 +61,8 @@ const turnoValidator = [
             return true;
         }),
 
+
+
     // ✅ Validación de la fecha de fin con zona horaria de Colombia
     check("tur_fecha_fin")
         .exists().notEmpty().withMessage("La fecha de fin (tur_fecha_fin) es requerida.")
@@ -80,6 +82,7 @@ const turnoValidator = [
         }),
 
 
+        
     // horas con minutos...
     check("tur_hora_inicio").exists().notEmpty()
     .matches(/^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/)
@@ -91,10 +94,10 @@ const turnoValidator = [
     .withMessage("Hora fin del turno inválida (Formato esperado: HH:MM AM/PM)."), 
 
     
-    check("tur_tipo_turno").exists().notEmpty()
+/*     check("tur_tipo_turno").exists().notEmpty()
         .isIn(["Diurno", "Nocturno"])
         .withMessage("El tipo de turno debe ser 'Diurno' o 'Nocturno'."),
-
+ */
 
         (req, res, next) => validateResult(req, res, next),
 
@@ -191,11 +194,11 @@ const turnoUpdateValidator = [
     .withMessage("Hora fin del turno inválida (Formato esperado: HH:MM AM/PM)."), 
 
     
-    check("tur_tipo_turno").optional().notEmpty()
+/*     check("tur_tipo_turno").optional().notEmpty()
     .isIn(["Diurno", "Nocturno"])
     .withMessage("El tipo de turno debe ser 'Diurno' o 'Nocturno'."),
 
-
+ */
         (req, res, next) => validateResult(req, res, next),
 
 ];
