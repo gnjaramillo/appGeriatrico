@@ -82,7 +82,7 @@ const turnoValidator = [
         }),
 
 
-        
+
     // horas con minutos...
     check("tur_hora_inicio").exists().notEmpty()
     .matches(/^(0?[1-9]|1[0-2]):[0-5][0-9] (AM|PM)$/)
@@ -216,6 +216,16 @@ const turnoIdValidator = [
 
 ];
 
+const turnoEnfIdValidator = [
+
+    param("enf_id") // Se toma de los parámetros de la URL
+        .isInt().withMessage("El ID de la enfermera debe ser un número entero.")
+        .toInt(),
+
+
+        (req, res, next) => validateResult(req, res, next),
+
+];
 
 
 
@@ -223,4 +233,5 @@ const turnoIdValidator = [
 
 
 
-module.exports = { turnoValidator,turnoUpdateValidator, turnoIdValidator };
+
+module.exports = { turnoValidator,turnoUpdateValidator, turnoIdValidator, turnoEnfIdValidator };
