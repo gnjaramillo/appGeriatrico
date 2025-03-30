@@ -88,6 +88,29 @@ pacienteModel.associate = (models) => {
     foreignKey: "pac_id",
     as: "recomendaciones",
   });
+
+
+  // Un paciente puede tener muchos medicamentos en su inventario
+  pacienteModel.hasMany(models.inventarioMedicamentosPacienteModel, {
+    foreignKey: "pac_id",
+    as: "medicamentos",
+  });
+  
+
+  // Un paciente puede tener múltiples administraciones de medicamentos
+  pacienteModel.hasMany(models.administracionMedicamentosModel, {
+    foreignKey: "pac_id",
+    as: "administraciones",
+  });
+  
+
+
+
+
+
+
+
+
 };
 
 module.exports = pacienteModel;

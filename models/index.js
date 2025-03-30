@@ -17,7 +17,11 @@ const models = {
     seguimientoModel: require('./seguimientos'),
     pacienteAcudienteModel: require('./acudientes'),
     diagnosticoModel: require('./diagnosticos'),
-    recomendacionModel: require('./recomendaciones')
+    recomendacionModel: require('./recomendaciones'),
+    inventarioMedicamentosSedeModel: require('./inventariomedicamentosede'),
+    inventarioMedicamentosPacienteModel: require('./inventariomedicamentospaciente'),
+    administracionMedicamentosModel: require('./administracionmedicamento'),
+    detalleAdministracionMedicamentoModel: require('./detalleadministracionmedicamento'),
 };
 
 // Ejecutar asociaciones automáticamente

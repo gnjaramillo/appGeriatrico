@@ -51,6 +51,19 @@ sedeModel.associate = (models) => {
     foreignKey: "se_id",
     as: "turnos",
   });
+
+
+    // Una sede tiene muchos medicamentos en su inventario
+  sedeModel.hasMany(models.inventarioMedicamentosSedeModel, {
+    foreignKey: "se_id",
+    as: "medicamentos",
+  });
+
+
+
+
+
+
 };
 
 module.exports = sedeModel;
