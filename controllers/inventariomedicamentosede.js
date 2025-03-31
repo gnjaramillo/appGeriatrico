@@ -134,8 +134,6 @@ const agregarStockMedicamento = async (req, res) => {
 
 
 
-
-
 // solo permite actualizar ciertos campos dependiendo del stock ( admin sede)
 const actualizarMedicamento = async (req, res) => {
     try {

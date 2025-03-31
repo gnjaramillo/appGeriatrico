@@ -41,6 +41,18 @@ const inventarioMedicamentosPacienteModel = sequelize.define(
     med_presentacion: {
       type: DataTypes.STRING,
       allowNull: false,
+      set(value) {
+        // Transformar el nombre a mayúscula inicial para cada palabra
+        const capitalizeWords = (str) => {
+          return str
+            .toLowerCase()
+            .split(" ")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ");
+        };
+        this.setDataValue("med_presentacion", capitalizeWords(value));
+      },
+
     },
     unidades_por_presentacion: {
       type: DataTypes.INTEGER.UNSIGNED,

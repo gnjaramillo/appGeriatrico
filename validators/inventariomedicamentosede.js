@@ -102,6 +102,7 @@ const validatorActualizarMedicamento = [
 
 
 
+
 module.exports = { validatorCrearMedicamento, validatorStockMedicamento, validatorActualizarMedicamento };
 
 
