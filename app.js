@@ -1,16 +1,17 @@
 require('dotenv').config()
 const express = require('express')
+const { app, server } = require('./utils/handleSocket');
 const cors = require('cors')
 const openApiConfig = require('./docs/swagger')
 const swaggerUI = require('swagger-ui-express')
 const { dbConnectMysql } = require('./config/mysql')
-const cookieParser = require('cookie-parser');
+const cookieParser = require('cookie-parser')
 
 // Importa la sincronización
 // require('./sync');  // Ejecuta la sincronización de modelos
 
 
-const app = express()
+// const app = express()
 const NODE_ENV = process.env.NODE_ENV || 'development'
 const port = process.env.PORT || 3000; 
 
@@ -65,8 +66,19 @@ app.use('/documentation',
 app.use('/api', require('./routes'))
 
 
-if (NODE_ENV !== 'test'){
+
+
+
+
+/* if (NODE_ENV !== 'test'){
     app.listen(port, "0.0.0.0", () => {
+        console.log(`tu app esta lista por http://localhost:${port}`)
+    });
+}
+ */
+
+if (NODE_ENV !== 'test'){
+    server.listen(port, "0.0.0.0", () => {
         console.log(`tu app esta lista por http://localhost:${port}`)
     });
 }

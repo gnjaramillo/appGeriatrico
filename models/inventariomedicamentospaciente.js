@@ -19,9 +19,20 @@ const inventarioMedicamentosPacienteModel = sequelize.define(
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
-    med_nombre: {
-      type: DataTypes.STRING,
+    med_nombre: { 
+      type: DataTypes.STRING, 
       allowNull: false,
+      set(value) {
+        // Transformar el nombre a mayúscula inicial para cada palabra
+        const capitalizeWords = (str) => {
+          return str
+            .toLowerCase()
+            .split(" ")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ");
+        };
+        this.setDataValue("med_nombre", capitalizeWords(value));
+      },
     },
     med_cantidad: {
       type: DataTypes.INTEGER.UNSIGNED,

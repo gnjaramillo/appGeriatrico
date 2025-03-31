@@ -15,7 +15,6 @@ const {
 
 
 
-// crear geriatrico lo hace el super admin
 router.post('/:pac_id', sessionMiddleware, authMiddleware,  checkRol([3]), validatorCrearMedicamento, registrarMedicamentoPaciente);
 
 
