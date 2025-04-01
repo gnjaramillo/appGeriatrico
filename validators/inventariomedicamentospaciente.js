@@ -29,7 +29,7 @@ const validatorCrearMedicamento = [
 ];
 
 
-const validatorStockMedicamento = [
+/* const validatorStockMedicamento = [
 
     // ✅ Validar que la cantidad del medicamento sea un número entero positivo
     check("med_cantidad")
@@ -42,6 +42,21 @@ const validatorStockMedicamento = [
     (req, res, next) => validateResult(req, res, next),
 ];
 
+ */
+
+
+const validatorStockMedicamento = [
+
+    // ✅ Validar que la cantidad del medicamento sea un número decimal positivo
+    check("med_cantidad")
+    .exists().withMessage("La cantidad de medicamentos es requerida.")
+    .notEmpty().withMessage("La cantidad de medicamentos no puede estar vacía.")
+    .isFloat({ min: 0.01 }).withMessage("La cantidad debe ser un número decimal positivo.")
+    .customSanitizer(value => parseFloat(value.toFixed(2))) // Asegura que tenga solo 2 decimales
+    .toFloat(),
+
+    (req, res, next) => validateResult(req, res, next),
+];
 
 
 const validatorActualizarMedicamento = [

@@ -2,12 +2,13 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 
+
 const app = express();
 const server = http.createServer(app);
 
 const io = socketIo(server, {
     cors: {
-        origin: ["http://localhost:4000", "http://localhost:5173", "http://localhost:5174"],
+        origin: ["http://localhost:4000", "http://localhost:5173", "http://localhost:5174", "http://localhost:3000"],
         methods: ["GET", "POST"]
     }
 });
@@ -24,6 +25,8 @@ io.on('connection', (socket) => {
         console.log('Cliente desconectado:', socket.id);
     });
 });
+
+
 
 // ✅ Método para obtener la instancia de io en otros archivos
 const getIo = () => io;

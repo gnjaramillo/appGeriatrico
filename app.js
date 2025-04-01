@@ -37,6 +37,9 @@ app.use(cors({
       'http://localhost:4000',  // Dominio local del frontend
       'http://localhost:5174',  // Dominio local del frontend
       'http://localhost:5173',
+      'http://localhost:3000',
+      "https://appgeriatrico-production.up.railway.app",
+
     ],
     credentials: true, // Permitir el envío de cookies/credenciales
     methods: ['GET', 'POST', 'PUT', 'DELETE'],

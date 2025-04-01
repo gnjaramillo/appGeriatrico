@@ -11,37 +11,6 @@ const turnoValidator = [
         .toInt(),
 
 
-/*     check('tur_fecha_inicio')
-        .isDate().exists().notEmpty().withMessage('La fecha de inicio (tur_fecha_inicio) debe ser una fecha válida')
-        .custom((value) => {
-            const now = new Date();
-            const localToday = new Date(now.toLocaleDateString("en-CA", { timeZone: "America/Bogota" })); 
-            const inputDate = new Date(value);
-        
-            // Formatear ambas fechas a 'YYYY-MM-DD'
-            const formattedToday = localToday.toISOString().split('T')[0];
-            const formattedInputDate = inputDate.toISOString().split('T')[0];
-        
-            if (formattedInputDate < formattedToday) {
-                throw new Error('La fecha de inicio no puede ser una fecha pasada');
-            }
-            return true;
-        }),
-
-
-    check('tur_fecha_fin')
-        .isDate().exists().notEmpty()
-        .withMessage('La fecha de fin (tur_fecha_fin) debe ser una fecha válida')
-        .custom((value, { req }) => {
-            const fechaInicio = new Date(req.body.tur_fecha_inicio);
-            const fechaFin = new Date(value);
-
-            if (fechaFin < fechaInicio) {
-                throw new Error('La fecha de fin no puede ser anterior a la fecha de inicio');
-            }
-            return true;
-        }), */
-
 
      // ✅ Validación de la fecha de inicio con zona horaria de Colombia
     check("tur_fecha_inicio")
