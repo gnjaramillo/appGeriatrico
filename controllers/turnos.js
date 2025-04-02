@@ -128,12 +128,38 @@ const asignarTurnoEnfermeria = async (req, res) => {
 
 
 // 🔹 Si hay conflictos en la misma sede o en otra sede, devolverlos en la respuesta
-if (conflictosEnMismaSede.length > 0 || conflictosEnOtraSede.length > 0) {
+/* if (conflictosEnMismaSede.length > 0 || conflictosEnOtraSede.length > 0) {
   return res.status(400).json({
     message: "⛔ Conflictos encontrados en los turnos asignados.",
     conflictos: {
       enEstaSede: conflictosEnMismaSede,
       enOtraSede: conflictosEnOtraSede,
+    }
+  });
+}
+ */
+
+// 🔹 Si hay conflictos en la misma sede o en otra sede, mapear y devolverlos en la respuesta
+if (conflictosEnMismaSede.length > 0 || conflictosEnOtraSede.length > 0) {
+  return res.status(400).json({
+    message: "⛔ Conflictos encontrados en los turnos asignados.",
+    conflictos: {
+      enEstaSede: conflictosEnMismaSede.map(t => ({
+        sede: "Sede actual",
+        fecha_inicio: moment(t.tur_fecha_inicio).format("DD/MM/YYYY"),
+        hora_inicio: t.tur_hora_inicio,
+        fecha_fin: moment(t.tur_fecha_fin).format("DD/MM/YYYY"),
+        hora_fin: t.tur_hora_fin,
+        //total_horas_turno: t.tur_total_horas,
+      })),
+      enOtraSede: conflictosEnOtraSede.map(t => ({
+        sede: t.sede?.se_nombre || "Sede desconocida",
+        fecha_inicio: moment(t.tur_fecha_inicio).format("DD/MM/YYYY"),
+        hora_inicio: t.tur_hora_inicio,
+        fecha_fin: moment(t.tur_fecha_fin).format("DD/MM/YYYY"),
+        hora_fin: t.tur_hora_fin,
+        //total_horas_turno: t.tur_total_horas,
+      }))
     }
   });
 }
@@ -183,7 +209,7 @@ const verMisTurnosEnfermeriaVigentes = async (req, res) => {
           attributes: ["se_id", "se_nombre"],
         },
       ],
-      order: [["tur_fecha_inicio", "ASC"], ["tur_hora_inicio", "ASC"]],
+      order: [["tur_fecha_inicio", "ASC"], ["tur_hora_inicio", "ASC"], ["tur_total_horas", "ASC"]],
     });
 
 
@@ -215,7 +241,6 @@ const verMisTurnosEnfermeriaVigentes = async (req, res) => {
 
 
 
-
 // vista para cada enfermera, para q visualice histoial de turnos (hasta ayer) agrupados por sede
 const verMisTurnosEnfermeriaHistorial = async (req, res) => {
   try {
@@ -238,7 +263,7 @@ const verMisTurnosEnfermeriaHistorial = async (req, res) => {
           attributes: ["se_id", "se_nombre"],
         },
       ],
-      order: [["tur_fecha_inicio", "DESC"], ["tur_hora_inicio", "DESC"]], // Ordenar de más reciente a más antiguo
+      order: [["tur_fecha_inicio", "DESC"], ["tur_hora_inicio", "DESC"], ["tur_total_horas", "DESC"] ], // Ordenar de más reciente a más antiguo
     });
 
     // 🔹 Agrupar turnos por sede
@@ -350,85 +375,7 @@ const verTurnosSedeVigentes = async (req, res) => {
 
 
 
-// ver histoial (hasta ayer) turnos de todas las enfermeras(os) en la sede del admin (admin sede)
-/* const verTurnosSedeHistorial = async (req, res) => {
-  try {
-    const se_id = req.session.se_id;
-
-    if (!se_id) {
-      return res.status(403).json({ message: "No tienes una sede asignada en la sesión." });
-    }
-
-    const hoy = moment().startOf("day").format("YYYY-MM-DD");
-    const ahora = moment().format("HH:mm:ss"); // Obtener la hora actual
-
-    // Obtener los turnos finalizados hasta ayer o los de hoy con hora fin pasada
-    const turnos = await turnoModel.findAll({
-      where: {
-        se_id,
-        [Op.or]: [
-          { tur_fecha_fin: { [Op.lt]: hoy } }, // ✅ Turnos con fecha fin antes de hoy
-          { 
-            tur_fecha_fin: hoy, 
-            tur_hora_fin: { [Op.lt]: ahora } // ✅ Turnos de hoy que ya terminaron
-          }
-        ],
-      },
-      include: [
-        {
-          model: enfermeraModel,
-          as: "enfermera",
-          include: [
-            {
-              model: personaModel,
-              as: "persona",
-              attributes: ["per_nombre_completo", "per_documento"],
-            },
-          ],
-        },
-      ],
-      order: [
-        ["tur_fecha_inicio", "DESC"], // Ordenar de más reciente a más antiguo
-        ["tur_hora_inicio", "DESC"],
-      ],
-    });
-
-    // 🔹 Agrupar turnos por fecha
-    const turnosAgrupados = {};
-    turnos.forEach(turno => {
-      const fecha = turno.tur_fecha_inicio;
-      if (!turnosAgrupados[fecha]) {
-        turnosAgrupados[fecha] = [];
-      }
-
-      const turnoModificado = {
-        ...turno.toJSON(),
-        enfermera: {
-          enf_id: turno.enfermera.enf_id,
-          enf_codigo: turno.enfermera.enf_codigo,
-          datos_enfermera: turno.enfermera.persona, // Renombramos "persona" a "datos_enfermera"
-        },
-      };
-
-      turnosAgrupados[fecha].push(turnoModificado);
-    });
-
-    return res.status(200).json({
-      message: "📅 Historial de turnos en la sede",
-      turnos: turnosAgrupados,
-    });
-
-  } catch (error) {
-    console.error("❌ Error al obtener el historial de turnos de la sede:", error);
-    return res.status(500).json({ message: "Error en el servidor." });
-  }
-}; */
-
-
-
-
-// ver histoial (hasta ayer) turnos de cada enfermera(o) en la sede del admin (admin sede)
-const verTurnosSedeHistorialEnfermera = async (req, res) => {
+/* const verTurnosSedeHistorialEnfermera = async (req, res) => {
   try {
     const { enf_id } = req.params;
     const se_id = req.session.se_id;
@@ -480,7 +427,77 @@ const verTurnosSedeHistorialEnfermera = async (req, res) => {
     console.error("❌ Error al obtener el historial de turnos de la sede:", error);
     return res.status(500).json({ message: "Error en el servidor." });
   }
+}; */
+
+
+// ver histoial (hasta ayer) turnos de cada enfermera(o) en la sede del admin (admin sede)
+const verTurnosSedeHistorialEnfermera = async (req, res) => {
+  try {
+    const { enf_id } = req.params;
+    const se_id = req.session.se_id;
+
+    if (!se_id) {
+      return res.status(403).json({ message: "No tienes una sede asignada en la sesión." });
+    }
+
+    const hoy = moment().startOf("day").format("YYYY-MM-DD");
+    const ahora = moment().format("HH:mm:ss"); // Hora actual
+
+    // Obtener los turnos finalizados hasta ayer o los de hoy con hora fin pasada
+    const turnos = await turnoModel.findAll({
+      where: {
+        se_id,
+        enf_id,
+        [Op.or]: [
+          { tur_fecha_fin: { [Op.lt]: hoy } }, // Turnos con fecha fin antes de hoy
+          { 
+            tur_fecha_fin: hoy, 
+            tur_hora_fin: { [Op.lt]: ahora } // Turnos de hoy que ya terminaron
+          }
+        ],
+      },
+      order: [
+        ["tur_fecha_inicio", "DESC"], // Ordenar de más reciente a más antiguo
+        ["tur_hora_inicio", "ASC"], // Primero los más tempranos del día
+      ],
+    });
+
+    // 🔹 Agrupar turnos por fecha de inicio
+    const turnosAgrupados = turnos.reduce((acc, turno) => {
+      const fecha = moment(turno.tur_fecha_inicio).format("DD/MM/YYYY");
+
+      if (!acc[fecha]) {
+        acc[fecha] = [];
+      }
+
+      acc[fecha].push({
+        fecha_inicio: fecha,
+        hora_inicio: turno.tur_hora_inicio,
+        fecha_fin: moment(turno.tur_fecha_fin).format("DD/MM/YYYY"),
+        hora_fin: turno.tur_hora_fin,
+        total_horas_turno: turno.tur_total_horas,
+        tipo_turno: turno.tur_tipo_turno,
+      });
+
+      return acc;
+    }, {});
+
+    // 🔹 Ordenar turnos dentro de cada fecha por `total_horas_turno` (descendente)
+    Object.keys(turnosAgrupados).forEach(fecha => {
+      turnosAgrupados[fecha].sort((a, b) => b.total_horas_turno - a.total_horas_turno);
+    });
+
+    return res.status(200).json({
+      message: "📅 Historial de turnos de la enfermera",
+      turnos: turnosAgrupados,
+    });
+
+  } catch (error) {
+    console.error("❌ Error al obtener el historial de turnos de la sede:", error);
+    return res.status(500).json({ message: "Error en el servidor." });
+  }
 };
+
 
 
 
@@ -788,7 +805,7 @@ const actualizarTurnoEnfermeria = async (req, res) => {
 
 
 // 🔹 Si hay conflictos en la misma sede o en otra sede, devolverlos en la respuesta
-if (conflictosEnMismaSede.length > 0 || conflictosEnOtraSede.length > 0) {
+/* if (conflictosEnMismaSede.length > 0 || conflictosEnOtraSede.length > 0) {
   return res.status(400).json({
     message: "⛔ Conflictos encontrados en los turnos asignados.",
     conflictos: {
@@ -796,8 +813,33 @@ if (conflictosEnMismaSede.length > 0 || conflictosEnOtraSede.length > 0) {
       enOtraSede: conflictosEnOtraSede,
     }
   });
-}
+} */
 
+
+// 🔹 Si hay conflictos en la misma sede o en otra sede, mapear y devolverlos en la respuesta
+if (conflictosEnMismaSede.length > 0 || conflictosEnOtraSede.length > 0) {
+  return res.status(400).json({
+    message: "⛔ Conflictos encontrados en los turnos asignados.",
+    conflictos: {
+      enEstaSede: conflictosEnMismaSede.map(t => ({
+        sede: "Sede actual",
+        fecha_inicio: moment(t.tur_fecha_inicio).format("DD/MM/YYYY"),
+        hora_inicio: t.tur_hora_inicio,
+        fecha_fin: moment(t.tur_fecha_fin).format("DD/MM/YYYY"),
+        hora_fin: t.tur_hora_fin,
+        //total_horas_turno: t.tur_total_horas,
+      })),
+      enOtraSede: conflictosEnOtraSede.map(t => ({
+        sede: t.sede?.se_nombre || "Sede desconocida",
+        fecha_inicio: moment(t.tur_fecha_inicio).format("DD/MM/YYYY"),
+        hora_inicio: t.tur_hora_inicio,
+        fecha_fin: moment(t.tur_fecha_fin).format("DD/MM/YYYY"),
+        hora_fin: t.tur_hora_fin,
+        //total_horas_turno: t.tur_total_horas,
+      }))
+    }
+  });
+}
 
 await turnoModel.update(updateData, { where: { tur_id } });
 const turnoActualizado = await turnoModel.findOne({ where: { tur_id } });
