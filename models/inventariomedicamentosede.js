@@ -34,14 +34,7 @@ const inventarioMedicamentosSedeModel = sequelize.define(
         this.setDataValue("med_nombre", capitalizeWords(value));
       },
     },
-/*     med_cantidad: { 
-      type: DataTypes.INTEGER.UNSIGNED, 
-      allowNull: false 
-    }, */
-    med_cantidad: { 
-      type: DataTypes.DECIMAL(10,2).UNSIGNED, // Cambiado a decimal para permitir valores fraccionarios
-      allowNull: false 
-    },
+
     med_presentacion: { 
       type: DataTypes.STRING, 
       allowNull: false,
@@ -85,12 +78,12 @@ inventarioMedicamentosSedeModel.associate = (models) => {
     as: "sede",
   });
 
-  // Un medicamento de la sede puede haber sido administrado en múltiples recetas.
 
-inventarioMedicamentosSedeModel.hasMany(models.administracionMedicamentosModel, {
+  // Un medicamento de la sede puede haber sido administrado en múltiples recetas.  
+/* inventarioMedicamentosSedeModel.hasMany(models.administracionMedicamentosModel, {
   foreignKey: "inv_med_sede_id",
   as: "administraciones_sede",
-});
+}); */
 
 
   // Un medicamento en el inventario de la sede puede haber sido administrado varias veces.
