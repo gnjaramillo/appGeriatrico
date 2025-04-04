@@ -64,6 +64,7 @@ const geriatricoPersonaRolModel = sequelize.define('GeriatricoPersonasRoles', {
   indexes: [] // Evita que Sequelize cree índices automáticamente
 });
 
+module.exports = geriatricoPersonaRolModel;
 
 // Relaciones
 geriatricoPersonaRolModel.associate = (models) => {
@@ -73,6 +74,5 @@ geriatricoPersonaRolModel.associate = (models) => {
 };
 
 
-module.exports = geriatricoPersonaRolModel;
 
 

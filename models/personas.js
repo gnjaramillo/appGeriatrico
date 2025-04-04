@@ -77,6 +77,12 @@ const personaModel = sequelize.define(
   }
 );
 
+
+
+// Exportar el modelo
+module.exports = personaModel;
+
+
 // Relaciones
 personaModel.associate = (models) => {
   // Persona tiene muchos roles a través de SedePersonaRol
@@ -153,5 +159,3 @@ personaModel.associate = (models) => {
   });
 };
 
-// Exportar el modelo
-module.exports = personaModel;

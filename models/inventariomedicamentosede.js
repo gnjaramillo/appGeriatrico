@@ -19,56 +19,39 @@ const inventarioMedicamentosSedeModel = sequelize.define(
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
-    med_nombre: { 
-      type: DataTypes.STRING, 
+    med_id: { 
+      type: DataTypes.INTEGER, 
       allowNull: false,
-      set(value) {
-        // Transformar el nombre a mayúscula inicial para cada palabra
-        const capitalizeWords = (str) => {
-          return str
-            .toLowerCase()
-            .split(" ")
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ");
-        };
-        this.setDataValue("med_nombre", capitalizeWords(value));
+      references: {
+        model: "medicamentos", //  nombre de la tabla en la DB
+        key: "med_id",
       },
+      onDelete: "CASCADE",
+      onUpdate: "CASCADE",
     },
-
-    med_presentacion: { 
-      type: DataTypes.STRING, 
-      allowNull: false,
-      set(value) {
-        // Transformar el nombre a mayúscula inicial para cada palabra
-        const capitalizeWords = (str) => {
-          return str
-            .toLowerCase()
-            .split(" ")
-            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-            .join(" ");
-        };
-        this.setDataValue("med_presentacion", capitalizeWords(value));
-      },
-
-    },
-    unidades_por_presentacion: { 
-        type: DataTypes.INTEGER.UNSIGNED, 
-        allowNull: false 
-      },
     med_total_unidades_disponibles: { 
         type: DataTypes.INTEGER.UNSIGNED, 
         allowNull: false 
       },
-    med_descripcion: { 
-      type: DataTypes.TEXT, 
-      allowNull: true // Campo opcional
-    }
+      med_origen: { 
+        type: DataTypes.ENUM("EPS", "Compra Directa", "Donación", "Otro"), 
+        allowNull: false, 
+        defaultValue: "Otro"
+      },
+      med_observaciones: { 
+        type: DataTypes.TEXT, 
+        allowNull: true 
+      }
   },
   { 
     tableName: "inventario_medicamentos_sede", 
     timestamps: false 
   }
 );
+
+module.exports = inventarioMedicamentosSedeModel;
+
+
 
 inventarioMedicamentosSedeModel.associate = (models) => {
     
@@ -79,22 +62,27 @@ inventarioMedicamentosSedeModel.associate = (models) => {
   });
 
 
-  // Un medicamento de la sede puede haber sido administrado en múltiples recetas.  
-/* inventarioMedicamentosSedeModel.hasMany(models.administracionMedicamentosModel, {
+
+  // cada entrada en el inventario de una sede está asociada a un solo medicamento
+  inventarioMedicamentosSedeModel.belongsTo(models.medicamentosModel, { 
+    foreignKey: "med_id", 
+    as: "medicamento" 
+  });
+
+
+  // un medicamento de la sede puede ser administrado múltiples veces.  
+inventarioMedicamentosSedeModel.hasMany(models.detalleAdministracionMedicamentoModel, {
   foreignKey: "inv_med_sede_id",
   as: "administraciones_sede",
-}); */
+});
 
-
-  // Un medicamento en el inventario de la sede puede haber sido administrado varias veces.
-  inventarioMedicamentosSedeModel.hasMany(models.detalleAdministracionMedicamentoModel, { 
-    foreignKey: "inv_med_sede_id", 
-    as: "detalles_sede" 
-  });
   
 
 
 
 };
 
-module.exports = inventarioMedicamentosSedeModel;
+
+
+
+

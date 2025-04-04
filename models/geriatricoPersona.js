@@ -41,6 +41,7 @@ const geriatricoPersonaModel = sequelize.define('GeriatricoPersona', {
     tableName: 'geriatrico_persona',
     timestamps: false
 });
+module.exports = geriatricoPersonaModel;
 
 // Definir asociaciones
 geriatricoPersonaModel.associate = (models) => {
@@ -57,4 +58,3 @@ geriatricoPersonaModel.associate = (models) => {
     });
 };
 
-module.exports = geriatricoPersonaModel;

@@ -59,6 +59,11 @@ const cuidadoEnfermeriaModel = sequelize.define('CuidadosEnfermeria', {
     timestamps: false
 });
 
+
+
+module.exports = cuidadoEnfermeriaModel;
+
+
 // Relaciones
 cuidadoEnfermeriaModel.associate = (models) => {
     // Un cuidado de enfermería pertenece a un paciente
@@ -67,23 +72,5 @@ cuidadoEnfermeriaModel.associate = (models) => {
         as: 'paciente' 
     });
 
-
-
-    // Un cuidado de enfermería es realizado por una enfermera
-/*     cuidadoEnfermeriaModel.belongsTo(models.enfermeraModel, { 
-        foreignKey: 'enf_id', 
-        as: 'enfermera' 
-    }); */
-
-//Un registro de CuidadosEnfermeria tiene un Seguimiento:
-/*     cuidadoEnfermeriaModel.hasOne(models.seguimientoModel, { 
-        foreignKey: 'cue_id',
-        as: 'seguimiento'
-    }); */
-
-
-
-
 };
 
-module.exports = cuidadoEnfermeriaModel;

@@ -3,7 +3,7 @@ const { sequelize } = require('../config/mysql');
 const { io } = require('../utils/handleSocket'); 
 const moment = require('moment-timezone');
 const { matchedData } = require('express-validator');
-const { sedeModel, inventarioMedicamentosSedeModel } = require('../models');
+const { medicamentosModel, inventarioMedicamentosSedeModel } = require('../models');
 
 
 
@@ -11,35 +11,45 @@ const { sedeModel, inventarioMedicamentosSedeModel } = require('../models');
 
 
 
-// registrar medicamento, sin stock inicial (admin sede)
-const registrarMedicamentoSede = async (req, res) => {
+// vincular medicamento al inventario de la sede, con un stock inicial (admin sede)
+const registrarMedicamentoStockInvSede = async (req, res) => {
     try {
+        const { med_id } = req.params;
         const data = matchedData(req);
-        const { med_nombre, med_presentacion, unidades_por_presentacion, med_descripcion } = data;
+        const { med_total_unidades_disponibles, med_origen, med_observaciones  } = data;
         const se_id = req.session.se_id; 
 
         if (!se_id) {
             return res.status(400).json({ message: "Sede no especificada en la sesión del usuario" });
         }
 
-        // 🚫 No permitir ingresar cantidad al registrar un medicamento
-        const med_total_unidades_disponibles = 0;
+         // Validar que el medicamento exista
+         const medicamento = await medicamentosModel.findByPk(med_id);
+         if (!medicamento) {
+             return res.status(404).json({ message: "El medicamento no existe." });
+         }
 
-        // 🔴 Validar que unidades_por_presentacion sea mayor a 0
-        if (unidades_por_presentacion <= 0) {
-            return res.status(400).json({ message: "Las unidades por presentación deben ser mayores a 0." });
-        }
-
-        const nuevoMedicamento = await inventarioMedicamentosSedeModel.create({
-            se_id,
-            med_nombre,
-            med_presentacion,
-            unidades_por_presentacion, // Debe ser un número válido
-            med_total_unidades_disponibles,
-            med_descripcion: med_descripcion || null
+         // Verificar si ya está registrado en la sede
+         const existeInventario = await inventarioMedicamentosSedeModel.findOne({
+            where: { se_id, med_id }
         });
 
-        return res.status(201).json({ message: "Medicamento registrado exitosamente. Ahora puedes agregar stock.", medicamento: nuevoMedicamento });
+        if (existeInventario) {
+            return res.status(400).json({ message: "El medicamento ya está registrado en la sede. Solo puedes actualizar el stock." });
+        }
+
+        
+        // Registrar el medicamento con la cantidad inicial indicada
+        const nuevoMedicamento = await inventarioMedicamentosSedeModel.create({
+            se_id,
+            med_id,
+            med_total_unidades_disponibles, 
+            med_origen,
+            med_observaciones: med_observaciones || ""
+        });
+
+
+        return res.status(201).json({ message: "Medicamento registrado exitosamente en la sede con stock inicial.", medicamento: nuevoMedicamento });
     } catch (error) {
         console.error("Error al registrar el medicamento:", error);
         return res.status(500).json({ message: "Error interno del servidor" });
@@ -50,32 +60,50 @@ const registrarMedicamentoSede = async (req, res) => {
 
 
 // ver los medicamentos del inventario de la sede (admin sede)
-const obtenerMedicamentosSede = async (req, res) => {
+const obtenerMedicamentosInvSede = async (req, res) => {
     try {
         const se_id = req.session.se_id; // Obtener la sede desde la sesión
 
         if (!se_id) {
-            return res.status(400).json({ message: "Sede no especificada en la sesión del usuario" });
+            return res.status(400).json({ message: "Sede no especificada en la sesión del usuario." });
         }
 
         // Consultar los medicamentos de la sede
         const medicamentos = await inventarioMedicamentosSedeModel.findAll({
             where: { se_id },
+            include: [
+                {
+                    model: medicamentosModel,
+                    as: "medicamento",
+                    attributes: ["med_id", "med_nombre", "med_presentacion", "unidades_por_presentacion", "med_descripcion"]
+                }
+            ],
             attributes: [
                 "med_sede_id", 
-                "med_nombre", 
-                "med_presentacion", 
-                "unidades_por_presentacion", 
                 "med_total_unidades_disponibles",
-                "med_descripcion"
             ],
-            order: [["med_nombre", "ASC"]] // Ordenar por nombre
+            order: [[{ model: medicamentosModel, as: "medicamento" }, "med_nombre", "ASC"]] // 🔹 Corrección aquí
         });
 
-        return res.status(200).json({ message: "Lista de medicamentos", medicamentos });
+        const medicamentosMapeados = medicamentos.map(med => ({
+            med_sede_id: med.med_sede_id,
+            med_id: med.medicamento.med_id,
+            med_total_unidades_disponibles: med.med_total_unidades_disponibles,
+            med_nombre: med.medicamento.med_nombre,
+            med_presentacion: med.medicamento.med_presentacion,
+            unidades_por_presentacion: med.medicamento.unidades_por_presentacion,
+            med_descripcion: med.medicamento.med_descripcion
+        }));
+        
+        
+        
+        return res.status(200).json({ message: "Lista de medicamentos", medicamentos: medicamentosMapeados });
+        
+
+        // return res.status(200).json({ message: "Lista de medicamentos", medicamentos });
     } catch (error) {
         console.error("Error al obtener los medicamentos:", error);
-        return res.status(500).json({ message: "Error interno del servidor" });
+        return res.status(500).json({ message: "Error interno del servidor." });
     }
 };
 
@@ -204,5 +232,5 @@ const actualizarMedicamento = async (req, res) => {
 
 
 
-module.exports = { registrarMedicamentoSede , obtenerMedicamentosSede,  agregarStockMedicamento, actualizarMedicamento };
+module.exports = { registrarMedicamentoStockInvSede , obtenerMedicamentosInvSede,  agregarStockMedicamento, actualizarMedicamento };
 

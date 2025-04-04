@@ -55,7 +55,8 @@ const geriatricoModel  = sequelize.define('Geriatricos', {
   
   { tableName: 'geriatricos', 
     timestamps: false });
-
+    
+module.exports = geriatricoModel;
 
 // un geriatrico puede tener muchas sedes
 geriatricoModel.associate = (models) => {
@@ -81,6 +82,5 @@ geriatricoModel.associate = (models) => {
 
 };
 
-module.exports = geriatricoModel;
 
 

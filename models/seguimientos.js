@@ -90,6 +90,8 @@ const seguimientoModel = sequelize.define('seguimientos', {
     },
 });
 
+module.exports = seguimientoModel
+
     // relaciones
     seguimientoModel.associate = (models) => {
 
@@ -104,5 +106,3 @@ const seguimientoModel = sequelize.define('seguimientos', {
         });
 
     };
-
-module.exports = seguimientoModel

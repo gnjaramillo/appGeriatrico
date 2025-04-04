@@ -18,9 +18,9 @@ const {
 
 
 router.get('/:pac_id', sessionMiddleware, authMiddleware,  checkRol([3]), validarPacId, obtenerMedicamentosInvPaciente);
-router.post('/registrar/:pac_id', sessionMiddleware, authMiddleware,  checkRol([3]), validatorCrearMedicamento, registrarMedicamentoPaciente);
-router.put('/agregarstock/:med_pac_id', sessionMiddleware, authMiddleware,  checkRol([3]), validatorStockMedicamento, agregarStockMedicamentoPac);
-router.put('/:med_pac_id', sessionMiddleware, authMiddleware,  checkRol([3]), validatorActualizarMedicamento, actualizarMedicamentoPac);
+router.post('/registrar/:pac_id', sessionMiddleware, authMiddleware,  checkRol([3, 5]), validatorCrearMedicamento, registrarMedicamentoPaciente);
+router.put('/agregarstock/:med_pac_id', sessionMiddleware, authMiddleware,  checkRol([3, 5]), validatorStockMedicamento, agregarStockMedicamentoPac);
+router.put('/:med_pac_id', sessionMiddleware, authMiddleware,  checkRol([3, 5]), validatorActualizarMedicamento, actualizarMedicamentoPac);
 
 
 

@@ -5,8 +5,8 @@ const sessionMiddleware = require('../middleware/sessionRedis')
 const checkRol = require('../middleware/rol');
 
 const { 
-    obtenerMedicamentosSede,
-    registrarMedicamentoSede, 
+    obtenerMedicamentosInvSede,
+    registrarMedicamentoStockInvSede, 
     agregarStockMedicamento, 
     actualizarMedicamento
      } = require('../controllers/inventariomedicamentosede');
@@ -19,8 +19,8 @@ const {
 
 
 
-router.get('/', sessionMiddleware, authMiddleware,  checkRol([3]),  obtenerMedicamentosSede);
-router.post('/', sessionMiddleware, authMiddleware,  checkRol([3]), validatorCrearMedicamento, registrarMedicamentoSede);
+router.get('/', sessionMiddleware, authMiddleware,  checkRol([3, 5]),  obtenerMedicamentosInvSede);
+router.post('/:med_id', sessionMiddleware, authMiddleware,  checkRol([3]), validatorCrearMedicamento, registrarMedicamentoStockInvSede);
 router.put('/agregarstock/:med_sede_id', sessionMiddleware, authMiddleware,  checkRol([3]), validatorStockMedicamento, agregarStockMedicamento);
 router.put('/:med_sede_id', sessionMiddleware, authMiddleware,  checkRol([3]), validatorActualizarMedicamento, actualizarMedicamento);
 

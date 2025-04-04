@@ -66,6 +66,7 @@ const recomendacionModel = sequelize.define('recomendaciones', {
     timestamps: false 
 });
 
+module.exports = recomendacionModel;
 
 recomendacionModel.associate = (models) => {
     // Cada recomendación pertenece a un paciente
@@ -75,4 +76,3 @@ recomendacionModel.associate = (models) => {
     });
 };
 
-module.exports = recomendacionModel;

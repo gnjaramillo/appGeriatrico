@@ -3,8 +3,8 @@ const router = express.Router();
 const authMiddleware = require('../middleware/sessionJwt')
 const sessionMiddleware = require('../middleware/sessionRedis')
 const checkRol = require('../middleware/rol');
-const { validatorCrearFormulacion } = require('../validators/administracionmedicamento');
-const { registrarFormulacion } = require('../controllers/administracionmedicamento');
+const { validatorCrearFormulacion } = require('../validators/formulacionmedicamento');
+const { registrarFormulacion } = require('../controllers/formulacionmedicamento');
 
 
 

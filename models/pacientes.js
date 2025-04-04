@@ -52,6 +52,11 @@ const pacienteModel = sequelize.define(
   { tableName: "pacientes", timestamps: false }
 );
 
+module.exports = pacienteModel;
+
+
+
+
 pacienteModel.associate = (models) => {
   // cada paciente pertenece a una persona.
   pacienteModel.belongsTo(models.personaModel, {
@@ -97,10 +102,10 @@ pacienteModel.associate = (models) => {
   });
   
 
-  // Un paciente puede tener múltiples administraciones de medicamentos
-  pacienteModel.hasMany(models.administracionMedicamentosModel, {
+  // Un paciente puede tener múltiples formulaciones de medicamentos
+  pacienteModel.hasMany(models.formulacionMedicamentosModel, {
     foreignKey: "pac_id",
-    as: "administraciones",
+    as: "formulacion_medicamentos",
   });
   
 
@@ -113,4 +118,3 @@ pacienteModel.associate = (models) => {
 
 };
 
-module.exports = pacienteModel;

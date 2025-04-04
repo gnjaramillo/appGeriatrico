@@ -31,6 +31,7 @@ const diagnosticoModel = sequelize.define('diagnosticos', {
 });
 
 
+module.exports = diagnosticoModel;
 
 diagnosticoModel.associate = (models) => {
     // Cada diagnóstico pertenece a un paciente
@@ -40,4 +41,3 @@ diagnosticoModel.associate = (models) => {
     });
 };
 
-module.exports = diagnosticoModel;

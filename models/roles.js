@@ -22,6 +22,8 @@ const rolModel = sequelize.define('Roles', {
 });
 
 
+// Exportar el modelo
+module.exports = rolModel;
 
 // Relaciones
 rolModel.associate = (models) => {
@@ -42,6 +44,3 @@ rolModel.associate = (models) => {
 
 };
 
-
-// Exportar el modelo
-module.exports = rolModel;

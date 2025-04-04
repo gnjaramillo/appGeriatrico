@@ -18,9 +18,10 @@ const models = {
     pacienteAcudienteModel: require('./acudientes'),
     diagnosticoModel: require('./diagnosticos'),
     recomendacionModel: require('./recomendaciones'),
+    medicamentosModel: require('./medicamentos'),
     inventarioMedicamentosSedeModel: require('./inventariomedicamentosede'),
     inventarioMedicamentosPacienteModel: require('./inventariomedicamentospaciente'),
-    administracionMedicamentosModel: require('./administracionmedicamento'),
+    formulacionMedicamentosModel: require('./formulacionmedicamento'),
     detalleAdministracionMedicamentoModel: require('./detalleadministracionmedicamento'),
 };
 

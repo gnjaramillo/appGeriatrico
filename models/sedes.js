@@ -26,6 +26,9 @@ const sedeModel = sequelize.define(
   { tableName: "sedes", timestamps: false }
 );
 
+module.exports = sedeModel;
+
+
 // una sede pertenece a un geriatrico
 sedeModel.associate = (models) => {
   sedeModel.belongsTo(models.geriatricoModel, {
@@ -66,4 +69,3 @@ sedeModel.associate = (models) => {
 
 };
 
-module.exports = sedeModel;

@@ -22,6 +22,8 @@ const enfermeraModel = sequelize.define('Enfermeras', {
 
 
 
+module.exports = enfermeraModel;
+
 
 // cada enfermera pertenece a una persona
 enfermeraModel.associate = (models) => {
@@ -45,16 +47,7 @@ enfermeraModel.associate = (models) => {
     as: 'seguimientos' 
 });
 
-//Una enfermera puede realizar varios cuidados enfermeria
-/*     enfermeraModel.hasMany(models.cuidadoEnfermeriaModel, { 
-    foreignKey: 'enf_id', 
-    as: 'cuidados_enfermeria' 
-}); */
-
-
-
 
 };
 
 
-module.exports = enfermeraModel;

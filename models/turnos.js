@@ -80,14 +80,19 @@ const turnoModel = sequelize.define(
     },
  */    
 
-    tur_total_horas: { 
-      type: DataTypes.DECIMAL(5,2), // Asegurar que guarde valores decimales
-      allowNull: false,
-      get() {
-          const value = this.getDataValue('tur_total_horas');
-          return value % 1 === 0 ? parseInt(value) : parseFloat(value); 
-      }
+
+  tur_total_horas: { 
+    type: DataTypes.DECIMAL(5,2), // Permite guardar con decimales si se requiere
+    allowNull: false,
+    set(value) { 
+      this.setDataValue('tur_total_horas', Math.round(value)); // Redondear antes de guardar
+    },
+    get() {
+      const value = this.getDataValue('tur_total_horas');
+      return value % 1 === 0 ? parseInt(value) : parseFloat(value); 
+    }
   },
+  
   
 
     tur_tipo_turno: {
@@ -101,6 +106,10 @@ const turnoModel = sequelize.define(
     timestamps: false,
   }
 );
+
+
+module.exports = turnoModel;
+
 
 // Relaciones
 turnoModel.associate = (models) => {
@@ -143,4 +152,3 @@ function convertTo12HourFormat(time24h) {
 }
 
 
-module.exports = turnoModel;

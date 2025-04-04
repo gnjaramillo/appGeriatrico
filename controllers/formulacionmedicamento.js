@@ -3,7 +3,7 @@ const { sequelize } = require('../config/mysql');
 const { getIo } = require('../utils/handleSocket'); 
 const moment = require('moment-timezone');
 const { matchedData } = require('express-validator');
-const {  administracionMedicamentosModel, sedePersonaRolModel, pacienteModel, inventarioMedicamentosPacienteModel, inventarioMedicamentosSedeModel  } = require('../models');
+const {  formulacionMedicamentosModel, sedePersonaRolModel, pacienteModel, inventarioMedicamentosPacienteModel, inventarioMedicamentosSedeModel  } = require('../models');
 
 
 
@@ -144,7 +144,7 @@ const registrarFormulacion = async (req, res) => {
         }
 
         // Crear la formulación médica con los datos del medicamento
-        const nuevaFormulacion = await administracionMedicamentosModel.create({
+        const nuevaFormulacion = await formulacionMedicamentosModel.create({
             pac_id,
             inv_med_sede_id,
             inv_med_pac_id,
