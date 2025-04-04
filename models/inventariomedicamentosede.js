@@ -33,15 +33,6 @@ const inventarioMedicamentosSedeModel = sequelize.define(
         type: DataTypes.INTEGER.UNSIGNED, 
         allowNull: false 
       },
-      med_origen: { 
-        type: DataTypes.ENUM("EPS", "Compra Directa", "Donación", "Otro"), 
-        allowNull: false, 
-        defaultValue: "Otro"
-      },
-      med_observaciones: { 
-        type: DataTypes.TEXT, 
-        allowNull: true 
-      }
   },
   { 
     tableName: "inventario_medicamentos_sede", 
@@ -76,7 +67,12 @@ inventarioMedicamentosSedeModel.hasMany(models.detalleAdministracionMedicamentoM
   as: "administraciones_sede",
 });
 
-  
+// Un registro de inventario puede tener múltiples movimientos asociados (entradas o salidas).
+inventarioMedicamentosSedeModel.hasMany(models.movimientosStockSedeModel, {
+  foreignKey: "med_sede_id",
+  as: "movimientos_stock",
+});
+
 
 
 

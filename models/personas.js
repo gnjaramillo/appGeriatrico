@@ -157,5 +157,21 @@ personaModel.associate = (models) => {
     foreignKey: "per_id",
     as: "vinculosGeriatricos",
   });
+
+
+// Una persona puede realizar muchos movimientos de stock (como registrar entradas o salidas).
+  personaModel.hasMany(models.movimientosStockSedeModel, {
+    foreignKey: "usuario_id",
+    as: "movimientos_stock_sede",
+  });
+
+
+// Una persona puede realizar muchos movimientos de stock (como registrar entradas o salidas).
+  personaModel.hasMany(models.movimientosStockPacienteModel, {
+    foreignKey: "usuario_id",
+    as: "movimientos_stock_pacientes", 
+  });
+  
+
 };
 

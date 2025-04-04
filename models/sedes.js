@@ -64,6 +64,19 @@ sedeModel.associate = (models) => {
 
 
 
+  // Relación: Una sede puede tener muchos medicamentos vinculados.
+sedeModel.hasMany(models.vinculacionMedicamentoSedeModel, {
+  foreignKey: "se_id",
+  as: "vinculaciones_medicamentos",
+});
+
+
+  
+// Una sede puede tener muchos movimientos de medicamentos registrados.
+sedeModel.hasMany(models.movimientosStockSedeModel, {
+  foreignKey: "se_id",
+  as: "movimientos_stock",
+});
 
 
 

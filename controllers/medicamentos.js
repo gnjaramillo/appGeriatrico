@@ -11,7 +11,7 @@ const {  medicamentosModel, inventarioMedicamentosSedeModel, inventarioMedicamen
 
 
 
-// registrar medicamento, sin stock inicial (admin sede)
+// registrar medicamento en tabla general (admin sede y enfermera)
 const registrarMedicamento = async (req, res) => {
     try {
         const data = matchedData(req);
@@ -36,7 +36,7 @@ const registrarMedicamento = async (req, res) => {
 
 
 
-// ver los medicamentos del inventario de la sede (admin sede)
+// ver los medicamentos generales registrados (admin sede)
 const obtenerMedicamentos = async (req, res) => {
     try {
         const se_id = req.session.se_id; // Obtener la sede desde la sesión
