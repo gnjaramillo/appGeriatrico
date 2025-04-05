@@ -5,61 +5,88 @@ const moment = require("moment-timezone");
 
 
 
-const validatorCrearMedicamento = [
+const validatorPrimerMovimiento = [
+    // 🔢 Validar med_id desde params
+    param("med_id")
+      .exists().withMessage("El ID del medicamento es requerido.")
+      .isInt({ min: 1 }).withMessage("El ID del medicamento debe ser un número entero positivo."),
 
 
-    param('pac_id').isInt().exists().notEmpty().withMessage('El ID del paciente debe ser un número entero'),
+    // 🔢 Validar pac_id desde params
+    param("pac_id")
+      .exists().withMessage("El ID del paciente es requerido.")
+      .isInt({ min: 1 }).withMessage("El ID del paciente debe ser un número entero positivo."),
+  
+
+    // 🧮 Validar cantidad desde body
+    check("cantidad")
+      .exists().withMessage("La cantidad es obligatoria.")
+      .isInt({ min: 0 }).withMessage("La cantidad debe ser un número entero positivo."),
+  
+    // 🏷️ Validar med_origen desde body
+    check("med_origen")
+      .exists().withMessage("El origen del medicamento es obligatorio.")
+      .isIn(["EPS", "Compra Directa", "Donación", "Otro"])
+      .withMessage("El origen del medicamento no es válido."),
+  
+    // 🧪 Ejecutar middleware de resultados
+    (req, res, next) => validateResult(req, res, next),
+  ];
 
 
-    check("med_nombre").exists().notEmpty().isString().trim()
-        .withMessage("El nombre del medicamento es requerido y debe ser un texto."),
-    
-    
-    check("med_presentacion").exists().notEmpty().isString().trim()
-        .withMessage("La presentación del medicamento es requerida y debe ser un texto."),
-    
-    check("unidades_por_presentacion").exists().notEmpty().isInt({ min: 1 }).toInt()
-        .withMessage("Las unidades por presentación deben ser un número entero positivo."),
-    
-    check("med_descripcion").optional().isString().trim()
-        .withMessage("La descripción debe ser un texto."),
-    
+
+
+  const validatorStockMedicamento = [
+
+    // 🔢 Validar med_pac_id desde params
+    param("med_pac_id")
+      .exists().withMessage("El ID del medicamento en sede es requerido.")
+      .isInt({ min: 1 }).withMessage("El ID del medicamento debe ser un número entero positivo."),
+  
+    // 🧮 Validar cantidad desde body
+    check("cantidad")
+      .exists().withMessage("La cantidad es obligatoria.")
+      .isInt({ min: 1 }).withMessage("La cantidad debe ser un número entero positivo."),
+  
+    // 🏷️ Validar med_origen desde body
+    check("med_origen")
+      .exists().withMessage("El origen del medicamento es obligatorio.")
+      .isIn(["EPS", "Compra Directa", "Donación", "Otro"])
+      .withMessage("El origen del medicamento no es válido."),
+  
+    // 🧪 Ejecutar middleware de resultados
     (req, res, next) => validateResult(req, res, next),
 
-];
 
-
-
-
-const validatorStockMedicamento = [
-
-    // ✅ Validar que la cantidad del medicamento sea un número entero positivo
-    check("med_total_unidades_disponibles")
-        .exists().withMessage("La cantidad de medicamentos es requerida.")
-        .notEmpty().withMessage("La cantidad de medicamentos no puede estar vacía.")
-        .isInt({ min: 1 }).withMessage("La cantidad debe ser un número entero positivo.")
-        .toInt(),
-
-    (req, res, next) => validateResult(req, res, next),
 ]; 
 
 
 
+const validatorSalidaMedicamento = [
 
-
-
-const validatorActualizarMedicamento = [
-    check("med_nombre").optional().isString().trim().notEmpty()
-    .withMessage("El nombre del medicamento es requerido y debe ser un texto."),
-    check("med_presentacion").optional().isString().trim().notEmpty()
-    .withMessage("La presentación del medicamento es requerida y debe ser un texto."),
-    check("unidades_por_presentacion").optional().isInt({ min: 1 })
-    .withMessage("Las unidades por presentación deben ser un número entero positivo."),
-    check("med_descripcion").optional().isString().trim().withMessage("La descripción debe ser un texto."),
-    
+    // 🔢 Validar med_pac_id desde params
+    param("med_pac_id")
+      .exists().withMessage("El ID del medicamento en sede es requerido.")
+      .isInt({ min: 1 }).withMessage("El ID del medicamento debe ser un número entero positivo."),
+  
+    // 🧮 Validar cantidad desde body
+    check("cantidad")
+      .exists().withMessage("La cantidad es obligatoria.")
+      .isInt({ min: 1 }).withMessage("La cantidad debe ser un número entero positivo."),
+  
+    // 🏷️ Validar med_origen desde body
+    check("med_destino")
+      .exists().withMessage("El destino del medicamento es obligatorio.")
+      .isIn(["Baja", "Devolución", "Otro"])
+      .withMessage("El destino del medicamento no es válido."),
+  
+    // 🧪 Ejecutar middleware de resultados
     (req, res, next) => validateResult(req, res, next),
 
-];
+
+]; 
+
+
 
 
 const validarPacId = [
@@ -73,6 +100,6 @@ const validarPacId = [
 
 
 
-module.exports = { validatorCrearMedicamento, validatorStockMedicamento, validatorActualizarMedicamento, validarPacId };
+module.exports = { validatorPrimerMovimiento, validatorStockMedicamento, validatorSalidaMedicamento, validarPacId };
 
 

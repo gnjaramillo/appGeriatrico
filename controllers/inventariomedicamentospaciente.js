@@ -3,77 +3,116 @@ const { sequelize } = require('../config/mysql');
 const { io } = require('../utils/handleSocket'); 
 const moment = require('moment-timezone');
 const { matchedData } = require('express-validator');
-const {  inventarioMedicamentosPacienteModel, pacienteModel, sedePersonaRolModel } = require('../models');
+const {  inventarioMedicamentosPacienteModel, pacienteModel, medicamentosModel, sedePersonaRolModel, movimientosStockPacienteModel } = require('../models');
 
 
 
 
 
-// ingresar medicamento al inventario del paciente, sin stock inicial (admin sede)
-const registrarMedicamentoPaciente = async (req, res) => {
+/* vinculacion inicial medicamento a inventario paciente, registran primer movimiento 
+con stock igual o mayor a cero  (admin sede y enfermera) */
+
+const vincularMedicamentoInvPac = async (req, res) => {
+    const t = await sequelize.transaction(); // Iniciar transacción
+  
     try {
-        const { pac_id } = req.params;
-        const data = matchedData(req);
-        const { med_nombre, med_presentacion, unidades_por_presentacion, med_descripcion } = data;
-        const se_id = req.session.se_id; 
+    const { med_id, pac_id } = req.params;;
+      const se_id = req.session.se_id;
+      const usuario_id = req.session.per_id;
+  
+      const data = matchedData(req);
+      const { cantidad, med_origen } = data;
+  
+      if (cantidad === undefined || cantidad < 0) {
+        await t.rollback();
+        return res.status(400).json({ message: "La cantidad no puede ser negativa" });
+      }
 
-        if (!se_id) {
-            return res.status(400).json({ message: "Sede no especificada en la sesión del usuario" });
-        }
-        
+        // Verificar existencia del paciente   
+      const paciente = await pacienteModel.findOne({ where: { pac_id } });
+      if (!paciente) {
+          return res.status(404).json({ message: "Paciente no encontrado." });
+      }
 
-        const paciente = await pacienteModel.findOne({ where: { pac_id } });
+      const per_id = paciente.per_id;
 
-        if (!paciente) {
-            return res.status(404).json({ message: "Paciente no encontrado." });
-        }
+      // Verificar si la persona tiene rol de paciente en la sede
+      const rolesPaciente = await sedePersonaRolModel.findAll({
+          where: { se_id, per_id, rol_id: 4 },
+          attributes: ["sp_activo"],
+      });
 
-        const per_id = paciente.per_id;
+      if (rolesPaciente.length === 0) {
+          return res.status(404).json({ message: "La persona no tiene un rol de paciente en esta sede." });
+      }
 
-        // Verificar si la persona tiene rol de paciente en la sede
-        const rolesPaciente = await sedePersonaRolModel.findAll({
-            where: { se_id, per_id, rol_id: 4 },
-            attributes: ["sp_activo"],
-        });
+      const tieneRolActivo = rolesPaciente.some((rol) => rol.sp_activo === true);
 
-        if (rolesPaciente.length === 0) {
-            return res.status(404).json({ message: "La persona no tiene un rol de paciente en esta sede." });
-        }
+      if (!tieneRolActivo) {
+          return res.status(403).json({ message: "El usuario tiene el rol de paciente en esta sede, pero está inactivo." });
+      }
 
-        const tieneRolActivo = rolesPaciente.some((rol) => rol.sp_activo === true);
+    // Verificar si ya está registrado en el inventario
+      let inventario = await inventarioMedicamentosPacienteModel.findOne({
+        where: { pac_id, med_id },
+        transaction: t,
+      });
+  
+      if (inventario) {
+        await t.rollback();
+        return res.status(400).json({ message: "El medicamento ya se encuentra en el inventario. Realice un nuevo ingreso desde el módulo de stock." });
+      }
 
-        if (!tieneRolActivo) {
-            return res.status(403).json({ message: "El usuario tiene el rol de paciente en esta sede, pero está inactivo." });
-        }
+      // Crear inventario con stock inicial
+      inventario = await inventarioMedicamentosPacienteModel.create({
+        pac_id,
+        med_id,
+        med_total_unidades_disponibles: cantidad,
+      }, { transaction: t });
+  
+      // Registrar movimiento inicial
+      const movimiento = await movimientosStockPacienteModel.create({
+        med_pac_id: inventario.med_pac_id,
+        pac_id,
+        med_id,
+        usuario_id,
+        cantidad,
+        tipo: "Entrada",
+        med_origen,
+        med_destino: null,
+        fecha: new Date(),
+      }, { transaction: t });
+  
+      await t.commit(); // Éxito
 
-        // 🚫 No permitir ingresar cantidad al registrar un medicamento
-        const med_total_unidades_disponibles = 0;
 
-        // 🔴 Validar que unidades_por_presentacion sea mayor a 0
-        if (unidades_por_presentacion <= 0) {
-            return res.status(400).json({ message: "Las unidades por presentación deben ser mayores a 0." });
-        }       
+      // 🔴 Emitir evento por socket
+      io.emit('stockPacienteActualizado', {
+        med_pac_id: inventario.med_pac_id,
+        cantidadAgregada: cantidad,
+        nuevoStock: inventario.med_total_unidades_disponibles,
+        mensaje: "Nuevo medicamento vinculado al inventario del paciente.",
+      });
 
-
-
-        const nuevoMedicamento = await inventarioMedicamentosPacienteModel.create({
-            pac_id,
-            med_nombre,
-            med_presentacion,
-            unidades_por_presentacion,
-            med_total_unidades_disponibles,
-            med_descripcion: med_descripcion || null // Si no se envía, queda como null
-        });
-
-        return res.status(201).json({ message: "Medicamento registrado exitosamente", medicamento: nuevoMedicamento });
+  
+      return res.status(201).json({
+        message: "Medicamento agregado al inventario paciente y  primer movimiento de stock registrado.",
+        inventario,
+        movimiento,
+      });
+  
     } catch (error) {
-        console.error("Error al registrar el medicamento:", error);
-        return res.status(500).json({ message: "Error interno del servidor" });
+      // Solo intenta rollback si la transacción no está terminada
+      if (!t.finished) await t.rollback(); 
+      console.error("Error en vincularMedicamentoInvSede:", error);
+      return res.status(500).json({ message: "Error interno del servidor" });
     }
 };
 
 
-// ver los medicamentos del inventario de la sede (admin sede)
+
+
+// ver los medicamentos del inventario del paciente (admin sede, enfermera)
 const obtenerMedicamentosInvPaciente = async (req, res) => {
     try {
         const se_id = req.session.se_id; // Obtener la sede desde la sesión
@@ -91,22 +130,48 @@ const obtenerMedicamentosInvPaciente = async (req, res) => {
         }
 
 
-        // Consultar los medicamentos de la sede
         const medicamentos = await inventarioMedicamentosPacienteModel.findAll({
             where: { pac_id },
+
+            include: [
+                {
+                    model: pacienteModel,
+                    as: "paciente",
+                    attributes: ["pac_id"]
+                },
+                {
+                    model: medicamentosModel,
+                    as: "medicamento",
+                    attributes: ["med_id", "med_nombre", "med_presentacion", "unidades_por_presentacion", "med_descripcion"]
+                }
+            ],
             attributes: [
                 "med_pac_id", 
-                "pac_id",
-                "med_nombre", 
-                "med_presentacion", 
-                "unidades_por_presentacion", 
                 "med_total_unidades_disponibles",
-                "med_descripcion"
             ],
-            order: [["med_nombre", "ASC"]] // Ordenar por nombre
+            order: [[{ model: medicamentosModel, as: "medicamento" }, "med_nombre", "ASC"]] // 🔹 Corrección aquí
         });
 
-        return res.status(200).json({ message: "Lista de medicamentos", medicamentos });
+        const medicamentosMapeados = medicamentos.map(med => ({
+            med_pac_id: med.med_pac_id,
+            med_id: med.medicamento.med_id,
+            med_total_unidades_disponibles: med.med_total_unidades_disponibles,
+            med_nombre: med.medicamento.med_nombre,
+            med_presentacion: med.medicamento.med_presentacion,
+            unidades_por_presentacion: med.medicamento.unidades_por_presentacion,
+            med_descripcion: med.medicamento.med_descripcion,
+            pac_id: med.paciente.pac_id,
+
+        }));
+        
+        
+        
+        return res.status(200).json({ message: "Lista de medicamentos", medicamentos: medicamentosMapeados });
+
+
+
+
+
     } catch (error) {
         console.error("Error al obtener los medicamentos:", error);
         return res.status(500).json({ message: "Error interno del servidor" });
@@ -115,124 +180,200 @@ const obtenerMedicamentosInvPaciente = async (req, res) => {
 
 
 
-// añadir stock a un medicamento del paciente previamente registrado con stock cero (admin sede)
-const agregarStockMedicamentoPac = async (req, res) => {
+
+// registrar entrada stock desde la lista de medicamentos del inventario del paciente (admin sede, enfermera)
+const entradaStockMedicamentoInvPaciente = async (req, res) => {
+    const t = await sequelize.transaction();
+  
     try {
-        const data = matchedData(req);
-        const { med_pac_id } = req.params;
-        let { med_total_unidades_disponibles } = data;  // `med_cantidad` como let para poder modificarlo
-        const se_id = req.session.se_id;
-
-        if (!se_id) {
-            return res.status(400).json({ message: "Sede no especificada en la sesión del usuario" });
-        }
-
-        // Buscar el medicamento en la sede
-        const medicamento = await inventarioMedicamentosPacienteModel.findOne({
-            where: { med_pac_id }
-        });
-
-        if (!medicamento) {
-            return res.status(404).json({ message: "Medicamento no encontrado en la sede." });
-        }
-
-        // Validar que la presentación NO se modifique
-        if (data.med_presentacion && data.med_presentacion !== medicamento.med_presentacion) {
-            return res.status(400).json({
-                message: "No se puede cambiar la presentación del medicamento al agregar stock.",
-            });
-        }
-
-
-        medicamento.med_total_unidades_disponibles += med_total_unidades_disponibles;
-
-        // ✅ Guardar los cambios
-        await medicamento.save();
-
-
-        // 🔥 Emitir evento de stock actualizado
-        io.emit("stockActualizado", { med_pac_id, med_total_unidades_disponibles: medicamento.med_total_unidades_disponibles });
-
-
-
-        return res.status(200).json({ message: "Stock actualizado exitosamente", medicamento });
+      const { med_pac_id } = req.params;
+      const usuario_id = req.session.per_id;
+      const se_id = req.session.se_id;
+  
+      const data = matchedData(req);
+      const { cantidad, med_origen } = data;
+  
+      if (cantidad === undefined || cantidad <= 0) {
+        await t.rollback();
+        return res.status(400).json({ message: "La cantidad debe ser mayor a 0." });
+      }
+  
+      const inventario = await inventarioMedicamentosPacienteModel.findByPk(med_pac_id, {
+        // include: [{ model: pacienteModel, as: "paciente" }]
+        include: [
+            {
+                model: pacienteModel,
+                as: "paciente",
+                attributes: ["pac_id"]
+            }
+        ],
+      });
+  
+      if (!inventario) {
+        await t.rollback();
+        return res.status(404).json({ message: "Inventario del paciente no encontrado." });
+      }
+  
+      const pac_id = inventario.pac_id;
+      const paciente = await pacienteModel.findByPk(pac_id);
+  
+      if (!paciente) {
+        await t.rollback();
+        return res.status(404).json({ message: "Paciente no encontrado." });
+      }
+  
+      const per_id = paciente.per_id;
+  
+      // Verificar rol activo del paciente en la sede
+      const rolesPaciente = await sedePersonaRolModel.findAll({
+        where: { se_id, per_id, rol_id: 4 },
+        attributes: ["sp_activo"]
+      });
+  
+      if (rolesPaciente.length === 0 || !rolesPaciente.some(r => r.sp_activo === true)) {
+        await t.rollback();
+        return res.status(403).json({ message: "El paciente no tiene un rol activo en esta sede." });
+      }
+  
+      // Actualizar stock
+      inventario.med_total_unidades_disponibles += cantidad;
+      await inventario.save({ transaction: t });
+  
+      // Registrar el movimiento
+      await movimientosStockPacienteModel.create({
+        med_pac_id,
+        pac_id,
+        med_id: inventario.med_id,
+        usuario_id,
+        cantidad,
+        tipo: "Entrada",
+        med_origen,
+        med_destino: null,
+        fecha: new Date()
+      }, { transaction: t });
+  
+      await t.commit();
+  
+      io.emit('stockActualizado', {
+        med_pac_id,
+        cantidadAgregada: cantidad,
+        nuevoStock: inventario.med_total_unidades_disponibles,
+      });
+  
+      return res.status(200).json({ message: "Ingreso de stock registrado correctamente.", inventario });
+  
     } catch (error) {
-        console.error("Error al actualizar el stock del medicamento:", error);
-        return res.status(500).json({ message: "Error interno del servidor" });
+      if (!t.finished) await t.rollback();
+      console.error("Error al agregar stock al inventario del paciente:", error);
+      return res.status(500).json({ message: "Error interno del servidor." });
     }
-};
+  };
+  
 
 
 
-// solo permite actualizar ciertos campos dependiendo del stock ( admin sede)
-const actualizarMedicamentoPac = async (req, res) => {
+// registrar salida stock desde la lista de medicamentos del inventario del paciente (admin sede, enfermera)
+  const salidaStockMedicamentoInvPaciente = async (req, res) => {
+    const t = await sequelize.transaction();
+  
     try {
-        const data = matchedData(req);
-        const { med_pac_id } = req.params;
-        const { med_nombre, med_presentacion, unidades_por_presentacion, med_descripcion } = data;
-        const se_id = req.session.se_id;
-
-        if (!se_id) {
-            return res.status(400).json({ message: "Sede no especificada en la sesión del usuario" });
-        }
-
-        // Buscar el medicamento en la sede
-        const medicamento = await inventarioMedicamentosPacienteModel.findOne({
-            where: { med_pac_id }
-        });
-
-        if (!medicamento) {
-            return res.status(404).json({ message: "Medicamento no encontrado en la sede." });
-        }
-
-        // ⚠️ Si el medicamento tiene stock, NO permitir cambios en presentación ni unidades por presentación
-        if (medicamento.med_total_unidades_disponibles > 0) {
-            if (med_presentacion && med_presentacion !== medicamento.med_presentacion) {
-                return res.status(400).json({
-                    message: "No se puede cambiar la presentación de un medicamento con stock disponible.",
-                });
+      const { med_pac_id } = req.params;
+      const usuario_id = req.session.per_id;
+      const se_id = req.session.se_id;
+  
+      const data = matchedData(req);
+      const { cantidad, med_destino } = data;
+  
+      // Validación de cantidad
+      if (cantidad === undefined || cantidad <= 0) {
+        await t.rollback();
+        return res.status(400).json({ message: "La cantidad debe ser mayor a 0." });
+      }
+  
+      // Buscar inventario del paciente
+      const inventario = await inventarioMedicamentosPacienteModel.findByPk(med_pac_id, {
+        // include: [{ model: pacienteModel, as: "paciente" }]
+        include: [
+            {
+                model: pacienteModel,
+                as: "paciente",
+                attributes: ["pac_id"]
             }
+        ],
 
-            if (unidades_por_presentacion && unidades_por_presentacion !== medicamento.unidades_por_presentacion) {
-                return res.status(400).json({
-                    message: "No se pueden cambiar las unidades por presentación de un medicamento con stock disponible.",
-                });
-            }
-        } else {
-            // Si no tiene stock, permitir cambios en presentación y unidades por presentación
-            medicamento.med_presentacion = med_presentacion || medicamento.med_presentacion;
-            medicamento.unidades_por_presentacion = unidades_por_presentacion || medicamento.unidades_por_presentacion;
-        }
-
-        // Actualizar siempre nombre y descripción si hay cambios
-        let cambios = false;
-        if (med_nombre && med_nombre !== medicamento.med_nombre) {
-            medicamento.med_nombre = med_nombre;
-            cambios = true;
-        }
-
-        if (med_descripcion !== undefined && med_descripcion !== medicamento.med_descripcion) {
-            medicamento.med_descripcion = med_descripcion;
-            cambios = true;
-        }
-
-        if (!cambios) {
-            return res.status(200).json({ message: "No se realizaron cambios en el medicamento.", medicamento });
-        }
-
-        // Guardar cambios
-        await medicamento.save();
-
-        // 🔥 Emitir evento de WebSocket
-        io.emit("medicamentoActualizado", { med_pac_id, medicamento });
-
-        return res.status(200).json({ message: "Medicamento actualizado correctamente", medicamento });
+      });
+  
+      if (!inventario) {
+        await t.rollback();
+        return res.status(404).json({ message: "Inventario del paciente no encontrado." });
+      }
+  
+      const pac_id = inventario.pac_id;
+      const paciente = await pacienteModel.findByPk(pac_id);
+      if (!paciente) {
+        await t.rollback();
+        return res.status(404).json({ message: "Paciente no encontrado." });
+      }
+  
+      const per_id = paciente.per_id;
+  
+      // Verificar que el paciente tenga rol activo en la sede
+      const rolesPaciente = await sedePersonaRolModel.findAll({
+        where: { se_id, per_id, rol_id: 4 },
+        attributes: ["sp_activo"]
+      });
+  
+      if (rolesPaciente.length === 0 || !rolesPaciente.some(r => r.sp_activo === true)) {
+        await t.rollback();
+        return res.status(403).json({ message: "El paciente no tiene un rol activo en esta sede." });
+      }
+  
+      const stockDisponible = inventario.med_total_unidades_disponibles;
+  
+      if (cantidad > stockDisponible) {
+        await t.rollback();
+        return res.status(400).json({ message: `La cantidad solicitada supera el stock actual del medicamento, que actualmente es de ${stockDisponible} unidades.` });
+      }
+  
+      // Actualizar stock
+      inventario.med_total_unidades_disponibles -= cantidad;
+      await inventario.save({ transaction: t });
+  
+      // Registrar el movimiento
+      await movimientosStockPacienteModel.create({
+        med_pac_id,
+        pac_id,
+        med_id: inventario.med_id,
+        usuario_id,
+        cantidad,
+        tipo: "Salida",
+        med_origen: null,
+        med_destino,
+        fecha: new Date()
+      }, { transaction: t });
+  
+      await t.commit();
+  
+      // Emitir evento por socket
+      io.emit('stockActualizado', {
+        med_pac_id,
+        cantidadRetirada: cantidad,
+        nuevoStock: inventario.med_total_unidades_disponibles,
+      });
+  
+      return res.status(200).json({ message: "Salida de stock registrada correctamente.", inventario });
+  
     } catch (error) {
-        console.error("Error al actualizar el medicamento:", error);
-        return res.status(500).json({ message: "Error interno del servidor" });
+      if (!t.finished) await t.rollback();
+      console.error("Error al disminuir stock del paciente:", error);
+      return res.status(500).json({ message: "Error interno del servidor." });
     }
-};
+  };
+  
 
 
-module.exports = { registrarMedicamentoPaciente, obtenerMedicamentosInvPaciente, agregarStockMedicamentoPac, actualizarMedicamentoPac  };
+
+
+
+module.exports = { vincularMedicamentoInvPac, obtenerMedicamentosInvPaciente, entradaStockMedicamentoInvPaciente, salidaStockMedicamentoInvPaciente  };
 

@@ -8,7 +8,7 @@ const { medicamentosModel, inventarioMedicamentosSedeModel, movimientosStockSede
 
 
 
-// vinculacion inicial medicamento a inventario sede, registran primer movimiento con stock igual o mayor a cero  (admin sede y enfermera)
+// vinculacion inicial medicamento a inventario sede, registran primer movimiento con stock igual o mayor a cero  (admin sede )
 const vincularMedicamentoInvSede = async (req, res) => {
     const t = await sequelize.transaction(); // Iniciar transacción
   
@@ -65,7 +65,7 @@ const vincularMedicamentoInvSede = async (req, res) => {
       });
   
       return res.status(201).json({
-        message: "Medicamento agregado al inventario sede y registrado el primer movimiento de stock.",
+        message: "Medicamento agregado al inventario sede y primer movimiento de stock registrado.",
         inventario,
         movimiento,
       });
@@ -80,7 +80,7 @@ const vincularMedicamentoInvSede = async (req, res) => {
 
 
 
-// ver los medicamentos del inventario de la sede (admin sede, enfermera)
+// ver los medicamentos del inventario de la sede (admin sede)
 const obtenerMedicamentosInvSede = async (req, res) => {
     try {
         const se_id = req.session.se_id; // Obtener la sede desde la sesión
@@ -130,7 +130,7 @@ const obtenerMedicamentosInvSede = async (req, res) => {
 
 
 
-// registrar entrada stock desde la lista de medicamentos del inventario de la sede (admin sede, enfermera)
+// registrar entrada stock desde la lista de medicamentos del inventario de la sede (admin sede)
 const entradaStockMedicamentoInvSede = async (req, res) => {
     const t = await sequelize.transaction();
   
@@ -199,7 +199,7 @@ const entradaStockMedicamentoInvSede = async (req, res) => {
 
 
 
-// registrar salida stock desde la lista de medicamentos del inventario de la sede (admin sede, enfermera)
+// registrar salida stock desde la lista de medicamentos del inventario de la sede (admin sede)
 const salidaStockMedicamentoInvSede = async (req, res) => {
     const t = await sequelize.transaction();
   

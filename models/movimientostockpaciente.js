@@ -58,8 +58,20 @@ const movimientosStockPacienteModel = sequelize.define(
       allowNull: false,
     },
     med_origen: {
-      type: DataTypes.ENUM("EPS", "Compra Directa", "Donación", "Otro", "No aplica"),
-      allowNull: false,
+      type: DataTypes.ENUM("EPS", "Compra Directa", "Donación", "Otro"),
+      allowNull: true,
+      get() {
+        const value = this.getDataValue('med_origen');
+        return value === null ? undefined : value;
+      }
+    },
+    med_destino: {
+      type: DataTypes.ENUM('Baja', 'Devolución', 'Otro'),
+      allowNull: true,
+      get() {
+        const value = this.getDataValue('med_destino');
+        return value === null ? undefined : value;
+      }
     },
     fecha: {
       type: DataTypes.DATEONLY,
