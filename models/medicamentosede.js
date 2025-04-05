@@ -1,4 +1,4 @@
-const { sequelize } = require("../config/mysql");
+/* const { sequelize } = require("../config/mysql");
 const { DataTypes } = require("sequelize");
 
 const vinculacionMedicamentoSedeModel = sequelize.define(
@@ -54,3 +54,4 @@ vinculacionMedicamentoSedeModel.associate = (models) => {
     as: "medicamento",
   });
 };
+ */

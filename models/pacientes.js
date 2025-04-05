@@ -110,10 +110,10 @@ pacienteModel.associate = (models) => {
   
   
   // Relación: Un paciente puede tener muchos medicamentos vinculados.
-  pacienteModel.hasMany(models.vinculacionMedicamentoPacienteModel, {
+/*   pacienteModel.hasMany(models.vinculacionMedicamentoPacienteModel, {
     foreignKey: "pac_id",
     as: "vinculaciones_medicamentos",
-  });
+  }); */
   
   
 

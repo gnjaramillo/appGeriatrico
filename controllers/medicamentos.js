@@ -61,7 +61,7 @@ const obtenerMedicamentos = async (req, res) => {
 
 
 
-// solo permite actualizar ciertos campos dependiendo del stock ( admin sede)
+// solo permite actualizar ciertos campos dependiendo si medicamento ya esta vinculado a un inventario con stock ( admin sede)
 const actualizarMedicamento = async (req, res) => {
     try {
         const data = matchedData(req);
@@ -84,7 +84,7 @@ const actualizarMedicamento = async (req, res) => {
         // Si el medicamento tiene stock, restringir ciertos cambios
         if ((medicamentosede || medicamentopac) && (data.med_nombre || data.med_presentacion || data.unidades_por_presentacion)) {
             return res.status(400).json({ 
-                message: "No se pueden modificar nombre, presentación o unidades si el medicamento ya tiene stock."
+                message: "No se pueden modificar nombre, presentación o unidades si el medicamento ya esta vinculado a un inventario."
             });
         }
 

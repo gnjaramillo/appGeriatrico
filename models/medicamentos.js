@@ -79,17 +79,17 @@ medicamentosModel.hasMany(models.formulacionMedicamentosModel, {
   
 
 // Relación: Un medicamento puede estar vinculado a muchas sedes.
-medicamentosModel.hasMany(models.vinculacionMedicamentoSedeModel, {
+/* medicamentosModel.hasMany(models.vinculacionMedicamentoSedeModel, {
   foreignKey: "med_id",
   as: "vinculaciones_sedes",
-});
+}); */
 
 
 // Relación: Un medicamento puede estar vinculado a varios pacientes.
-medicamentosModel.hasMany(models.vinculacionMedicamentoPacienteModel, {
+/* medicamentosModel.hasMany(models.vinculacionMedicamentoPacienteModel, {
   foreignKey: "med_id",
   as: "vinculaciones_pacientes",
-});
+}); */
 
 
 // Un medicamento puede estar involucrado en múltiples movimientos de stock en diferentes sedes.

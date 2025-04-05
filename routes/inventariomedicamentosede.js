@@ -5,24 +5,28 @@ const sessionMiddleware = require('../middleware/sessionRedis')
 const checkRol = require('../middleware/rol');
 
 const { 
-    obtenerMedicamentosInvSede,
-    registrarMedicamentoStockInvSede, 
-    agregarStockMedicamento, 
-    actualizarMedicamento
-     } = require('../controllers/inventariomedicamentosede');
+    vincularMedicamentoInvSede,
+    obtenerMedicamentosInvSede,     
+    entradaStockMedicamentoInvSede,
+    salidaStockMedicamentoInvSede, 
+    } = require('../controllers/inventariomedicamentosede');
 
+    
 const {
-    validatorCrearMedicamento, 
+    validatorPrimerMovimiento,    
     validatorStockMedicamento,
-    validatorActualizarMedicamento
-     } = require('../validators/inventariomedicamentosede');
+    validatorSalidaMedicamento,
+    } = require('../validators/inventariomedicamentosede');
+
+
+router.post('/vinculoinicial/:med_id', sessionMiddleware, authMiddleware, checkRol([3]), validatorPrimerMovimiento, vincularMedicamentoInvSede);
+router.get('/', sessionMiddleware, authMiddleware,  checkRol([3]),  obtenerMedicamentosInvSede);
+router.put('/entradastock/:med_sede_id', sessionMiddleware, authMiddleware,  checkRol([3]), validatorStockMedicamento, entradaStockMedicamentoInvSede);
+router.put('/salidastock/:med_sede_id', sessionMiddleware, authMiddleware,  checkRol([3]), validatorSalidaMedicamento, salidaStockMedicamentoInvSede);
 
 
 
-router.get('/', sessionMiddleware, authMiddleware,  checkRol([3, 5]),  obtenerMedicamentosInvSede);
-router.post('/:med_id', sessionMiddleware, authMiddleware,  checkRol([3]), validatorCrearMedicamento, registrarMedicamentoStockInvSede);
-router.put('/agregarstock/:med_sede_id', sessionMiddleware, authMiddleware,  checkRol([3]), validatorStockMedicamento, agregarStockMedicamento);
-router.put('/:med_sede_id', sessionMiddleware, authMiddleware,  checkRol([3]), validatorActualizarMedicamento, actualizarMedicamento);
+
 
 
 module.exports = router;
