@@ -3,8 +3,8 @@ const router = express.Router();
 const authMiddleware = require('../middleware/sessionJwt')
 const sessionMiddleware = require('../middleware/sessionRedis')
 const checkRol = require('../middleware/rol');
-const { validatorCrearFormulacion } = require('../validators/formulacionmedicamentos');
-const { registrarFormulacionMedicamento, formulacionMedicamentoVigente, formulacionMedicamentoHistorial, formulacionMedicamentoSuspendidas } = require('../controllers/formulacionmedicamentos');
+const { validatorCrearFormulacion, validatorUpdateFormulacion } = require('../validators/formulacionmedicamentos');
+const { registrarFormulacionMedicamento, formulacionMedicamentoVigente, formulacionMedicamentoHistorial, actualizarFormulacionMedicamento } = require('../controllers/formulacionmedicamentos');
 
 
 
@@ -13,8 +13,8 @@ const { registrarFormulacionMedicamento, formulacionMedicamentoVigente, formulac
 
 router.get('/:pac_id', sessionMiddleware, authMiddleware, checkRol([3, 5, 6]),  formulacionMedicamentoVigente);
 router.get('/historial/:pac_id', sessionMiddleware, authMiddleware, checkRol([3, 5, 6]),  formulacionMedicamentoHistorial);
-router.get('/suspendidas/:pac_id', sessionMiddleware, authMiddleware, checkRol([3, 5, 6]),  formulacionMedicamentoSuspendidas);
-router.post('/:pac_id', sessionMiddleware, authMiddleware, checkRol([3, 5, 6]), validatorCrearFormulacion, registrarFormulacionMedicamento);
+router.post('/:pac_id', sessionMiddleware, authMiddleware, checkRol([3, 5]), validatorCrearFormulacion, registrarFormulacionMedicamento);
+router.put('/:admin_id', sessionMiddleware, authMiddleware, checkRol([3, 5]), validatorUpdateFormulacion, actualizarFormulacionMedicamento);
 
 
 module.exports = router;

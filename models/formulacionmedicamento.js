@@ -21,8 +21,6 @@ const formulacionMedicamentosModel = sequelize.define(
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
     },
-
-
     med_id: {
       type: DataTypes.INTEGER,
       allowNull: false,
@@ -32,8 +30,7 @@ const formulacionMedicamentosModel = sequelize.define(
       },
       onDelete: "CASCADE",
       onUpdate: "CASCADE",
-
-  },
+    },
     admin_fecha_inicio: { 
       type: DataTypes.DATEONLY, 
       allowNull: false 
@@ -42,10 +39,14 @@ const formulacionMedicamentosModel = sequelize.define(
       type: DataTypes.DATEONLY, 
       allowNull: false 
     },
+    admin_fecha_suspension : { 
+      type: DataTypes.DATEONLY, 
+      allowNull: true 
+    },
     admin_dosis_por_toma: {
       type: DataTypes.DECIMAL(10,2),
       allowNull: false
-  },
+    },
 
 
 admin_total_dosis_periodo: {
@@ -66,14 +67,6 @@ admin_tipo_cantidad: {
 admin_hora: { 
   type: DataTypes.TIME, 
   allowNull: false,
-  /* set(value) { 
-    // El frontend enviará la hora en formato de 24 horas, por lo que no es necesario convertirla al setearla
-    this.setDataValue('admin_hora', value); 
-  },
-  get() { 
-    // Convertir la hora de 24 horas a 12 horas para mostrarla
-    return convertTo12HourFormat(this.getDataValue('admin_hora')); 
-  } */
 },
 
 admin_metodo: {

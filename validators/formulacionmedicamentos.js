@@ -108,9 +108,95 @@ const validatorCrearFormulacion = [
   ];
 
 
+
+
+const validatorUpdateFormulacion = [
+  // Validar el ID de la formulación desde los parámetros de la URL
+  param('admin_id')
+    .isInt().withMessage('El ID de la formulación debe ser un número entero')
+    .exists().notEmpty().withMessage("El ID de la formulación es obligatorio."),
+
+  // Validar que existan los campos requeridos (si vienen)
+  check("med_id")
+    .optional().exists()
+    .notEmpty().withMessage("El medicamento no puede estar vacío.")
+    .isInt().withMessage("El ID del medicamento debe ser un número."),
+
+  check("admin_fecha_inicio")
+    .optional()
+    .notEmpty().withMessage("La fecha de inicio no puede estar vacía.")
+    .custom((value) => {
+      if (!moment(value, "YYYY-MM-DD", true).isValid()) {
+        throw new Error("La fecha de inicio debe estar en formato YYYY-MM-DD.");
+      }
+
+      const today = moment().tz("America/Bogota").startOf("day");
+      const inputDate = moment.tz(value, "America/Bogota").startOf("day");
+
+      if (inputDate.isBefore(today)) {
+        throw new Error("La fecha de inicio no puede ser una fecha pasada.");
+      }
+
+      return true;
+    }),
+
+  check("admin_fecha_fin")
+    .optional()
+    .notEmpty().withMessage("La fecha de fin no puede estar vacía.")
+    .custom((value, { req }) => {
+      if (!moment(value, "YYYY-MM-DD", true).isValid()) {
+        throw new Error("La fecha de fin debe estar en formato YYYY-MM-DD.");
+      }
+
+      const fechaInicio = moment.tz(req.body.admin_fecha_inicio || "1900-01-01", "America/Bogota").startOf("day");
+      const fechaFin = moment.tz(value, "America/Bogota").startOf("day");
+
+      if (req.body.admin_fecha_inicio && fechaFin.isBefore(fechaInicio)) {
+        throw new Error("La fecha de fin no puede ser anterior a la fecha de inicio.");
+      }
+
+      return true;
+    }),
+
+  check("admin_dosis_por_toma")
+    .optional()
+    .notEmpty().withMessage("La dosis por toma no puede estar vacía.")
+    .isFloat({ min: 0.01 }).withMessage("La dosis por toma debe ser un número positivo."),
+
+  check("admin_tipo_cantidad")
+    .optional()
+    .notEmpty().withMessage("El tipo de cantidad no puede estar vacío.")
+    .isIn(["unidades", "mililitros", "gramos", "gotas", "otro"])
+    .withMessage("El tipo de cantidad no es válido."),
+
+  check("admin_hora")
+    .optional()
+    .notEmpty().withMessage("La hora no puede estar vacía.")
+    .matches(/^([01]\d|2[0-3]):([0-5]\d)$/)
+    .withMessage("La hora debe estar en formato HH:MM (24 horas)."),
+
+  check("admin_metodo")
+    .optional()
+    .notEmpty().withMessage("El método de administración no puede estar vacío.")
+    .isIn(["Oral", "Intravenosa", "Subcutánea", "Tópica", "Inhalación", "Rectal", "Ótica", "Oftálmica", "Nasal", "Otro"])
+    .withMessage("Método de administración no válido."),
+
+
+  check("admin_estado")
+    .optional()
+    .notEmpty().withMessage("El estado no puede estar vacío.")
+    .isIn(["Pendiente", "En Curso", "Completado", "Suspendido"])
+    .withMessage("El estado de la formulación no es válido."),
+
+  // Ejecutar validación final
+  (req, res, next) => validateResult(req, res, next),
+];
+
+  
+
   
   
-  module.exports = { validatorCrearFormulacion };
+  module.exports = { validatorCrearFormulacion, validatorUpdateFormulacion };
 
 
 

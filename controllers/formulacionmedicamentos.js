@@ -91,10 +91,8 @@ const registrarFormulacionMedicamento = async (req, res) => {
 };
 
 
-  
 
-
-// formulas vigentes
+// formulas vigentes, estado pendiente o en curso de cada paciente
 const formulacionMedicamentoVigente = async (req, res) => {
     try {
       const { pac_id } = req.params;
@@ -106,7 +104,10 @@ const formulacionMedicamentoVigente = async (req, res) => {
       const formulacionVigente = await formulacionMedicamentosModel.findAll({
         where: {
           pac_id,
-          admin_estado: 'Pendiente',
+          admin_estado: {
+            [Op.in]: ['Pendiente', 'En Curso']
+          },
+          
           admin_fecha_fin: {
             [Op.gte]: hoy, // 👉 Fecha fin mayor o igual que hoy
           },
@@ -117,28 +118,39 @@ const formulacionMedicamentoVigente = async (req, res) => {
             as: "medicamentos_formulados",
             attributes: ["med_nombre", "med_presentacion"],
           },
-          {
+/*           {
             model: pacienteModel,
             as: "paciente",
-            attributes: [], // No traemos nada de paciente
-            include: [
-              {
-                model: personaModel,
-                as: "persona",
-                attributes: ["per_nombre_completo", "per_documento"],
-              }
-            ]
+            attributes: ["pac_id"], // No traemos nada de paciente
           }
-        ],
+ */        ],
         order: [
           ["admin_fecha_inicio", "DESC"],
           ["admin_hora", "DESC"]
         ]
       });
+
+      const formulacionvigente = formulacionVigente.map(f => {
+        return {
+          admin_id: f.admin_id,
+          pac_id: f.pac_id,
+          med_id: f.med_id,
+          medicamentos_formulados: f.medicamentos_formulados,
+          admin_fecha_inicio: f.admin_fecha_inicio,
+          admin_fecha_fin: f.admin_fecha_fin,
+          admin_hora: f.admin_hora,
+          admin_dosis_por_toma: f.admin_dosis_por_toma,
+          admin_tipo_cantidad: f.admin_tipo_cantidad,
+          admin_metodo: f.admin_metodo,
+          admin_estado: f.admin_estado,
+          admin_total_dosis_periodo: f.admin_total_dosis_periodo,
+        };
+      });
+      
   
       return res.status(200).json({
         message: "Formulaciones vigentes obtenidas exitosamente.",
-        formulacion: formulacionVigente
+        formulacion: formulacionvigente
       });
   
     } catch (error) {
@@ -152,21 +164,18 @@ const formulacionMedicamentoVigente = async (req, res) => {
 
 
 
-
+// formulas completadas y suspendidas agrupadas por paciente
 const formulacionMedicamentoHistorial = async (req, res) => {
   try {
     const { pac_id } = req.params;
 
-    // Fecha de hoy en zona horaria Colombia
-    const hoy = moment().tz("America/Bogota").startOf("day").format("YYYY-MM-DD");
-
-
-    const historialformulacion = await formulacionMedicamentosModel.findAll({
+    // Obtener todas las formulaciones con estado Completado o Suspendido
+    const todas = await formulacionMedicamentosModel.findAll({
       where: {
         pac_id,
-        // admin_estado: 'Pendiente',
-
-        admin_fecha_fin: { [Op.lt]: hoy } // ✅  finalizaron hasta ayer
+        admin_estado: {
+          [Op.in]: ['Completado', 'Suspendido']
+        }
       },
       include: [
         {
@@ -174,28 +183,27 @@ const formulacionMedicamentoHistorial = async (req, res) => {
           as: "medicamentos_formulados",
           attributes: ["med_nombre", "med_presentacion"],
         },
-        {
+      /*   {
           model: pacienteModel,
           as: "paciente",
-          attributes: [],
-          include: [
-            {
-              model: personaModel,
-              as: "persona",
-              attributes: ["per_nombre_completo", "per_documento"],
-            }
-          ]
-        }
+          attributes: ["pac_id"],
+        } */
       ],
       order: [
+        ["admin_estado", "ASC"], // Opcional: para que salgan primero Completado, luego Suspendido
         ["admin_fecha_inicio", "DESC"],
         ["admin_hora", "DESC"]
       ]
     });
 
+    // Agrupar en dos listas
+    const completadas = todas.filter(f => f.admin_estado === "Completado");
+    const suspendidas = todas.filter(f => f.admin_estado === "Suspendido");
+
     return res.status(200).json({
       message: "Historial de formulaciones obtenido exitosamente.",
-      formulacion: historialformulacion
+      completadas,
+      suspendidas
     });
 
   } catch (error) {
@@ -209,52 +217,88 @@ const formulacionMedicamentoHistorial = async (req, res) => {
 
 
 
-const formulacionMedicamentoSuspendidas = async (req, res) => {
+// si la formula esta pendiente, actualiza todo menos su estado, si la formula esta en curso puede actualizar solo fecha fin y cambiar estado a suspendido..
+const actualizarFormulacionMedicamento = async (req, res) => {
   try {
-    const { pac_id } = req.params;
+    const { admin_id } = req.params;
+    const data = matchedData(req, { locations: ["body"] }); // esto evita que el param entre al análisis
 
-    const formulacionesSuspendidas = await formulacionMedicamentosModel.findAll({
-      where: {
-        pac_id,
-        admin_estado: 'Suspendido',
-      },
-      include: [
-        {
-          model: medicamentosModel,
-          as: "medicamentos_formulados",
-          attributes: ["med_nombre", "med_presentacion"],
-        },
-        {
-          model: pacienteModel,
-          as: "paciente",
-          attributes: [],
-          include: [
-            {
-              model: personaModel,
-              as: "persona",
-              attributes: ["per_nombre_completo", "per_documento"],
-            }
-          ]
-        }
-      ],
-      order: [
-        ["admin_fecha_inicio", "DESC"],
-        ["admin_hora", "DESC"]
-      ]
-    });
+    const formulacion = await formulacionMedicamentosModel.findByPk(admin_id);
 
-    return res.status(200).json({
-      message: "Formulaciones suspendidas obtenidas exitosamente.",
-      formulacion: formulacionesSuspendidas
+    if (!formulacion) {
+      return res.status(404).json({ message: "Formulación no encontrada." });
+    }
+
+    const estadoActual = formulacion.admin_estado;
+
+    // --- ESTADO: PENDIENTE ---
+    if (estadoActual === "Pendiente") {
+      // ❌ No permitir cambiar el estado
+      if ("admin_estado" in data && data.admin_estado !== "Pendiente") {
+        return res.status(400).json({
+          message: "No puedes cambiar el estado mientras esté Pendiente.",
+        });
+      }
+
+      // Eliminar estado si viene (por seguridad)
+      delete data.admin_estado;
+
+      await formulacion.update(data);
+      return res.status(200).json({
+        message: "Formulación actualizada correctamente (estado: Pendiente).",
+        formulacion,
+      });
+    }
+
+    // --- ESTADO: EN CURSO ---
+    if (estadoActual === "En Curso") {
+      const camposActualizados = Object.keys(data);
+
+      // ✅ Solo permitir admin_fecha_fin y admin_estado
+      const camposNoPermitidos = camposActualizados.filter(
+        campo => campo !== "admin_fecha_fin" && campo !== "admin_estado"
+      );
+
+      if (camposNoPermitidos.length > 0) {
+        return res.status(400).json({
+          message: `No puedes modificar los campos: ${camposNoPermitidos.join(", ")} cuando la formulación está En Curso.`,
+        });
+      }
+
+      // 👉 Si se cambia a 'Suspendido', registrar fecha
+      if (data.admin_estado === "Suspendido") {
+        formulacion.admin_estado = "Suspendido";
+        formulacion.admin_fecha_suspension = moment().tz("America/Bogota").format("YYYY-MM-DD");
+        await formulacion.save();
+
+        return res.status(200).json({
+          message: "Formulación suspendida correctamente.",
+          formulacion,
+        });
+      }
+
+      // 👉 Si solo cambia fecha_fin (o también viene el estado igual), permitir
+      await formulacion.update(data);
+      return res.status(200).json({
+        message: "Formulación actualizada correctamente (estado: En Curso).",
+        formulacion,
+      });
+    }
+
+    // --- ESTADO: COMPLETADO o SUSPENDIDO ---
+    return res.status(403).json({
+      message: `No se puede modificar una formulación en estado '${estadoActual}'.`,
     });
 
   } catch (error) {
-    console.error("Error al obtener formulaciones suspendidas:", error);
+    console.error("Error al actualizar formulación médica:", error);
     return res.status(500).json({
-      message: "Error interno al obtener formulaciones suspendidas.",
+      message: "Error interno al intentar actualizar la formulación.",
     });
   }
 };
+
+
 
 
 
@@ -262,7 +306,7 @@ const formulacionMedicamentoSuspendidas = async (req, res) => {
     registrarFormulacionMedicamento, 
     formulacionMedicamentoVigente,
     formulacionMedicamentoHistorial,
-    formulacionMedicamentoSuspendidas
+    actualizarFormulacionMedicamento
 };
 
 
