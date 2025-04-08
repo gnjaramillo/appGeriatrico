@@ -194,7 +194,9 @@ const verMisTurnosEnfermeriaVigentes = async (req, res) => {
     const ge_id = req.session.ge_id;
     const enf_id = req.session.enf_id;
     
-    const hoy = moment().startOf("day").format("YYYY-MM-DD");
+    const hoy = moment().tz("America/Bogota").startOf("day").format("YYYY-MM-DD");
+
+    // const hoy = moment().startOf("day").format("YYYY-MM-DD");
 
     // Obtener los turnos de la enfermera desde hoy en adelante
     const misTurnos = await turnoModel.findAll({
@@ -248,7 +250,9 @@ const verMisTurnosEnfermeriaHistorial = async (req, res) => {
     const ge_id = req.session.ge_id;
     const enf_id = req.session.enf_id;
     
-    const hoy = moment().startOf("day").format("YYYY-MM-DD");
+    // const hoy = moment().startOf("day").format("YYYY-MM-DD");
+    const hoy = moment().tz("America/Bogota").startOf("day").format("YYYY-MM-DD");
+
 
     // Obtener los turnos de la enfermera hasta ayer
     const misTurnosPasados = await turnoModel.findAll({
@@ -310,7 +314,8 @@ const verTurnosSedeVigentes = async (req, res) => {
       return res.status(403).json({ message: "No tienes una sede asignada en la sesión." });
     }
 
-    const hoy = moment().tz("America/Bogota").format("YYYY-MM-DD"); // Fecha de hoy
+    const hoy = moment().tz("America/Bogota").startOf("day").format("YYYY-MM-DD");
+    // const hoy = moment().tz("America/Bogota").format("YYYY-MM-DD"); // Fecha de hoy
     const ahora = moment().tz("America/Bogota").format("HH:mm"); // Hora actual en formato 24h
 
     // Obtener los turnos de la sede desde hoy en adelante
@@ -375,61 +380,6 @@ const verTurnosSedeVigentes = async (req, res) => {
 
 
 
-/* const verTurnosSedeHistorialEnfermera = async (req, res) => {
-  try {
-    const { enf_id } = req.params;
-    const se_id = req.session.se_id;
-
-    if (!se_id) {
-      return res.status(403).json({ message: "No tienes una sede asignada en la sesión." });
-    }
-
-    const hoy = moment().startOf("day").format("YYYY-MM-DD");
-    const ahora = moment().format("HH:mm:ss"); // Obtener la hora actual
-
-    // Obtener los turnos finalizados hasta ayer o los de hoy con hora fin pasada
-    const turnos = await turnoModel.findAll({
-      where: {
-        se_id,
-        enf_id,
-        [Op.or]: [
-          { tur_fecha_fin: { [Op.lt]: hoy } }, // ✅ Turnos con fecha fin antes de hoy
-          { 
-            tur_fecha_fin: hoy, 
-            tur_hora_fin: { [Op.lt]: ahora } // ✅ Turnos de hoy que ya terminaron
-          }
-        ],
-      },
-      order: [
-        ["tur_fecha_inicio", "DESC"], // Ordenar de más reciente a más antiguo
-        ["tur_hora_inicio", "DESC"],
-      ],
-    });
-
-
-
-    return res.status(200).json({
-      message: "📅 Historial de turnos de la enfermera",
-      turnos: turnos.map(turno => ({
-        fecha_inicio: moment(turno.tur_fecha_inicio).format("DD/MM/YYYY"),
-        hora_inicio: turno.tur_hora_inicio,
-        fecha_fin: moment(turno.tur_fecha_fin).format("DD/MM/YYYY"),
-        hora_fin: turno.tur_hora_fin,
-        total_horas_turno: turno.tur_total_horas,
-        tipo_turno: turno.tur_tipo_turno,
-
-
-      })),
-    });
-
-
-  } catch (error) {
-    console.error("❌ Error al obtener el historial de turnos de la sede:", error);
-    return res.status(500).json({ message: "Error en el servidor." });
-  }
-}; */
-
-
 // ver histoial (hasta ayer) turnos de cada enfermera(o) en la sede del admin (admin sede)
 const verTurnosSedeHistorialEnfermera = async (req, res) => {
   try {
@@ -440,7 +390,8 @@ const verTurnosSedeHistorialEnfermera = async (req, res) => {
       return res.status(403).json({ message: "No tienes una sede asignada en la sesión." });
     }
 
-    const hoy = moment().startOf("day").format("YYYY-MM-DD");
+    const hoy = moment().tz("America/Bogota").startOf("day").format("YYYY-MM-DD");
+    // const hoy = moment().startOf("day").format("YYYY-MM-DD");
     const ahora = moment().format("HH:mm:ss"); // Hora actual
 
     // Obtener los turnos finalizados hasta ayer o los de hoy con hora fin pasada

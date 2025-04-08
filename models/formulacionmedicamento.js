@@ -46,34 +46,38 @@ const formulacionMedicamentosModel = sequelize.define(
       type: DataTypes.DECIMAL(10,2),
       allowNull: false
   },
-  admin_total_dosis_periodo: {
-    type: DataTypes.VIRTUAL,
-    get() {
-        const fechaInicio = new Date(this.admin_fecha_inicio);
-        const fechaFin = new Date(this.admin_fecha_fin);
-        const dias = Math.ceil((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24)) + 1;
-        return dias * this.admin_dosis_por_toma;
-    }
+
+
+admin_total_dosis_periodo: {
+  type: DataTypes.VIRTUAL,
+  get() {
+    const fechaInicio = new Date(this.admin_fecha_inicio);
+    const fechaFin = new Date(this.admin_fecha_fin);
+    // Calculamos días entre las fechas (incluyendo ambos extremos)
+    const dias = Math.ceil((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24)) + 1;
+    return dias;
+  }
 },
+
 admin_tipo_cantidad: {
-  type: DataTypes.ENUM('unidades', 'mililitros', 'gramos', 'gotas'),
+  type: DataTypes.ENUM('unidades', 'mililitros', 'gramos', 'gotas', 'otro'),
   allowNull: false
 },
 admin_hora: { 
   type: DataTypes.TIME, 
   allowNull: false,
-  set(value) { 
+  /* set(value) { 
     // El frontend enviará la hora en formato de 24 horas, por lo que no es necesario convertirla al setearla
     this.setDataValue('admin_hora', value); 
   },
   get() { 
     // Convertir la hora de 24 horas a 12 horas para mostrarla
     return convertTo12HourFormat(this.getDataValue('admin_hora')); 
-  }
+  } */
 },
 
 admin_metodo: {
-  type: DataTypes.ENUM('Oral', 'Intravenosa', 'Subcutánea', 'Tópica', 'Inhalación'),
+  type: DataTypes.ENUM('Oral', 'Intravenosa', 'Subcutánea', 'Tópica', 'Inhalación', 'Rectal', 'Ótica', 'Oftálmica', 'Nasal', 'Otro'),
   allowNull: false
 },
 admin_estado: {
@@ -83,7 +87,7 @@ admin_estado: {
     
   },
   { 
-    tableName: "administracion_medicamentos", 
+    tableName: "formulacion_medicamentos", 
     timestamps: false 
   }
 );
@@ -118,6 +122,9 @@ formulacionMedicamentosModel.associate = (models) => {
 
   
 };
+
+
+
 
 
 
