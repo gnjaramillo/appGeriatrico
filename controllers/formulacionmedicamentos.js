@@ -92,6 +92,7 @@ const registrarFormulacionMedicamento = async (req, res) => {
 
 
 
+
 // formulas vigentes, estado pendiente o en curso de cada paciente
 const formulacionMedicamentoVigente = async (req, res) => {
     try {
@@ -182,15 +183,10 @@ const formulacionMedicamentoHistorial = async (req, res) => {
           model: medicamentosModel,
           as: "medicamentos_formulados",
           attributes: ["med_nombre", "med_presentacion"],
-        },
-      /*   {
-          model: pacienteModel,
-          as: "paciente",
-          attributes: ["pac_id"],
-        } */
+        }
       ],
       order: [
-        ["admin_estado", "ASC"], // Opcional: para que salgan primero Completado, luego Suspendido
+        ["admin_estado", "ASC"],
         ["admin_fecha_inicio", "DESC"],
         ["admin_hora", "DESC"]
       ]
@@ -200,10 +196,40 @@ const formulacionMedicamentoHistorial = async (req, res) => {
     const completadas = todas.filter(f => f.admin_estado === "Completado");
     const suspendidas = todas.filter(f => f.admin_estado === "Suspendido");
 
+    // Mapear campos con formato limpio y ordenado
+    const mapearFormulacion = (f) => {
+      const base = {
+        admin_id: f.admin_id,
+        pac_id: f.pac_id,
+        med_id: f.med_id,
+        medicamentos_formulados: f.medicamentos_formulados,
+        admin_fecha_inicio: f.admin_fecha_inicio,
+        admin_fecha_fin: f.admin_fecha_fin,
+        admin_hora: f.admin_hora,
+        admin_dosis_por_toma: f.admin_dosis_por_toma,
+        admin_tipo_cantidad: f.admin_tipo_cantidad,
+        admin_metodo: f.admin_metodo,
+        admin_estado: f.admin_estado,
+        admin_total_dosis_periodo: f.admin_total_dosis_periodo,
+      };
+
+      // Si está suspendida, incluir fecha de suspensión
+      if (f.admin_estado === "Suspendido") {
+        base.admin_fecha_suspension = f.admin_fecha_suspension;
+      }
+
+      return base;
+    };
+
+    // Aplicar mapeo
+    const completadasMapeadas = completadas.map(mapearFormulacion);
+    const suspendidasMapeadas = suspendidas.map(mapearFormulacion);
+
+    // Respuesta final
     return res.status(200).json({
       message: "Historial de formulaciones obtenido exitosamente.",
-      completadas,
-      suspendidas
+      completadas: completadasMapeadas,
+      suspendidas: suspendidasMapeadas
     });
 
   } catch (error) {
