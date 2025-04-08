@@ -244,10 +244,15 @@ const formulacionMedicamentoHistorial = async (req, res) => {
 
 
 // si la formula esta pendiente, actualiza todo menos su estado, si la formula esta en curso puede actualizar solo fecha fin y cambiar estado a suspendido..
-const actualizarFormulacionMedicamento = async (req, res) => {
+
+
+
+
+
+/* const actualizarFormulacionMedicamento = async (req, res) => {
   try {
     const { admin_id } = req.params;
-    const data = matchedData(req, { locations: ["body"] }); // esto evita que el param entre al análisis
+    const data = matchedData(req, { locations: ["body"] });
 
     const formulacion = await formulacionMedicamentosModel.findByPk(admin_id);
 
@@ -259,17 +264,113 @@ const actualizarFormulacionMedicamento = async (req, res) => {
 
     // --- ESTADO: PENDIENTE ---
     if (estadoActual === "Pendiente") {
-      // ❌ No permitir cambiar el estado
       if ("admin_estado" in data && data.admin_estado !== "Pendiente") {
         return res.status(400).json({
           message: "No puedes cambiar el estado mientras esté Pendiente.",
         });
       }
 
-      // Eliminar estado si viene (por seguridad)
+      // Eliminar admin_estado si viene, por seguridad
       delete data.admin_estado;
 
       await formulacion.update(data);
+
+      return res.status(200).json({
+        message: "Formulación actualizada correctamente (estado: Pendiente).",
+        formulacion,
+      });
+    }
+
+
+    // --- ESTADO: EN CURSO ---
+if (estadoActual === "En Curso") {
+  const camposActualizados = Object.keys(data);
+
+  // Solo se permite actualizar admin_fecha_fin o admin_estado
+  const camposNoPermitidos = camposActualizados.filter(
+    campo => campo !== "admin_fecha_fin" && campo !== "admin_estado"
+  );
+
+  if (camposNoPermitidos.length > 0) {
+    return res.status(400).json({
+      message: `No puedes modificar los campos: ${camposNoPermitidos.join(", ")} cuando la formulación está En Curso.`,
+    });
+  }
+
+  // ❌ Validar que no se estén actualizando ambos campos a la vez
+  if ("admin_fecha_fin" in data && "admin_estado" in data) {
+    return res.status(400).json({
+      message: "No puedes modificar fecha_fin y estado al mismo tiempo cuando la formulación está En Curso.",
+    });
+  }
+
+  // 👉 Si se cambia a 'Suspendido'
+  if (data.admin_estado === "Suspendido") {
+    formulacion.admin_estado = "Suspendido";
+    formulacion.admin_fecha_suspension = moment().tz("America/Bogota").format("YYYY-MM-DD");
+
+    await formulacion.save();
+
+    return res.status(200).json({
+      message: "Formulación suspendida correctamente.",
+      formulacion,
+    });
+  }
+
+  // 👉 Si solo se actualiza fecha_fin
+  if ("admin_fecha_fin" in data) {
+    await formulacion.update({ admin_fecha_fin: data.admin_fecha_fin });
+
+    return res.status(200).json({
+      message: "Fecha de finalización actualizada correctamente.",
+      formulacion,
+    });
+  }
+
+  return res.status(400).json({
+    message: "No se detectaron cambios válidos para aplicar.",
+  });
+}
+
+
+  } catch (error) {
+    console.error("Error al actualizar formulación médica:", error);
+    return res.status(500).json({
+      message: "Error interno al intentar actualizar la formulación.",
+    });
+  }
+}; */
+
+
+
+
+
+const actualizarFormulacionMedicamento = async (req, res) => {
+  try {
+    const { admin_id } = req.params;
+    const data = matchedData(req, { locations: ["body"] });
+
+    const formulacion = await formulacionMedicamentosModel.findByPk(admin_id);
+
+    if (!formulacion) {
+      return res.status(404).json({ message: "Formulación no encontrada." });
+    }
+
+    const estadoActual = formulacion.admin_estado;
+
+    // --- ESTADO: PENDIENTE ---
+    if (estadoActual === "Pendiente") {
+      if ("admin_estado" in data && data.admin_estado !== "Pendiente") {
+        return res.status(400).json({
+          message: "No puedes cambiar el estado mientras esté Pendiente.",
+        });
+      }
+
+      // Eliminar admin_estado si viene, por seguridad
+      delete data.admin_estado;
+
+      await formulacion.update(data);
+
       return res.status(200).json({
         message: "Formulación actualizada correctamente (estado: Pendiente).",
         formulacion,
@@ -280,7 +381,7 @@ const actualizarFormulacionMedicamento = async (req, res) => {
     if (estadoActual === "En Curso") {
       const camposActualizados = Object.keys(data);
 
-      // ✅ Solo permitir admin_fecha_fin y admin_estado
+      // Solo se permite actualizar admin_fecha_fin o admin_estado
       const camposNoPermitidos = camposActualizados.filter(
         campo => campo !== "admin_fecha_fin" && campo !== "admin_estado"
       );
@@ -291,10 +392,18 @@ const actualizarFormulacionMedicamento = async (req, res) => {
         });
       }
 
-      // 👉 Si se cambia a 'Suspendido', registrar fecha
+      // ❌ Validar que no se estén actualizando ambos campos a la vez
+      if ("admin_fecha_fin" in data && "admin_estado" in data) {
+        return res.status(400).json({
+          message: "Una formulación en curso, solo permite ser ampliada actualizando fecha fin ó puede ser suspendida actualizando su estado. No se permite cambiar los dos campos al mismo tiempo.",
+        });
+      }
+
+      // 👉 Si se cambia a 'Suspendido'
       if (data.admin_estado === "Suspendido") {
         formulacion.admin_estado = "Suspendido";
         formulacion.admin_fecha_suspension = moment().tz("America/Bogota").format("YYYY-MM-DD");
+
         await formulacion.save();
 
         return res.status(200).json({
@@ -303,11 +412,18 @@ const actualizarFormulacionMedicamento = async (req, res) => {
         });
       }
 
-      // 👉 Si solo cambia fecha_fin (o también viene el estado igual), permitir
-      await formulacion.update(data);
-      return res.status(200).json({
-        message: "Formulación actualizada correctamente (estado: En Curso).",
-        formulacion,
+      // 👉 Si solo se actualiza fecha_fin
+      if ("admin_fecha_fin" in data) {
+        await formulacion.update({ admin_fecha_fin: data.admin_fecha_fin });
+
+        return res.status(200).json({
+          message: "Fecha de finalización actualizada correctamente.",
+          formulacion,
+        });
+      }
+
+      return res.status(400).json({
+        message: "No se detectaron cambios válidos para aplicar.",
       });
     }
 
@@ -324,6 +440,7 @@ const actualizarFormulacionMedicamento = async (req, res) => {
   }
 };
 
+module.exports = { actualizarFormulacionMedicamento };
 
 
 
