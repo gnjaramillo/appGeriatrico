@@ -171,6 +171,14 @@ personaModel.associate = (models) => {
     foreignKey: "usuario_id",
     as: "movimientos_stock_pacientes", 
   });
+
+  
+// Una persona puede haber suspendido muchas formulaciones médicas.
+  personaModel.hasMany(models.formulacionMedicamentosModel, {
+    foreignKey: "admin_suspendido_por",
+    as: "formulaciones_suspendidas"
+  });
+  
   
 
 };

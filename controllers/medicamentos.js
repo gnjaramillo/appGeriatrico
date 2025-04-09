@@ -25,6 +25,13 @@ const registrarMedicamento = async (req, res) => {
             med_descripcion: med_descripcion || null
         });
 
+
+         // 🔥 Emitir evento por WebSocket
+         io.emit("medicamentoRegistrado", {
+            message: "Se ha registrado un nuevo medicamento.",
+            medicamento: nuevoMedicamento,
+        });
+
         return res.status(201).json({ 
             message: "Medicamento registrado exitosamente. Validar que los datos sean correctos, una vez el medicamento se vincule a un inventario, solo podrá ser actualizado en la descripción.", medicamento: nuevoMedicamento });
     } catch (error) {
@@ -94,8 +101,12 @@ const actualizarMedicamento = async (req, res) => {
         // Obtener los datos actualizados
         const medicamentoActualizado = await medicamentosModel.findOne({ where: { med_id } });
 
-        // Emitir evento WebSocket
-        io.emit("medicamentoActualizado", medicamentoActualizado);
+         // 🔥 Emitir evento por WebSocket
+        io.emit("medicamentoActualizado", {
+            message: "Medicamento actualizado correctamente.",
+            medicamento: medicamentoActualizado
+        });
+
 
         return res.status(200).json({ 
             message: "Medicamento actualizado correctamente", 

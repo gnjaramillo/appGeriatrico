@@ -43,6 +43,22 @@ const formulacionMedicamentosModel = sequelize.define(
       type: DataTypes.DATEONLY, 
       allowNull: true 
     },
+
+    admin_motivo_suspension: {
+      type: DataTypes.TEXT,
+      allowNull: true
+    },
+    admin_suspendido_por: {
+      type: DataTypes.INTEGER,
+      allowNull: true,
+      references: {
+        model: "personas",
+        key: "per_id"
+      },
+      onDelete: "SET NULL",
+      onUpdate: "CASCADE"
+    },
+    
     admin_dosis_por_toma: {
       type: DataTypes.DECIMAL(10,2),
       allowNull: false
@@ -111,7 +127,15 @@ formulacionMedicamentosModel.associate = (models) => {
   formulacionMedicamentosModel.hasMany(models.detalleAdministracionMedicamentoModel, { 
     foreignKey: "admin_id", 
     as: "medicamento_administrado" 
-  });  
+  }); 
+  
+
+// Cada formulación médica suspendida está relacionada con la persona que realizó la suspensión en el sistema.
+formulacionMedicamentosModel.belongsTo(models.personaModel, {
+    foreignKey: "admin_suspendido_por",
+    as: "suspendido_por"
+  });
+  
 
   
 };
