@@ -95,7 +95,6 @@ const registrarFormulacionMedicamento = async (req, res) => {
 
 
 
-
 // formulas vigentes, estado pendiente(por iniciar) o en curso de cada paciente
 const formulacionMedicamentoVigente = async (req, res) => {
   try {
@@ -251,7 +250,6 @@ const formulacionMedicamentoHistorial = async (req, res) => {
 
 
 
-
 // si la formula esta pendiente, se puede actualizar todo menos su estado
 const actualizarFormulacionPendiente = async (req, res) => {
   try {
@@ -306,7 +304,6 @@ const actualizarFormulacionPendiente = async (req, res) => {
 
 
 
-
 //si la formula aun no inicia, se puede eliminar
 const deleteFormulacionPendiente = async (req, res) => {
   const { admin_id } = req.params;
@@ -350,7 +347,6 @@ const deleteFormulacionPendiente = async (req, res) => {
     });
   }
 };
-
 
 
 
@@ -408,7 +404,6 @@ const suspenderFormulacionEnCurso = async (req, res) => {
     });
   }
 };
-
 
 
 
@@ -476,26 +471,42 @@ const obtenerFormulacionesDelDia = async (req, res) => {
   try {
     const hoy = moment().tz("America/Bogota").format("YYYY-MM-DD");
 
+    const { pac_id } = req.params;
+
     const formulacionesHoy = await formulacionMedicamentosModel.findAll({
       where: {
-        admin_estado: "En Curso",
+        pac_id,
+        admin_estado: {
+          [Op.in]: ['Pendiente', 'En Curso']
+        },
         admin_fecha_inicio: { [Op.lte]: hoy },
         admin_fecha_fin: { [Op.gte]: hoy },
       },
       include: [
-        { model: medicamentosModel },
-        { model: pacientesModel }
+        {
+          model: medicamentosModel,
+          as: "medicamentos_formulados",
+          attributes: ["med_nombre", "med_presentacion"],
+        },
+      ],
+      order: [
+        ["admin_hora", "ASC"]
       ]
     });
 
     const resultado = formulacionesHoy.map(f => ({
       admin_id: f.admin_id,
-      medicamento: f.medicamento.nombre,
-      dosis: f.admin_dosis_por_toma,
-      tipo: f.admin_tipo_cantidad,
-      hora: f.admin_hora,
-      metodo: f.admin_metodo,
-      paciente: `${f.paciente.nombre} ${f.paciente.apellido}`,
+      pac_id: f.pac_id,
+      med_id: f.med_id,
+      medicamentos_formulados: f.medicamentos_formulados,
+      admin_fecha_inicio: f.admin_fecha_inicio,
+      admin_fecha_fin: f.admin_fecha_fin,
+      admin_hora: f.admin_hora,
+      admin_dosis_por_toma: f.admin_dosis_por_toma,
+      admin_tipo_cantidad: f.admin_tipo_cantidad,
+      admin_metodo: f.admin_metodo,
+      admin_estado: f.admin_estado,
+      admin_total_dosis_periodo: f.admin_total_dosis_periodo,
     }));
 
     res.status(200).json(resultado);
@@ -505,8 +516,6 @@ const obtenerFormulacionesDelDia = async (req, res) => {
     res.status(500).json({ message: "Error al obtener formulaciones del día." });
   }
 };
-
-
 
 
 

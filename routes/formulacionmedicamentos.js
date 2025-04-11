@@ -12,6 +12,7 @@ const {
     deleteFormulacionPendiente, 
     suspenderFormulacionEnCurso,
     extenderFechaFinFormulacion,
+    obtenerFormulacionesDelDia,
  } = require('../controllers/formulacionmedicamentos');
 
 
@@ -19,6 +20,7 @@ const {
 
 
 
+router.get('/diaria/:pac_id', sessionMiddleware, authMiddleware, checkRol([3, 5]),  obtenerFormulacionesDelDia);
 router.get('/historial/:pac_id', sessionMiddleware, authMiddleware, checkRol([3, 5, 6]),  formulacionMedicamentoHistorial);
 router.get('/:pac_id', sessionMiddleware, authMiddleware, checkRol([3, 5, 6]),  formulacionMedicamentoVigente);
 
