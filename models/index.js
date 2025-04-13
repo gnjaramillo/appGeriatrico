@@ -23,8 +23,6 @@ const models = {
     inventarioMedicamentosPacienteModel: require('./inventariomedicamentospaciente'),
     formulacionMedicamentosModel: require('./formulacionmedicamento'),
     detalleAdministracionMedicamentoModel: require('./detalleadministracionmedicamento'),
-    // vinculacionMedicamentoSedeModel: require('./medicamentosede'),
-    // vinculacionMedicamentoPacienteModel: require('./medicamentopaciente'),
     movimientosStockSedeModel: require('./movimientostocksede'),
     movimientosStockPacienteModel: require('./movimientostockpaciente'),
 };
@@ -37,3 +35,7 @@ Object.values(models).forEach((model) => {
 });
 
 module.exports = models;
+
+
+    // vinculacionMedicamentoSedeModel: require('./medicamentosede'),
+    // vinculacionMedicamentoPacienteModel: require('./medicamentopaciente'),

@@ -267,13 +267,13 @@ const entradaStockMedicamentoInvPaciente = async (req, res) => {
       console.error("Error al agregar stock al inventario del paciente:", error);
       return res.status(500).json({ message: "Error interno del servidor." });
     }
-  };
-  
+};
+
 
 
 
 // registrar salida stock desde la lista de medicamentos del inventario del paciente (admin sede, enfermera)
-  const salidaStockMedicamentoInvPaciente = async (req, res) => {
+const salidaStockMedicamentoInvPaciente = async (req, res) => {
     const t = await sequelize.transaction();
   
     try {
@@ -283,6 +283,14 @@ const entradaStockMedicamentoInvPaciente = async (req, res) => {
   
       const data = matchedData(req);
       const { cantidad, med_destino } = data;
+
+      // ⚠️ Validar que no se use "Administración" como destino desde este flujo
+      if (med_destino === 'Administración Paciente') {
+        await t.rollback();
+        return res.status(400).json({
+          message: "Para registrar una administración de medicamento, debes hacerlo desde el módulo correspondiente del paciente.",
+        });
+      }
   
       // Validación de cantidad
       if (cantidad === undefined || cantidad <= 0) {
@@ -368,8 +376,8 @@ const entradaStockMedicamentoInvPaciente = async (req, res) => {
       console.error("Error al disminuir stock del paciente:", error);
       return res.status(500).json({ message: "Error interno del servidor." });
     }
-  };
-  
+};
+
 
 
 

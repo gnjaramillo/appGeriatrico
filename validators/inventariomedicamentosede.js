@@ -24,7 +24,7 @@ const validatorPrimerMovimiento = [
   
     // 🧪 Ejecutar middleware de resultados
     (req, res, next) => validateResult(req, res, next),
-  ];
+];
 
 
 
@@ -69,7 +69,7 @@ const validatorSalidaMedicamento = [
     // 🏷️ Validar med_origen desde body
     check("med_destino")
       .exists().withMessage("El destino del medicamento es obligatorio.")
-      .isIn(["Baja", "Devolución", "Otro"])
+      .isIn(["Baja", "Devolución", "Otro", "Administración Paciente"])
       .withMessage("El destino del medicamento no es válido."),
   
     // 🧪 Ejecutar middleware de resultados
@@ -77,11 +77,6 @@ const validatorSalidaMedicamento = [
 
 
 ]; 
-
-
-
-
-
 
 
 

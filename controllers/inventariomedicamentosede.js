@@ -210,6 +210,14 @@ const salidaStockMedicamentoInvSede = async (req, res) => {
   
       const data = matchedData(req);
       const { cantidad, med_destino } = data;
+
+      // ⚠️ Validar que no se use "Administración" como destino desde este flujo
+      if (med_destino === 'Administración Paciente') {
+        await t.rollback();
+        return res.status(400).json({
+          message: "Para registrar una administración de medicamento, debes hacerlo desde el módulo correspondiente del paciente.",
+        });
+      }
   
       // Validación
       if (cantidad === undefined || cantidad <= 0) {

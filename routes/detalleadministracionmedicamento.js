@@ -1,0 +1,32 @@
+const express = require('express');
+const router = express.Router();
+const authMiddleware = require('../middleware/sessionJwt')
+const sessionMiddleware = require('../middleware/sessionRedis')
+const checkRol = require('../middleware/rol');
+
+const { 
+    registrarAdministracionDosis,
+    } = require('../controllers/detalleadministracionmedicamento');
+
+    
+const {
+
+    validatorRegistrarAdminMedicamento,
+
+    } = require('../validators/detalleadministracionmedicamento');
+
+
+router.post('/:admin_id', sessionMiddleware, authMiddleware, checkRol([5]), validatorRegistrarAdminMedicamento, registrarAdministracionDosis);
+
+
+
+
+
+
+module.exports = router;
+
+
+
+
+
+
