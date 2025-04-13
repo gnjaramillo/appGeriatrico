@@ -66,7 +66,7 @@ const movimientosStockPacienteModel = sequelize.define(
       }
     },
     med_destino: {
-      type: DataTypes.ENUM('Baja', 'Devolución', 'Otro'),
+      type: DataTypes.ENUM('Baja', 'Devolución', 'Administración Paciente',  'Otro'),
       allowNull: true,
       get() {
         const value = this.getDataValue('med_destino');
