@@ -24,4 +24,16 @@ const validatorRegistrarAdminMedicamento = [
 
 ];
 
-module.exports = { validatorRegistrarAdminMedicamento };
+
+const validatorAdminId = [
+
+    param("admin_id")
+    .exists().withMessage("El ID de la formula es requerido.")
+    .isInt({ min: 1 }).withMessage("El ID de la formula debe ser un número entero positivo."),
+
+
+    (req, res, next) => validateResult(req, res, next),
+
+];
+
+module.exports = { validatorRegistrarAdminMedicamento, validatorAdminId };

@@ -11,12 +11,12 @@ const {
     
 const {
 
-    validatorRegistrarAdminMedicamento,
+    validatorRegistrarAdminMedicamento,validatorAdminId
 
     } = require('../validators/detalleadministracionmedicamento');
 
 
-    router.get('/formula/:admin_id', sessionMiddleware, authMiddleware, checkRol([3, 5]),  obtenerDetallesDeAdministracionPorFormula);
+    router.get('/formula/:admin_id', sessionMiddleware, authMiddleware, checkRol([3, 5, 6]), validatorAdminId,  obtenerDetallesDeAdministracionPorFormula);
     // router.get('/hoy/:pac_id', sessionMiddleware, authMiddleware, checkRol([3, 5]),  obtenerDosisDelDia);
     router.post('/:admin_id', sessionMiddleware, authMiddleware, checkRol([5]), validatorRegistrarAdminMedicamento, registrarAdministracionDosis);
 

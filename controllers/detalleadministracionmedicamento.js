@@ -15,7 +15,7 @@ const {
 
 
 
-// dosis efectivamente suministradas de una formulacion especifica
+// registrar dosis efectivamente suministradas de una formulacion especifica (enfermera)
 const registrarAdministracionDosis = async (req, res) => {
   const t = await sequelize.transaction();
 
@@ -189,6 +189,8 @@ const registrarAdministracionDosis = async (req, res) => {
 
 
 
+
+// vista enfermera, admin sede y acudiente.. ver detalle cada dosis de la formula
 const obtenerDetallesDeAdministracionPorFormula = async (req, res) => {
   try {
     const { admin_id } = req.params;
