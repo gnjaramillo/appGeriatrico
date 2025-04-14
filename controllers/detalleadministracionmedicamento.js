@@ -199,7 +199,7 @@ const obtenerDetallesDeAdministracionPorFormula = async (req, res) => {
         {
           model: medicamentosModel,
           as: "medicamentos_formulados",
-          attributes: ["med_nombre", "med_presentacion"],
+          attributes: ["med_nombre"],
         },
         {
           model: detalleAdministracionMedicamentoModel,
@@ -218,12 +218,12 @@ const obtenerDetallesDeAdministracionPorFormula = async (req, res) => {
       pac_id: formulacion.pac_id,
       med_id: formulacion.med_id,
       medicamentos_formulados: formulacion.medicamentos_formulados,
-      admin_fecha_inicio: formulacion.admin_fecha_inicio,
-      admin_fecha_fin: formulacion.admin_fecha_fin,
+      // admin_fecha_inicio: formulacion.admin_fecha_inicio,
+      // admin_fecha_fin: formulacion.admin_fecha_fin,
       admin_dosis_por_toma: formulacion.admin_dosis_por_toma,
-      admin_tipo_cantidad: formulacion.admin_tipo_cantidad,
-      admin_metodo: formulacion.admin_metodo,
-      admin_estado: formulacion.admin_estado,
+      // admin_tipo_cantidad: formulacion.admin_tipo_cantidad,
+      // admin_metodo: formulacion.admin_metodo,
+      // admin_estado: formulacion.admin_estado,
       detalles_administracion: formulacion.medicamento_administrado
     };
 
