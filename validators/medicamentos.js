@@ -16,14 +16,23 @@ const validatorCrearMedicamento = [
     check("med_presentacion")
         .exists({ checkFalsy: true }).withMessage("La presentación del medicamento es obligatoria.")
         .isIn([
-            "sachet", "unidad", "tableta", "Blíster", "caja", "frasco", "crema", 
-            "spray", "ampolla", "inyección", "parche", "supositorio", "gotas"
+            "sachet", "unidad", "tableta", "blíster", "caja", "frasco", "crema", 
+            "spray", "ampolla", "inyección", "parche", "supositorio", "gotas",
+            "tubo", "cápsula"  // Nuevas opciones agregadas
         ]).withMessage("La presentación del medicamento no es válida."),
 
     check("unidades_por_presentacion")
         .exists({ checkFalsy: true }).withMessage("Las unidades por presentación son obligatorias.")
         .isInt({ min: 1 }).withMessage("Las unidades por presentación deben ser un número entero positivo.")
         .toInt(),
+
+    check("med_tipo_contenido")
+        .exists({ checkFalsy: true }).withMessage("El tipo de contenido es obligatorio.")
+        .isIn([
+            "mililitros", "gramos", "unidades", "tabletas", "cápsulas", "disparos", 
+            "parches", "gotas", "supositorios", "otros"
+        ]).withMessage("El tipo de contenido no es válido.")
+        .trim(),
 
     check("med_descripcion")
         .optional()
@@ -51,16 +60,27 @@ const validatorActualizarMedicamento = [
         .notEmpty()
         .withMessage("Si se proporciona, la presentación del medicamento no puede estar vacía.")
         .isIn([
-            "sachet", "unidad", "tableta", "Blíster", "caja", "frasco", "crema", 
-            "spray", "ampolla", "inyección", "parche", "supositorio", "gotas"
-        ])
-        .withMessage("La presentación del medicamento no es válida."),
+            "sachet", "unidad", "tableta", "blíster", "caja", "frasco", "crema", 
+            "spray", "ampolla", "inyección", "parche", "supositorio", "gotas",
+            "tubo", "cápsula"  // Nuevas opciones agregadas
+        ]).withMessage("La presentación del medicamento no es válida."),
 
     check("unidades_por_presentacion")
         .optional()
         .notEmpty()
         .isInt({ min: 1 })
         .withMessage("Si se proporciona, las unidades por presentación deben ser un número entero positivo."),
+        
+
+    check("med_tipo_contenido")
+        .optional()
+        .notEmpty()
+        .isIn([
+            "mililitros", "gramos", "unidades", "tabletas", "cápsulas", "disparos", 
+            "parches", "gotas", "supositorios", "otros"
+        ])
+        .withMessage("El tipo de contenido no es válido."),
+
 
      check("med_descripcion")
         .optional().isString().trim()

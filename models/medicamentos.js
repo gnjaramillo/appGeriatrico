@@ -26,17 +26,27 @@ const medicamentosModel = sequelize.define(
     },
 
     med_presentacion: {
-        type: DataTypes.ENUM(
-            'sachet', 'unidad', 'tableta', 'Blíster', 'caja', 'frasco', 'crema', 'spray', 
-            'ampolla', 'inyección', 'parche', 'supositorio', 'gotas'
-        ),
-        allowNull: false
-    },
+      type: DataTypes.ENUM(
+          'sachet', 'unidad', 'tableta', 'blíster', 'caja', 'frasco', 'crema', 'spray', 
+          'ampolla', 'inyección', 'parche', 'supositorio', 'gotas', 'tubo', 'cápsula'
+      ),
+      allowNull: false
+  },
 
     unidades_por_presentacion: { 
         type: DataTypes.INTEGER.UNSIGNED, 
         allowNull: false 
       },
+
+      
+    med_tipo_contenido: {
+      type: DataTypes.ENUM(
+        'mililitros', 'gramos', 'unidades', 'tabletas', 'cápsulas',
+        'disparos', 'parches', 'gotas', 'supositorios', 'otros'
+      ),
+      allowNull: false,
+      defaultValue: 'unidades'
+    },
 
     med_descripcion: { 
       type: DataTypes.TEXT, 

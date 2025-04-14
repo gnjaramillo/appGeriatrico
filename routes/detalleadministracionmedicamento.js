@@ -5,7 +5,7 @@ const sessionMiddleware = require('../middleware/sessionRedis')
 const checkRol = require('../middleware/rol');
 
 const { 
-    registrarAdministracionDosis,
+    registrarAdministracionDosis, obtenerDetallesDeAdministracionPorFormula
     } = require('../controllers/detalleadministracionmedicamento');
 
     
@@ -16,7 +16,9 @@ const {
     } = require('../validators/detalleadministracionmedicamento');
 
 
-router.post('/:admin_id', sessionMiddleware, authMiddleware, checkRol([5]), validatorRegistrarAdminMedicamento, registrarAdministracionDosis);
+    router.get('/formula/:admin_id', sessionMiddleware, authMiddleware, checkRol([3, 5]),  obtenerDetallesDeAdministracionPorFormula);
+    // router.get('/hoy/:pac_id', sessionMiddleware, authMiddleware, checkRol([3, 5]),  obtenerDosisDelDia);
+    router.post('/:admin_id', sessionMiddleware, authMiddleware, checkRol([5]), validatorRegistrarAdminMedicamento, registrarAdministracionDosis);
 
 
 

@@ -20,7 +20,7 @@ const {
 
 
 router.post('/vinculoinicial/:med_id', sessionMiddleware, authMiddleware, checkRol([3]), validatorPrimerMovimiento, vincularMedicamentoInvSede);
-router.get('/', sessionMiddleware, authMiddleware,  checkRol([3]),  obtenerMedicamentosInvSede);
+router.get('/', sessionMiddleware, authMiddleware,  checkRol([3, 5]),  obtenerMedicamentosInvSede);
 router.put('/entradastock/:med_sede_id', sessionMiddleware, authMiddleware,  checkRol([3]), validatorStockMedicamento, entradaStockMedicamentoInvSede);
 router.put('/salidastock/:med_sede_id', sessionMiddleware, authMiddleware,  checkRol([3]), validatorSalidaMedicamento, salidaStockMedicamentoInvSede);
 

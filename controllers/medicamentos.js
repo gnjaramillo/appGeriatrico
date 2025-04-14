@@ -15,13 +15,14 @@ const {  medicamentosModel, inventarioMedicamentosSedeModel, inventarioMedicamen
 const registrarMedicamento = async (req, res) => {
     try {
         const data = matchedData(req);
-        const { med_nombre, med_presentacion, unidades_por_presentacion, med_descripcion } = data;
+        const { med_nombre, med_presentacion, unidades_por_presentacion,med_tipo_contenido, med_descripcion } = data;
 
 
         const nuevoMedicamento = await medicamentosModel.create({
             med_nombre,
             med_presentacion,
             unidades_por_presentacion, // Debe ser un número válido
+            med_tipo_contenido,
             med_descripcion: med_descripcion || null
         });
 
@@ -89,9 +90,9 @@ const actualizarMedicamento = async (req, res) => {
         const medicamentopac = await inventarioMedicamentosPacienteModel.findOne({ where: { med_id } });
 
         // Si el medicamento tiene stock, restringir ciertos cambios
-        if ((medicamentosede || medicamentopac) && (data.med_nombre || data.med_presentacion || data.unidades_por_presentacion)) {
+        if ((medicamentosede || medicamentopac) && (data.med_nombre || data.med_presentacion || data.unidades_por_presentacion || data.med_tipo_contenido)) {
             return res.status(400).json({ 
-                message: "No se pueden modificar nombre, presentación o unidades si el medicamento ya esta vinculado a un inventario."
+                message: "No se pueden modificar nombre, presentación, tipo de contenido o unidades si el medicamento ya esta vinculado a un inventario."
             });
         }
 

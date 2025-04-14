@@ -4,7 +4,7 @@ const { sequelize } = require('../config/mysql');
 const { io } = require('../utils/handleSocket'); 
 const moment = require('moment-timezone');
 const { matchedData } = require('express-validator');
-const { formulacionMedicamentosModel, personaModel,sedePersonaRolModel, medicamentosModel, pacienteModel } = require('../models');
+const { formulacionMedicamentosModel, personaModel,sedePersonaRolModel, medicamentosModel, pacienteModel, detalleAdministracionMedicamentoModel } = require('../models');
 
 
 
@@ -113,6 +113,12 @@ const formulacionMedicamentoVigente = async (req, res) => {
           as: "medicamentos_formulados",
           attributes: ["med_nombre", "med_presentacion"],
         },
+        {
+          model: detalleAdministracionMedicamentoModel,
+          as: "medicamento_administrado",
+          attributes: ["detalle_numero_dosis"],
+        },
+
       ],
       order: [
         ["admin_fecha_inicio", "DESC"],
@@ -126,7 +132,7 @@ const formulacionMedicamentoVigente = async (req, res) => {
       en_curso: []
     };
 
-    formulacionVigente.forEach(f => {
+/*     formulacionVigente.forEach(f => {
       const item = {
         admin_id: f.admin_id,
         pac_id: f.pac_id,
@@ -140,7 +146,33 @@ const formulacionMedicamentoVigente = async (req, res) => {
         admin_metodo: f.admin_metodo,
         admin_estado: f.admin_estado,
         admin_total_dosis_periodo: f.admin_total_dosis_periodo,
-      };
+      }; */
+
+      formulacionVigente.forEach(f => {
+        // Obtener última dosis si existe
+        let ultimaDosis = null;
+  
+        if (f.medicamento_administrado && f.medicamento_administrado.length > 0) {
+          ultimaDosis = f.medicamento_administrado.reduce((prev, curr) => {
+            return (prev.detalle_numero_dosis > curr.detalle_numero_dosis) ? prev : curr;
+          });
+        }
+  
+        const item = {
+          admin_id: f.admin_id,
+          pac_id: f.pac_id,
+          med_id: f.med_id,
+          medicamentos_formulados: f.medicamentos_formulados,
+          admin_fecha_inicio: f.admin_fecha_inicio,
+          admin_fecha_fin: f.admin_fecha_fin,
+          admin_hora: f.admin_hora,
+          admin_dosis_por_toma: f.admin_dosis_por_toma,
+          admin_tipo_cantidad: f.admin_tipo_cantidad,
+          admin_metodo: f.admin_metodo,
+          admin_estado: f.admin_estado,
+          admin_total_dosis_periodo: f.admin_total_dosis_periodo,
+          dosis_efectivamente_administradas: ultimaDosis,
+        };
 
       if (f.admin_estado === 'Pendiente') {
         agrupadas.pendiente.push(item);
@@ -188,7 +220,13 @@ const formulacionMedicamentoHistorial = async (req, res) => {
           model: personaModel,
           as: "suspendido_por",
           attributes: ["per_nombre_completo", "per_documento"],
-        }
+        },
+        {
+          model: detalleAdministracionMedicamentoModel,
+          as: "medicamento_administrado",
+          attributes: ["detalle_numero_dosis"],
+        },
+
       ],
       order: [
         ["admin_estado", "ASC"],
@@ -201,8 +239,8 @@ const formulacionMedicamentoHistorial = async (req, res) => {
     const completadas = todas.filter(f => f.admin_estado === "Completado");
     const suspendidas = todas.filter(f => f.admin_estado === "Suspendido");
 
-    // Mapear campos con formato limpio y ordenado
-    const mapearFormulacion = (f) => {
+
+/*     const mapearFormulacion = (f) => {
       const base = {
         admin_id: f.admin_id,
         pac_id: f.pac_id,
@@ -228,6 +266,46 @@ const formulacionMedicamentoHistorial = async (req, res) => {
 
       return base;
     };
+ */
+
+
+    // Mapear campos con formato limpio y ordenado
+    const mapearFormulacion = (f) => {
+      // Obtener la última dosis administrada (si hay)
+      let ultimaDosis = null;
+      if (f.medicamento_administrado && f.medicamento_administrado.length > 0) {
+        ultimaDosis = f.medicamento_administrado.reduce((prev, curr) => {
+          return (prev.detalle_numero_dosis > curr.detalle_numero_dosis) ? prev : curr;
+        });
+      }
+
+      const base = {
+        admin_id: f.admin_id,
+        pac_id: f.pac_id,
+        med_id: f.med_id,
+        medicamentos_formulados: f.medicamentos_formulados,
+        admin_fecha_inicio: f.admin_fecha_inicio,
+        admin_fecha_fin: f.admin_fecha_fin,
+        admin_hora: f.admin_hora,
+        admin_dosis_por_toma: f.admin_dosis_por_toma,
+        admin_tipo_cantidad: f.admin_tipo_cantidad,
+        admin_metodo: f.admin_metodo,
+        admin_estado: f.admin_estado,
+        admin_total_dosis_periodo: f.admin_total_dosis_periodo,
+        dosis_efectivamente_administradas: ultimaDosis
+      };
+
+      if (f.admin_estado === "Suspendido") {
+        base.admin_fecha_suspension = f.admin_fecha_suspension;
+        base.admin_motivo_suspension = f.admin_motivo_suspension;
+        base.suspendido_por = f.suspendido_por;
+      }
+
+      return base;
+    };
+
+
+
 
     // Aplicar mapeo
     const completadasMapeadas = completadas.map(mapearFormulacion);
@@ -488,13 +566,18 @@ const obtenerFormulacionesDelDia = async (req, res) => {
           as: "medicamentos_formulados",
           attributes: ["med_nombre", "med_presentacion"],
         },
+        {
+          model: detalleAdministracionMedicamentoModel,
+          as: "medicamento_administrado",
+          attributes: ["detalle_numero_dosis"],
+        },
       ],
       order: [
         ["admin_hora", "ASC"]
       ]
     });
 
-    const resultado = formulacionesHoy.map(f => ({
+/*     const resultado = formulacionesHoy.map(f => ({
       admin_id: f.admin_id,
       pac_id: f.pac_id,
       med_id: f.med_id,
@@ -507,7 +590,37 @@ const obtenerFormulacionesDelDia = async (req, res) => {
       admin_metodo: f.admin_metodo,
       admin_estado: f.admin_estado,
       admin_total_dosis_periodo: f.admin_total_dosis_periodo,
-    }));
+      dosis_administradas: f.medicamento_administrado,
+
+    })); */
+
+    const resultado = formulacionesHoy.map(f => {
+      let ultimaDosis = null;
+    
+      if (f.medicamento_administrado.length > 0) {
+        ultimaDosis = f.medicamento_administrado.reduce((prev, curr) => {
+          return (prev.detalle_numero_dosis > curr.detalle_numero_dosis) ? prev : curr;
+        });
+      }
+
+
+      return {
+        admin_id: f.admin_id,
+        pac_id: f.pac_id,
+        med_id: f.med_id,
+        medicamentos_formulados: f.medicamentos_formulados,
+        admin_fecha_inicio: f.admin_fecha_inicio,
+        admin_fecha_fin: f.admin_fecha_fin,
+        admin_hora: f.admin_hora,
+        admin_dosis_por_toma: f.admin_dosis_por_toma,
+        admin_tipo_cantidad: f.admin_tipo_cantidad,
+        admin_metodo: f.admin_metodo,
+        admin_estado: f.admin_estado,
+        admin_total_dosis_periodo: f.admin_total_dosis_periodo,
+        dosis_efectivamente_administradas: ultimaDosis, // solo la última
+      };
+    });
+    
 
     res.status(200).json(resultado);
 
