@@ -39,6 +39,7 @@ app.use(cors({
       'http://localhost:5173',
       'http://localhost:3000',
       "https://appgeriatrico-production.up.railway.app",
+      "https://app-geriatrico-production.up.railway.app", // url despliegue frontend
 
     ],
     credentials: true, // Permitir el envío de cookies/credenciales
