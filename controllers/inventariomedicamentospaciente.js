@@ -85,15 +85,41 @@ const vincularMedicamentoInvPac = async (req, res) => {
   
       await t.commit(); // Éxito
 
+      const datosCompletos = await inventarioMedicamentosPacienteModel.findOne({
+        where: {
+          med_pac_id: inventario.med_pac_id
+        },
+        include: [
+          {
+              model: medicamentosModel,
+              as: "medicamento",
+              attributes: ["med_id", "med_nombre", "med_presentacion", "unidades_por_presentacion", "med_descripcion"]
+          }
+        ],
+      })
+
+      const payload = {
+        med_pac_id: datosCompletos.med_pac_id,
+        med_id: datosCompletos.med_id,
+        nombre: datosCompletos.medicamento.med_nombre,
+        presentacion: datosCompletos.medicamento.med_presentacion,
+        unidades_por_presentacion: datosCompletos.medicamento.unidades_por_presentacion,
+        descripcion: datosCompletos.medicamento.med_descripcion,
+        unidades_disponibles: datosCompletos.med_total_unidades_disponibles
+      };
+
+
 
       // 🔴 Emitir evento por socket
-      io.emit('stockPacienteActualizado', {
+      io.to(`paciente-${pac_id}`).emit("nuevo-medicamento-inventario-paciente", payload);
+
+/*       io.emit('stockPacienteActualizado', {
         med_pac_id: inventario.med_pac_id,
         cantidadAgregada: cantidad,
         nuevoStock: inventario.med_total_unidades_disponibles,
         mensaje: "Nuevo medicamento vinculado al inventario del paciente.",
       });
-
+ */
   
       return res.status(201).json({
         message: "Medicamento agregado al inventario paciente y  primer movimiento de stock registrado.",
@@ -104,7 +130,7 @@ const vincularMedicamentoInvPac = async (req, res) => {
     } catch (error) {
       // Solo intenta rollback si la transacción no está terminada
       if (!t.finished) await t.rollback(); 
-      console.error("Error en vincularMedicamentoInvSede:", error);
+      console.error("Error en vincularMedicamentoInvPac:", error);
       return res.status(500).json({ message: "Error interno del servidor" });
     }
 };

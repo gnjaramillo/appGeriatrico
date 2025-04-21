@@ -24,7 +24,8 @@ const vincularMedicamentoInvSede = async (req, res) => {
         await t.rollback();
         return res.status(400).json({ message: "La cantidad no puede ser negativa" });
       }
-  
+
+      // validar si el medicamento ya esta vinculado  
       let inventario = await inventarioMedicamentosSedeModel.findOne({
         where: { se_id, med_id },
         transaction: t,
@@ -40,6 +41,8 @@ const vincularMedicamentoInvSede = async (req, res) => {
         med_id,
         med_total_unidades_disponibles: cantidad,
       }, { transaction: t });
+
+
   
       const movimiento = await movimientosStockSedeModel.create({
         med_sede_id: inventario.med_sede_id,
@@ -55,14 +58,43 @@ const vincularMedicamentoInvSede = async (req, res) => {
   
       await t.commit(); // Éxito
 
+      const datosCompletos = await inventarioMedicamentosSedeModel.findOne({
+        where: {
+          med_sede_id: inventario.med_sede_id
+        },
+        include: [
+          {
+              model: medicamentosModel,
+              as: "medicamento",
+              attributes: ["med_id", "med_nombre", "med_presentacion", "unidades_por_presentacion", "med_descripcion"]
+          }
+        ],
+      })
+
+      const payload = {
+        med_sede_id: datosCompletos.med_sede_id,
+        med_id: datosCompletos.med_id,
+        nombre: datosCompletos.medicamento.med_nombre,
+        presentacion: datosCompletos.medicamento.med_presentacion,
+        unidades_por_presentacion: datosCompletos.medicamento.unidades_por_presentacion,
+        descripcion: datosCompletos.medicamento.med_descripcion,
+        unidades_disponibles: datosCompletos.med_total_unidades_disponibles
+      };
+
 
       // 🔴 Emitir evento por socket
-    io.emit('stockActualizado', {
+      io.to(`sede-${se_id}`).emit("nuevo-medicamento-inventario", payload);
+
+
+
+      /*     io.emit('stockActualizado', {
         med_sede_id: inventario.med_sede_id,
         cantidadAgregada: cantidad,
         nuevoStock: inventario.med_total_unidades_disponibles,
         mensaje: "Nuevo medicamento vinculado al inventario.",
-      });
+        }); */
+        
+      
   
       return res.status(201).json({
         message: "Medicamento agregado al inventario sede y primer movimiento de stock registrado.",
