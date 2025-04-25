@@ -58,18 +58,23 @@ const vincularMedicamentoInvSede = async (req, res) => {
   
       await t.commit(); // Éxito
 
-      const datosCompletos = await inventarioMedicamentosSedeModel.findOne({
-        where: {
-          med_sede_id: inventario.med_sede_id
-        },
-        include: [
-          {
-              model: medicamentosModel,
-              as: "medicamento",
-              attributes: ["med_id", "med_nombre", "med_presentacion", "unidades_por_presentacion", "med_descripcion"]
-          }
-        ],
-      })
+      const datosCompletos = (await inventarioMedicamentosSedeModel.findOne({
+        where: { med_sede_id: inventario.med_sede_id },
+        include: [{
+          model: medicamentosModel,
+          as: "medicamento",
+          attributes: [
+            "med_id",
+            "med_nombre",
+            "med_presentacion",
+            "unidades_por_presentacion",
+            "med_descripcion"
+          ]
+        }]
+      })).toJSON();   // Con la conversión a un objeto JavaScript “puro y simple” el socket enviará siempre todos los campos completos y el frontend los pintará sin necesidad de recargar.
+      
+
+
 
       const payload = {
         med_sede_id: datosCompletos.med_sede_id,

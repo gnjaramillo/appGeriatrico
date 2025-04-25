@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const { personaModel } = require('../models'); 
 const { sendMail } = require('../utils/handleEmail');
 const bcrypt = require('bcryptjs');
-const URL_RAILWAY = process.env.URL_RAILWAY 
+const URL_RAILWAY_FRONTEND = process.env.URL_RAILWAY_FRONTEND 
 
 
 
@@ -38,7 +38,7 @@ const forgotPassword = async (req, res) => {
 
         // const resetUrl = `http://localhost:3000/api/restablecerPassword/${token}`;
         
-        const resetUrl = `${URL_RAILWAY}/api/restablecerPassword/${token}`;
+        const resetUrl = `${URL_RAILWAY_FRONTEND}/api/restablecerPassword/${token}`;
 
         const mailOptions = {
             from: process.env.SMTP_USER_EMAIL,

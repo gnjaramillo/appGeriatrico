@@ -38,7 +38,7 @@ app.use(cors({
       'http://localhost:5174',  // Dominio local del frontend
       'http://localhost:5173',
       'http://localhost:3000',
-      "https://appgeriatrico-production.up.railway.app",
+      "https://appgeriatrico-production.up.railway.app", // url despliegue backend
       "https://app-geriatrico-production.up.railway.app", // url despliegue frontend
 
     ],

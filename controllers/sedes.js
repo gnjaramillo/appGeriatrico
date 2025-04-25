@@ -66,7 +66,7 @@ const crearSede = async (req, res) => {
 
 
 
-// todas las sedes visibles ruta sin proteccion por ahora.. 
+// todas las sedes visibles.. 
 const obtenerSedes = async (req, res) => {
   try {
     // Obtener todas las sedes de la base de datos

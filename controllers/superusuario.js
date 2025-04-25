@@ -69,3 +69,6 @@ const asignarRolSuperUsuario = async (req, res) => {
 };
 
 module.exports = {asignarRolSuperUsuario}
+
+
+

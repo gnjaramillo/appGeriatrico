@@ -8,15 +8,15 @@ const {validatorCrearRol, validatorDetalleRol, validatorActualizarRol, validarRo
 
 
 
-router.get('/', sessionMiddleware, authMiddleware, checkRol([1, 2, 3]), obtenerRoles);
+router.get('/', sessionMiddleware, authMiddleware, checkRol([1, 2, 3]), obtenerRoles); // los admin los obtienen para poder asignarlos
 router.get('/historialGeriatrico/:ge_id', sessionMiddleware, authMiddleware, checkRol([1]), obtenerHistorialRoles);
 router.get('/rolesAsignados', sessionMiddleware, authMiddleware,  obtenerRolesAsignados);
-router.get('/:rol_id', validatorDetalleRol, obtenerDetalleRol);
+router.get('/:rol_id', sessionMiddleware, authMiddleware, checkRol([1]), validatorDetalleRol, obtenerDetalleRol);
 
 router.post('/', sessionMiddleware, authMiddleware, checkRol([1]), validatorCrearRol, crearRol);
 router.post('/rolSeleccionado', sessionMiddleware, authMiddleware, validarRolSeleccionado,  seleccionarRol);
 
-router.put('/:rol_id', validatorActualizarRol, actualizarRol);
+router.put('/:rol_id', sessionMiddleware, authMiddleware, checkRol([1]), validatorActualizarRol, actualizarRol);
 // ver mis roles asignados como usuario
 
 

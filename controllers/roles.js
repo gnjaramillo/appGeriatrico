@@ -3,7 +3,7 @@ const { rolModel, personaModel, enfermeraModel, sedePersonaRolModel, sedeModel, 
 const { limpiarSesion } = require('../utils/sessionUtils');
 
 
-
+// solo lo hace el super admin
 const crearRol = async (req, res) => {
   try {
     const data = matchedData(req);
@@ -23,7 +23,7 @@ const crearRol = async (req, res) => {
 };
 
 
-
+// obtenerlos para poder asignarlos
 const obtenerRoles = async (req, res) => {
     try {
       const roles = await rolModel.findAll();
@@ -173,7 +173,7 @@ const obtenerHistorialRoles = async (req, res) => {
 
 
 
-
+// vista super admin
 const obtenerDetalleRol = async (req, res) => {
     try {
       const { rol_id } = req.params;
@@ -194,7 +194,7 @@ const obtenerDetalleRol = async (req, res) => {
 };
 
 
-
+// vista y permitido al super admin
 const actualizarRol = async (req, res) => {
   try {
     const { rol_id } = req.params;

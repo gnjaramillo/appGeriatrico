@@ -1,5 +1,6 @@
 const { Op } = require('sequelize');
-const { sequelize } = require('../config/mysql'); 
+const { sequelize } = require('../config/mysql');
+const { io } = require('../utils/handleSocket'); 
 const { matchedData } = require('express-validator');
 const { enfermeraModel,sedeModel,rolModel, turnoModel, personaModel, sedePersonaRolModel } = require('../models');
 
@@ -46,6 +47,31 @@ const registrarEnfermera = async (req, res) => {
           });
       }
 
+      
+    const persona = await enfermeraModel.findOne({
+      where: { enf_id: datosEnfermera.enf_id },
+      attributes: ["enf_id", "enf_codigo"],
+      include: [{
+        model: personaModel,
+        as: "persona",
+        attributes: ["per_id", "per_nombre_completo", "per_documento"]
+      }]
+    });
+
+    const payload = persona.toJSON(); 
+
+    io.to(`sede-${se_id_sesion}`).emit("enfermeraRegistrada", {
+      message: "Nueva enfermera registrada",
+      enfermera: {
+        enf_id: payload.enf_id,
+        enf_codigo: payload.enf_codigo,
+        per_id: payload.per_id,
+        nombre:  payload.persona.per_nombre_completo,
+        documento: payload.persona.per_documento
+      }
+    });
+
+
       return res.status(201).json({ 
           message: "Enfermera registrada con éxito.", 
           nuevaEnfermera: datosEnfermera,
@@ -59,6 +85,7 @@ const registrarEnfermera = async (req, res) => {
       });
   }
 };
+
 
 
 

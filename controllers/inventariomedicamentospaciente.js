@@ -85,18 +85,20 @@ const vincularMedicamentoInvPac = async (req, res) => {
   
       await t.commit(); // Éxito
 
-      const datosCompletos = await inventarioMedicamentosPacienteModel.findOne({
-        where: {
-          med_pac_id: inventario.med_pac_id
-        },
-        include: [
-          {
-              model: medicamentosModel,
-              as: "medicamento",
-              attributes: ["med_id", "med_nombre", "med_presentacion", "unidades_por_presentacion", "med_descripcion"]
-          }
-        ],
-      })
+      const datosCompletos = (await inventarioMedicamentosPacienteModel.findOne({
+        where: { med_pac_id: inventario.med_pac_id },
+        include: [{
+          model: medicamentosModel,
+          as: "medicamento",
+          attributes: [
+            "med_id",
+            "med_nombre",
+            "med_presentacion",
+            "unidades_por_presentacion",
+            "med_descripcion"
+          ]
+        }]
+      })).toJSON();  
 
       const payload = {
         med_pac_id: datosCompletos.med_pac_id,

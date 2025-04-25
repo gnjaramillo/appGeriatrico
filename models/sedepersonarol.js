@@ -71,9 +71,15 @@ module.exports = sedePersonaRolModel;
 
 // Relaciones
 sedePersonaRolModel.associate = (models) => {
-  sedePersonaRolModel.belongsTo(models.personaModel, { foreignKey: 'per_id', as: 'persona' });
-  sedePersonaRolModel.belongsTo(models.sedeModel, { foreignKey: 'se_id', as: 'sede' });
-  sedePersonaRolModel.belongsTo(models.rolModel, { foreignKey: 'rol_id', as: 'rol' });
+  sedePersonaRolModel.belongsTo(models.personaModel, { 
+    foreignKey: 'per_id', 
+    as: 'persona' });
+  sedePersonaRolModel.belongsTo(models.sedeModel, { 
+    foreignKey: 'se_id', 
+    as: 'sede' });
+  sedePersonaRolModel.belongsTo(models.rolModel, { 
+    foreignKey: 'rol_id', 
+    as: 'rol' });
 };
 
 

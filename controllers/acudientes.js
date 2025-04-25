@@ -1,6 +1,6 @@
 const { Op } = require("sequelize");
 const { sequelize } = require("../config/mysql");
-
+const { io } = require('../utils/handleSocket'); 
 const { matchedData } = require("express-validator");
 const {
   pacienteAcudienteModel,
@@ -107,6 +107,7 @@ const registrarAcudiente = async (req, res) => {
             acudiente: acudienteExistente,
           });
         } else {
+          // Estaba inactivo: se reactiva,
           await acudienteExistente.update(
             { pa_activo: true, pa_parentesco },
             { transaction: t }
@@ -119,7 +120,7 @@ const registrarAcudiente = async (req, res) => {
         }
       }
 
-      // Si no existe, lo registramos
+      // Si no existe, lo registramos y SE EMITE socket
       const acudienteRegistrado = await pacienteAcudienteModel.create(
         {
           per_id,
@@ -128,6 +129,38 @@ const registrarAcudiente = async (req, res) => {
         },
         { transaction: t }
       );
+
+
+      const persona = await pacienteAcudienteModel.findOne({
+        where: { pa_id: acudienteRegistrado.pa_id },
+        attributes: ["pa_id", "pa_parentesco", "pa_activo"],
+        include: [{
+          model: personaModel,
+          as: "persona",
+          attributes: ["per_id", "per_nombre_completo", "per_documento", "per_telefono", "per_correo" ]
+        }]
+      });
+  
+      const payload = persona.toJSON(); 
+
+      // Emitir evento a través de WebSocket 
+      io.to(`sede-${se_id}`).emit("acudienteRegistrado", {
+        message: "Nuevo acudiente registrado",
+        acudiente: {
+          pa_id: payload.pa_id,
+          per_id: payload.per_id,
+          pa_activo: payload.pa_activo,
+          nombre:  payload.persona.per_nombre_completo,
+          documento: payload.persona.per_documento,
+          pa_parentesco: payload.pa_parentesco,
+          per_telefono: payload.per_telefono,
+          per_correo: payload.per_correo,
+        }
+      });
+  
+
+
+
 
       return res.status(201).json({
         message: "Acudiente registrado correctamente.",

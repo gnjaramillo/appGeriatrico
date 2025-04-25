@@ -9,7 +9,6 @@ const {obtenerColaboradoresSede, obtenerRolesColaboradoresSede } = require('../c
 
 
 router.get('/sede', sessionMiddleware, authMiddleware, checkRol([3]), obtenerColaboradoresSede);
-
 router.get('/roles/:per_id', sessionMiddleware, authMiddleware, checkRol([3]), validatorIdPer, obtenerRolesColaboradoresSede);
 
 

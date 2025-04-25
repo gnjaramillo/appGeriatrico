@@ -11,7 +11,7 @@ const {registrarDiagnostico, obtenerDiagnostico, actualizarDiagnostico } = requi
 
 
 router.get('/paciente/:pac_id', sessionMiddleware, authMiddleware, checkRol([3, 5, 6]), validarPacId, obtenerDiagnostico);
-router.post('/paciente/:pac_id', sessionMiddleware, authMiddleware, checkRol([3]), validarDiagnostico, registrarDiagnostico);
+router.post('/paciente/:pac_id', sessionMiddleware, authMiddleware, checkRol([3, 5]), validarDiagnostico, registrarDiagnostico);
 router.put('/paciente/:pac_id', sessionMiddleware, authMiddleware, checkRol([3, 5]), validarUpdateDiagnostico, actualizarDiagnostico);
 
 

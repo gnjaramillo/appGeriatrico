@@ -1,6 +1,6 @@
 const { Op } = require("sequelize");
 const { sequelize } = require('../config/mysql'); 
-
+const { io } = require('../utils/handleSocket'); 
 const { matchedData } = require("express-validator");
 const { pacienteModel, rolModel, sedeModel, personaModel, geriatricoModel, pacienteAcudienteModel, geriatricoPersonaModel, sedePersonaRolModel,
 } = require("../models");
@@ -72,6 +72,29 @@ const registrarPaciente = async (req, res) => {
         pac_talla_pantalon,
       });
     }
+
+    const persona = await pacienteModel.findOne({
+      where: { pac_id: datosPaciente.pac_id },
+      include: [{
+        model: personaModel,
+        as: "persona",
+        attributes: ["per_id", "per_nombre_completo", "per_documento"]
+      }]
+    });
+
+    const payload = persona.toJSON(); 
+
+    io.to(`sede-${se_id_sesion}`).emit("pacienteRegistrado", {
+      message: "Nuevo paciente registrado",
+      paciente: {
+        pac_id: payload.pac_id,
+        per_id: payload.per_id,
+        nombre:  payload.persona.per_nombre_completo,
+        documento: payload.persona.per_documento
+      }
+    });
+
+
 
     return res.status(201).json({
       message: "Paciente registrado con éxito.",

@@ -1,6 +1,6 @@
 const { Op } = require("sequelize");
 const { sequelize } = require("../config/mysql");
-
+const { io } = require('../utils/handleSocket'); 
 const { matchedData } = require("express-validator");
 const {
   personaModel,
@@ -229,7 +229,6 @@ const inactivarRolAdminSede = async (req, res) => {
 
 
 const ROLES_PERMITIDOS_SEDE = [4, 5, 6, 7]; // Paciente, Enfermero, Acudiente, Colaborador
-
 const asignarRolesSede = async (req, res) => {
   let t;
 
@@ -423,6 +422,37 @@ const asignarRolesSede = async (req, res) => {
 
     await t.commit();
 
+    
+    const persona = await sedePersonaRolModel.findOne({
+      where: { sp_id: nuevaVinculacion.sp_id },
+      include: [{
+        model: personaModel,
+        as: "persona",
+        attributes: ["per_id", "per_nombre_completo", "per_documento", "per_telefono", "per_correo" ]
+      }]
+    });
+
+    // Emitir evento a través de WebSocket para notificar la asignación del rol
+    io.to(se_id).emit('rolAsignado', {
+      message: 'Rol asignado correctamente.',
+      nuevaVinculacion,
+      rolNombre: rol.rol_nombre,
+      sede: {
+        se_id: sede.se_id,
+        se_nombre: sede.se_nombre,
+        cuposTotales: cuposTotales,
+        cuposOcupados: cuposOcupados,
+      },
+      persona:{
+        per_id: persona.persona.per_id,
+        per_nombre_completo: persona.persona.per_nombre_completo,
+        per_documento: persona.persona.per_documento,
+        per_telefono: persona.persona.per_telefono,
+        per_correo: persona.persona.per_correo
+
+      }
+    });
+
     return res.status(200).json({
       message: "Rol asignado correctamente.",
       nuevaVinculacion,
@@ -433,7 +463,17 @@ const asignarRolesSede = async (req, res) => {
         cuposTotales: cuposTotales,
         cuposOcupados: cuposOcupados,
       },
+      persona:{
+        per_id: persona.persona.per_id,
+        per_nombre_completo: persona.persona.per_nombre_completo,
+        per_documento: persona.persona.per_documento,
+        per_telefono: persona.persona.per_telefono,
+        per_correo: persona.persona.per_correo
+
+      }
     });
+
+
   } catch (error) {
     if (t && !t.finished) {
       await t.rollback();
@@ -497,7 +537,7 @@ const inactivarRolSede = async (req, res) => {
     // Verificar que la sede pertenece al geriátrico del usuario en sesión
     const sede = await sedeModel.findOne({
       where: { se_id, ge_id },
-      attributes: ["se_id", "se_nombre", "cupos_ocupados"],
+      attributes: ["se_id", "se_nombre", "cupos_ocupados", "cupos_ocupados"],
     });
 
     if (!sede) {
@@ -594,7 +634,7 @@ const inactivarRolSede = async (req, res) => {
         .map((p) => p.persona?.paciente?.pac_id)
         .filter((id) => id !== undefined);
 
-      // 🔹 3️⃣ VERIFICAR RELACIONES ACTIVAS DE LOS ACUDIENTES
+      // 🔹 3️⃣ VERIFICAR RELACIONES ACTIVAS DE LOS ACUDIENTES CON OTROS PACIENTES
       for (const acudiente of acudientesRelacionados) {
         const { per_id: acudiente_id } = acudiente;
 
@@ -633,6 +673,19 @@ const inactivarRolSede = async (req, res) => {
     }
 
     await t.commit();
+
+    // Emitir evento para cualquier rol inactivado
+    io.emit('rol_inactivado_en_sede', {
+      rol_id,
+      nombre_rol: rolAsignado.rol.rol_nombre,
+      se_id: sede.se_id,
+      nombre_sede: sede.se_nombre,
+      nombre_persona: rolAsignado.persona.per_nombre_completo,
+      documento_persona: rolAsignado.persona.per_documento,
+      cupos_totales: sede.cupos_totales,
+      cupos_ocupados: sede.cupos_ocupados,
+    });
+
 
     return res.status(200).json({
       message: "Rol inactivado correctamente.",

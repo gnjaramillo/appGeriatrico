@@ -56,8 +56,6 @@ const registrarFormulacionMedicamento = async (req, res) => {
       if (!med_id || !admin_fecha_inicio || !admin_fecha_fin || !admin_dosis_por_toma || !admin_tipo_cantidad || !admin_hora || !admin_metodo) {
         return res.status(400).json({ message: "Faltan datos obligatorios en la formulación." });
       }
-  
-   
 
   
       const nuevaFormulacion = await formulacionMedicamentosModel.create({
@@ -73,10 +71,58 @@ const registrarFormulacionMedicamento = async (req, res) => {
       
       });
 
+
+      const datosCompletos = await formulacionMedicamentosModel.findOne({
+        where: {
+          admin_id: nuevaFormulacion.admin_id },
+        include: [
+          {
+              model: medicamentosModel,
+              as: "medicamentos_formulados",
+              attributes: [
+                "med_id", 
+                "med_nombre", 
+                "med_presentacion", 
+                "med_tipo_contenido",
+                "med_descripcion"]
+          }
+        ],
+        attributes: [
+          "admin_fecha_inicio", 
+          "admin_fecha_fin", 
+          "admin_hora", 
+          "admin_dosis_por_toma", 
+          // "admin_tipo_cantidad", 
+          "admin_metodo", 
+          "admin_estado",  
+          "admin_total_dosis_periodo"
+        ], 
+
+      })
+
+/*       const payload = {
+        med_id: datosCompletos.med_id,
+        nombre: datosCompletos.medicamentos_formulados.med_nombre,
+        presentacion: datosCompletos.medicamentos_formulados.med_presentacion,
+        tipo_contenido: datosCompletos.medicamentos_formulados.med_tipo_contenido,
+        admin_fecha_inicio: datosCompletos.admin_fecha_inicio,
+        admin_fecha_fin: datosCompletos.admin_fecha_fin,
+        admin_hora: datosCompletos.admin_hora,
+        admin_dosis_por_toma: datosCompletos.admin_dosis_por_toma,
+        admin_tipo_cantidad: datosCompletos.admin_tipo_cantidad,
+        admin_estado: datosCompletos.admin_estado,
+        admin_metodo: datosCompletos.admin_metodo,
+        admin_total_dosis_periodo: datosCompletos.admin_total_dosis_periodo,
+
+      }; */
+
+      // ¡Ojo! a JSON plano:
+      const payload = datosCompletos.toJSON();   // ← incluye el virtual ‘admin_total_dosis_periodo’
+
    // 🔥 Emitir evento por WebSocket
     io.emit("formulacionRegistrada", {
       message: "Se ha registrado una nueva formulación médica.",
-      formulacion: nuevaFormulacion,
+      formulacion: payload,
     });
 
   
