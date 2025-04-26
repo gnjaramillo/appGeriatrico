@@ -40,12 +40,28 @@ const forgotPassword = async (req, res) => {
         
         const resetUrl = `${URL_RAILWAY_FRONTEND}/api/restablecerPassword/${token}`;
 
+
         const mailOptions = {
-            from: process.env.SMTP_USER_EMAIL,
             to: persona.per_correo,
             subject: 'Recuperación de Contraseña',
-            text: (`Hola ${persona.per_nombre_completo},\n\nPara restablecer tu contraseña, por favor visita el siguiente enlace: \n\n${resetUrl}`
-        )};
+            text: `Hola ${persona.per_nombre_completo},\n\nPara restablecer tu contraseña, por favor visita el siguiente enlace:\n\n${resetUrl}`,
+            html: `
+              <div style="font-family: Arial, sans-serif; line-height: 1.5; color: #333;">
+                <h2>Hola ${persona.per_nombre_completo},</h2>
+                <p>Para restablecer tu contraseña, por favor haz clic en el siguiente botón:</p>
+                <p style="text-align: center; margin: 30px 0;">
+                  <a href="${resetUrl}" target="_blank" style="background-color: #4CAF50; color: white; padding: 12px 24px; text-decoration: none; font-size: 16px; border-radius: 5px; display: inline-block;">
+                    Restablecer Contraseña
+                  </a>
+                </p>
+                <p>Si no solicitaste este cambio, puedes ignorar este mensaje.</p>
+                <br>
+                <p style="font-size: 12px; color: #888;">Este enlace expirará en 1 hora.</p>
+              </div>
+            `
+          };
+          
+          
 
         await sendMail(mailOptions);
         res.send({ message: 'Correo electrónico enviado' });

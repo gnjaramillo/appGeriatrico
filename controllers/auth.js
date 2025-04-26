@@ -23,6 +23,12 @@ const registrarPersona = async (req, res) => {
           return res.status(400).json({ message: 'El correo ya está registrado' });
       }
 
+      // Validar usuario
+      const usuarioExiste = await personaModel.findOne({ where: { per_usuario } });
+      if (usuarioExiste) {
+          return res.status(400).json({ message: 'El usuario no esta disponible' });
+      }
+
       // Validar documento
       const documentoExiste = await personaModel.findOne({ where: { per_documento } });
       if (documentoExiste) {
