@@ -38,7 +38,7 @@ const forgotPassword = async (req, res) => {
 
         // const resetUrl = `http://localhost:3000/api/restablecerPassword/${token}`;
         
-        const resetUrl = `${URL_RAILWAY_FRONTEND}/api/restablecerPassword/${token}`;
+        const resetUrl = `${URL_RAILWAY_FRONTEND}/restablecerPassword/${token}`;
 
 
         const mailOptions = {
