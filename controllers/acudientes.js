@@ -130,16 +130,21 @@ const registrarAcudiente = async (req, res) => {
         { transaction: t }
       );
 
-
+      
       const persona = await pacienteAcudienteModel.findOne({
         where: { pa_id: acudienteRegistrado.pa_id },
         attributes: ["pa_id", "pa_parentesco", "pa_activo"],
         include: [{
           model: personaModel,
           as: "persona",
-          attributes: ["per_id", "per_nombre_completo", "per_documento", "per_telefono", "per_correo" ]
-        }]
+          attributes: ["per_id", "per_nombre_completo", "per_documento", "per_telefono", "per_correo"],
+        }],
+        transaction: t,
       });
+
+      if (!persona) {
+        throw new Error("No se pudo obtener la información del nuevo acudiente.");
+      }
   
       const payload = persona.toJSON(); 
 
